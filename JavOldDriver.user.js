@@ -99,13 +99,13 @@
     // (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
     Date.prototype.Format = function (fmt) { //author: meizz
         var o = {
-            "M+": this.getMonth() + 1,                 //月份
-            "d+": this.getDate(),                    //日
-            "h+": this.getHours(),                   //小时
-            "m+": this.getMinutes(),                 //分
-            "s+": this.getSeconds(),                 //秒
-            "q+": Math.floor((this.getMonth() + 3) / 3), //季度
-            "S": this.getMilliseconds()             //毫秒
+            "M+": this.getMonth() + 1,                    //月份
+            "d+": this.getDate(),                         //日
+            "h+": this.getHours(),                        //小时
+            "m+": this.getMinutes(),                      //分
+            "s+": this.getSeconds(),                      //秒
+            "q+": Math.floor((this.getMonth() + 3) / 3),  //季度
+            "S": this.getMilliseconds()                   //毫秒
         };
         if (/(y+)/.test(fmt))
             fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
@@ -1279,8 +1279,7 @@
                         // 给列表中的影片添加鼠标点击事件
                         $("a", $("#vid_" + _vid)).first().mousedown(function (event) {
                             // 判断鼠标左键或中间才执行
-                            if(event.button < 2)
-                            {
+                            if (event.button < 2) {
                                 // 设置点击后填充新的背景色peachpuff
                                 $("#vid_" + _vid).css("background-color", "peachpuff");
                             }
@@ -1298,7 +1297,7 @@
                                 else {
                                     // 查找影片是否存在我的影片资料表中
                                     MyMovie.findBy(persistence, null, 'index_cd', findObj.index_cd, function (findObj) {
-                                        if(findObj){//存在
+                                        if (findObj) {//存在
                                             let indexCd_id = "#vid_" + findObj.index_cd;
                                             $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
                                             $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + findObj.release_date + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + findObj.score + "</div>");
@@ -1307,7 +1306,7 @@
                                             filerMonth(indexCd_id, findObj.release_date);
                                             filerScore(indexCd_id, findObj.score);
                                         }
-                                        else{//不存在
+                                        else {//不存在
                                             // 加入影片资料到表中
                                             debugger;
                                             addMovie(_vid);
@@ -1621,7 +1620,7 @@
         persistence.flush(callback);
     }
 
-    function addMovie(index_cd , isSync) {
+    function addMovie(index_cd, isSync) {
         var index_cc = index_cd;
         GM_xmlhttpRequest({
             method: "GET",
