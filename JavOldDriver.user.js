@@ -272,7 +272,7 @@
         DBinit: function () {
 
             // 配置
-            persistence.store.websql.config(persistence, "MyMovie", 'database', 5 * 1024 * 1024);
+            persistence.store.websql.config(persistence, "MyMovie1000", 'database', 5 * 1024 * 1024);
 
 
             // 我的影片
@@ -1407,6 +1407,7 @@
         // 立即下载数据
 
         function loadPageNumData(pageName, PageNum, func) {
+            console.log("打开链接url:" + location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + PageNum);
             GM_xmlhttpRequest({
                 method: "GET",
                 url: location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + PageNum,
@@ -1415,7 +1416,8 @@
                     let docArr = doc.split("的影片: ");
                     //debugger;
                     let totalNum = parseInt(docArr[1].substring(0, docArr[1].search(/<\/div/)));
-                    GM_setValue(pageName + "_pageNum", parseInt(totalNum / 20) + 1);
+                    //设置初始化总页数
+                    GM_setValue(pageName + "_pageNum", parseInt((totalNum + 19) / 20));
 
                     //GM_setValue(pageName + "_next", true);
 
@@ -1477,90 +1479,12 @@
                 });
             }
         });
-
-
-        // GM_setValue(pageName + "_pageNum", 2);
-        // GM_setValue(pageName + "_next", false);
-        //
-        //
-        // for (let i = 0; i < GM_getValue(pageName + "_pageNum"); i++) {
-        //     console.log(" for 1 " + GM_getValue(pageName + "_pageNum"));
-        //     console.log(" if " + GM_getValue(pageName + "_next"));
-        //
-        //
-        //     // 只有当next为true时,for循环才继续,否则在一直循环等待中
-        //     if (i === 0 || GM_getValue(pageName + "_next")) {
-        //         // debugger;
-        //
-        //         // GM_setValue(pageName + "_next", false);
-        //
-        //         GM_xmlhttpRequest({
-        //             method: "GET",
-        //             url: location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + (i + 1),
-        //             onload: function (result) {
-        //                 let doc = result.responseText;
-        //                 let docArr = doc.split("我想要的影片: ");
-        //                 let totalNum = parseInt(docArr[1].substring(0, docArr[1].search(/<\/div/)));
-        //                 GM_setValue(pageName + "_pageNum", parseInt(totalNum / 20) + 1);
-        //
-        //                 GM_setValue(pageName + "_next", true);
-        //
-        //                 let tableText = doc.substring(doc.search(/<table class="videotextlist">/), doc.search(/<table style="width: 95%; margin: 10px auto;">/))
-        //                 //<table class="videotextlist">  //<table style="width: 95%; margin: 10px auto;">
-        //                 let $movList = $(Common.parsetext(tableText)).find("tr");
-        //
-        //                 let indexArrStr = "";
-        //                 let timeArrStr = "";
-        //
-        //
-        //                 for (let i = 1; i < $movList.length; i++) {
-        //                     let movie = $movList.get(i);
-        //                     let $aEle = $($(movie).children("td.title").find("a").get(0));
-        //                     // 索引编码
-        //                     let index_cd = $aEle.attr("href").split("=")[1];
-        //
-        //                     // 创建时间
-        //                     let add_time = $($(movie).children("td").get(2)).text();
-        //                     //MyBrowse.findBy(persistence, null, 'index_cd', index_cd, function (findObj) {
-        //                     //if (!findObj) {//不存在
-        //                     indexArrStr = indexArrStr + index_cd + ",";
-        //                     timeArrStr = timeArrStr + add_time + "|";
-        //                     //}
-        //                     //});
-        //                     //persistence.flush();
-        //                     // GM_xmlhttpRequest({
-        //                     //     method: "GET",
-        //                     //     url: "http://www.ja14b.com/cn/?v=" + index_cd,
-        //                     //     onload: function (result) {
-        //                     //
-        //                     //     },
-        //                     //     onerror: function (e) {
-        //                     //         console.log('出现错误');
-        //                     //     }
-        //                     // });
-        //                 }
-        //                 // debugger;
-        //                 GM_setValue(pageName + "_indexArr" + result.finalUrl.split("page=")[1], indexArrStr);
-        //                 GM_setValue(pageName + "_timeArr" + result.finalUrl.split("page=")[1], timeArrStr);
-        //
-        //                 /**<tr class="dimrow">
-        //                  <td style="padding-left: 0px;"><input type="checkbox" id="cb2" name="selectedVideos[]" value="23321331"></td>
-        //                  <td class="title">
-        //                  <a href="./?v=javli4rdye" title="STAR-851 飛鳥りん 我慢できない変態女の淫乱うねり腰セックス">STAR-851 飛鳥りん 我慢できない変態女の淫乱うねり腰セックス</a></td>
-        //                  <td>2017-12-24 05:20:53</td></tr>*/
-        //             },
-        //             onerror: function (e) {
-        //                 console.log('打开我想要的页面出现错误');
-        //             }
-        //         });
-        //     }
-        //     else {
-        //         setInterval(function () {
-        //         }, 500);
-        //     }
-        // }
     }
 
+    /**
+     *
+     * @param pageName
+     */
     function mergeJson(pageName) {
         // 循环执行,每次延迟执行
         var s1 = setInterval(function () {
@@ -1590,11 +1514,11 @@
         }, 100);
     }
 
-    /*
-    * JSON数组去重
-    * @param: [array] json Array
-    * @param: [string] 唯一的key名，根据此键名进行去重
-    */
+    /**
+     * JSON数组去重
+     * @param: [array] json Array
+     * @param: [string] 唯一的key名，根据此键名进行去重
+     */
     function uniqueArray(array, key, func) {
         var result = [array[0]];
         for (var i = 1; i < array.length; i++) {
@@ -1644,7 +1568,7 @@
 
                 let movie = new MyMovie();
                 movie.index_cd = index_cc;
-                debugger;
+                //debugger;
                 movie.index_cd = result.finalUrl.split("v=")[1];
                 movie.code = $('.header', $doc)[0].nextElementSibling.textContent;
                 movie.release_date = $('#video_date .text', $doc).text();
@@ -1663,6 +1587,7 @@
                 let jsonObj = myBrowseJsonArray.filter((p) => {
                     return p.index_cd == result.finalUrl.split("v=")[1];
                 });
+                debugger;
                 movie.add_time = jsonObj[0].add_time;
                 persistence.add(movie);
                 //persistence.flush();
@@ -1702,6 +1627,8 @@
             if ($('a[href="myaccount.php"]').length) {//已经登录
                 // 从未同步过,同步云数据到本地数据库
                 let isSync = GM_getValue("doDataSyncStepAll", false);
+
+                console.log("是否从未同步过：" + !isSync);
                 if (!isSync) {
                     // 立即下载数据
                     GM_setValue("mv_wanted_pageNum", 0);
