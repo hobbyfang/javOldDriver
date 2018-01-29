@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.1
+// @version      2.0.2
 // @description  JAV老司机神器,支持javlibrary.com、javbus.com、avio.pw、avso.pw等老司机站点。拥有JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载，优化成高效浏览的页面排版。
 // @author       Hobby
 
@@ -71,6 +71,7 @@
 
 // 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 
+// v2.0.2 修复已知问题。
 // v2.0.1 修复已知问题,增加amvoo、avsox新域名。
 // v2.0.0 增加自动同步个人数据缓存到本地,jav列表能识别个人已阅览过的内容(需登录javlibray),针对javlibrary的高评价栏目,增加过滤"不看我阅览过"功能。
 
@@ -1317,8 +1318,9 @@
                                         }
                                         else {//不存在
                                             // 加入影片资料到表中
-                                            debugger;
+                                            //debugger;
                                             addMovie(_vid);
+                                            persistence.flush();
                                         }
                                     });
                                 }
@@ -1553,11 +1555,11 @@
         persistence.flush(callback);
     }
 
-    function addMovie(index_cd, isSync) {
+    function addMovie(index_cd) {
         var index_cc = index_cd;
         GM_xmlhttpRequest({
             method: "GET",
-            url: location.origin + "/cn/?v=" + index_cd + "&isSync=" + isSync,
+            url: location.origin + "/cn/?v=" + index_cd,
             onload: function (result) {
                 let doc = result.responseText;
 
@@ -1587,7 +1589,7 @@
                 let jsonObj = myBrowseJsonArray.filter((p) => {
                     return p.index_cd == result.finalUrl.split("v=")[1];
                 });
-                debugger;
+                //debugger;
                 movie.add_time = jsonObj[0].add_time;
                 persistence.add(movie);
                 //persistence.flush();
