@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.0
+// @version      2.0.1
 // @description  JAV老司机神器,支持javlibrary.com、javbus.com、avio.pw、avso.pw等老司机站点。拥有JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载，优化成高效浏览的页面排版。
 // @author       Hobby
 
 // @require      http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js
 // @require      http://cdn.bootcss.com/jquery-cookie/1.4.1/jquery.cookie.min.js
-// @require      https://raw.githubusercontent.com/coresmart/persistencejs/master/lib/persistence.js
-// @require      https://raw.githubusercontent.com/coresmart/persistencejs/master/lib/persistence.store.sql.js
-// @require      https://raw.githubusercontent.com/coresmart/persistencejs/master/lib/persistence.store.websql.js
+// @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.js
+// @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.store.sql.js
+// @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.store.websql.js
 // @resource     icon http://geekdream.com/image/115helper_icon_001.jpg
 
 // @include     http*://*javlibrary.com/*
@@ -32,12 +32,17 @@
 // @include     https://www.javbus.me/*
 // @include     http*://www.javbus.com/*
 
+// @include     http*://*amvoo.com/*
 // @include     http*://*avmo.pw/*
 // @include     http*://*avmo.club/*
+// @include     http*://*javtag.com/*
+
+// @include     http*://*avsox.com/*
 // @include     http*://*avio.pw/*
 // @include     http*://*avso.pw/*
 // @include     http*://*avso.club/*
 // @include     http*://*avxo.pw/*
+// @include     http*://*javfee.com/*
 
 // @include     http://115.com/*
 
@@ -64,8 +69,9 @@
 
 // @copyright    hobby 2016-12-18
 
-// 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
+// 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 
+// v2.0.1 修复已知问题,增加amvoo、avsox新域名。
 // v2.0.0 增加自动同步个人数据缓存到本地,jav列表能识别个人已阅览过的内容(需登录javlibray),针对javlibrary的高评价栏目,增加过滤"不看我阅览过"功能。
 
 // v1.2.3 更新avmo域名。
@@ -266,7 +272,7 @@
         DBinit: function () {
 
             // 配置
-            persistence.store.websql.config(persistence, "MyMovieTesti", 'database', 5 * 1024 * 1024);
+            persistence.store.websql.config(persistence, "MyMovie", 'database', 5 * 1024 * 1024);
 
 
             // 我的影片
@@ -356,7 +362,7 @@
         //av信息查询 类
         jav: {
             type: 0,
-            re: /(avio|avmo|avso|avxo).*movie.*/,
+            re: /(avio|avmo|avso|avxo|javtag|javfee).*movie.*/,
             vid: function () {
                 return $('.header')[0].nextElementSibling.innerHTML;
             },
@@ -1219,6 +1225,9 @@
             // javlibrary
             var $pages2 = $('div.videos div.video');
             if ($pages2.length) {
+                GM_addStyle([
+                    '.videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}',
+                ].join(''));
                 $pages2[0].parentElement.id = "waterfall";
                 w = new thirdparty.waterfall({
                     next: 'a[class="page next"]',
@@ -1674,7 +1683,8 @@
             if (document.URL.indexOf("bestrated") > 0) {
                 $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
                 $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
                 //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
                 //todo
             }
