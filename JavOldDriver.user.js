@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.2
-// @description  JAV老司机神器,支持javlibrary.com、javbus.com、avio.pw、avso.pw等老司机站点。拥有JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载，优化成高效浏览的页面排版。
+// @version      2.0.3
+// @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。没时间解释了，快上车！
 // @author       Hobby
 
 // @require      http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js
@@ -34,15 +34,17 @@
 
 // @include     http*://*amvoo.com/*
 // @include     http*://*avmo.pw/*
+// @include     http*://*avso.pw/*
 // @include     http*://*avmo.club/*
 // @include     http*://*javtag.com/*
 
 // @include     http*://*avsox.com/*
 // @include     http*://*avio.pw/*
-// @include     http*://*avso.pw/*
 // @include     http*://*avso.club/*
-// @include     http*://*avxo.pw/*
 // @include     http*://*javfee.com/*
+
+// @include     http*://*avmemo.com/*
+// @include     http*://*avxo.pw/*
 
 // @include     http://115.com/*
 
@@ -62,6 +64,7 @@
 // @connect      btdb.to
 // @connect      sukebei.nyaa.si
 // @connect      btkitty.pet
+// @connect      cnbtkitty.com
 // @connect      www.torrentkitty.tv
 // @connect      btlibrary.pw
 // @connect      ja14b.com
@@ -71,6 +74,7 @@
 
 // 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 
+// v2.0.3 修复已知问题。
 // v2.0.2 修复已知问题。
 // v2.0.1 修复已知问题,增加amvoo、avsox新域名。
 // v2.0.0 增加自动同步个人数据缓存到本地,jav列表能识别个人已阅览过的内容(需登录javlibray),针对javlibrary的高评价栏目,增加过滤"不看我阅览过"功能。
@@ -273,7 +277,7 @@
         DBinit: function () {
 
             // 配置
-            persistence.store.websql.config(persistence, "MyMovie1000", 'database', 5 * 1024 * 1024);
+            persistence.store.websql.config(persistence, "MyMovie1001", 'database', 5 * 1024 * 1024);
 
 
             // 我的影片
@@ -576,7 +580,7 @@
                 3: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
-                        url: "http://btkitty.pet/",
+                        url: "https://cnbtkitty.com/",
                         data: "keyword=" + kw + "&hidden=true",
                         headers: {
                             "Content-Type": "application/x-www-form-urlencoded"
@@ -983,7 +987,7 @@
 
                                 ].join(''));
                                 main.cur_tab = thirdparty.nong.magnet_table.full();
-                                console.log('番号：', main.cur_vid);
+                                console.log('挊的番号：', main.cur_vid);
                                 v.proc();
 
                                 // console.log(main.cur_tab)
@@ -1759,60 +1763,62 @@
         var AVID = "";
         //获取番号影片详情页的番号  例如：https://www.javbus.com/CHN-141 || ttp://www.javlibrary.com/cn/?v=javlilzo4e
         if ($('.header').length) {
-
-            let movie = new MyMovie();
-
             let AVID = $('.header')[0].nextElementSibling.textContent;
-            let vid = location.search.split("=")[1];
 
-            movie.index_cd = vid;
-            movie.code = AVID;
-            movie.release_date = $('#video_date .text').text();
-            movie.duration = $('#video_length .text').text();
-            movie.director = $('#video_director .text').text();
-            movie.maker = $('#video_maker .text').text();
-            movie.score = $('#video_review .text .score').text();
-            movie.actor = $('#video_cast .text').text();
-            movie.cover_img_url = $('#video_jacket_img').attr("src");
-            movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
-            movie.movie_name = $('#video_title a').text();
-            movie.publisher = $('#video_label .text a').text();
-            movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+            // 只支持javlibray处理已阅影片
+            if (document.title.search(/JAVLibrary/) > 0) {
+                let movie = new MyMovie();
 
-            //查找是否存在此番号数据
-            MyMovie.findBy(persistence, null, 'code', AVID, function (findObj) {
-                let my_borwse = new MyBrowse();
-                if (!findObj) {//不存在
-                    persistence.add(movie);
+                let vid = location.search.split("=")[1];
 
-                    my_borwse.index_cd = movie.index_cd;
-                    my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-                    persistence.add(my_borwse);
-                    persistence.flush();
-                }
-                else {//存在
-                    movie.movie_id = findObj.movie_id;
-                    movie.add_time = findObj.add_time;
-                    persistence.remove(findObj);
-                    persistence.add(movie);
+                movie.index_cd = vid;
+                movie.code = AVID;
+                movie.release_date = $('#video_date .text').text();
+                movie.duration = $('#video_length .text').text();
+                movie.director = $('#video_director .text').text();
+                movie.maker = $('#video_maker .text').text();
+                movie.score = $('#video_review .text .score').text();
+                movie.actor = $('#video_cast .text').text();
+                movie.cover_img_url = $('#video_jacket_img').attr("src");
+                movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+                movie.movie_name = $('#video_title a').text();
+                movie.publisher = $('#video_label .text a').text();
+                movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
 
-                    MyBrowse.findBy(persistence, null, 'index_cd', movie.index_cd, function (findObj) {
+                //查找是否存在此番号数据
+                MyMovie.findBy(persistence, null, 'code', AVID, function (findObj) {
+                    let my_borwse = new MyBrowse();
+                    if (!findObj) {//不存在
+                        persistence.add(movie);
+
                         my_borwse.index_cd = movie.index_cd;
                         my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-                        if (findObj) {//存在
-                            persistence.remove(findObj);
-                        }
                         persistence.add(my_borwse);
                         persistence.flush();
-                    });
+                    }
+                    else {//存在
+                        movie.movie_id = findObj.movie_id;
+                        movie.add_time = findObj.add_time;
+                        persistence.remove(findObj);
+                        persistence.add(movie);
 
-                }
+                        MyBrowse.findBy(persistence, null, 'index_cd', movie.index_cd, function (findObj) {
+                            my_borwse.index_cd = movie.index_cd;
+                            my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+                            if (findObj) {//存在
+                                persistence.remove(findObj);
+                            }
+                            persistence.add(my_borwse);
+                            persistence.flush();
+                        });
 
-            });
+                    }
 
+                });
+            }
 
             //debugger;
-            //console.log("番号输出:"+AVID);
+            console.log("番号输出:"+AVID);
             //console.log("时间000000:"+ new Date().getTime());
             Common.addAvImg(AVID, function ($img) {
                 //https://www.javbus.com/CHN-141
