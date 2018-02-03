@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.3
-// @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。没时间解释了，快上车！
+// @version      2.0.4
+// @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
-// @require      http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js
-// @require      http://cdn.bootcss.com/jquery-cookie/1.4.1/jquery.cookie.min.js
+// @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
+//               http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js
+// @require      https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js
 // @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.js
 // @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.store.sql.js
 // @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.store.websql.js
@@ -74,6 +75,11 @@
 
 // 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 
+// 注意:2.0在每个版本号更新后,首次运行脚本并在登录javlibrary的情况下,根据电脑性能情况不同,需消耗2分钟以上缓存个人数据到本地浏览器中.
+// 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
+// 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
+
+// v2.0.4 2.0版本性能优化。
 // v2.0.3 修复已知问题。
 // v2.0.2 修复已知问题。
 // v2.0.1 修复已知问题,增加amvoo、avsox新域名。
@@ -124,139 +130,138 @@
             if (new RegExp("(" + k + ")").test(fmt))
                 fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
         return fmt;
-    }
+    };
+
     /**
      * 公用类
      * @Class
      */
     let Common = {
-            /**
-             * html文本转换为Document对象
-             * @param {String} text
-             * @returns {Document}
-             */
-            parsetext: function (text) {
-                var doc = null;
-                try {
-                    doc = document.implementation.createHTMLDocument('');
-                    doc.documentElement.innerHTML = text;
-                    return doc;
-                }
-                catch (e) {
-                    alert('parse error');
-                }
-            },
-
-            /**
-             * 判断日期是否最近X个月份的日期
-             * @param {String} DateStr 日期
-             * @param {Number} MonthNum 月数(X)
-             * @returns {boolean}
-             */
-            isLastXMonth: function (DateStr, MonthNum) {
-                let now = new Date(); //当前日期
-                let compDate = new Date(DateStr);
-                let m2 = now.getFullYear() * 12 + now.getMonth();
-                let m1 = compDate.getFullYear() * 12 + compDate.getMonth();
-                if ((m2 - m1) < MonthNum) {
-                    return true;
-                }
-                return false;
-            },
-
-            /**
-             * 方法: 通用chrome通知
-             * @param title
-             * @param body
-             * @param icon
-             * @param click_url
-             */
-            notifiy: function (title, body, icon, click_url) {
-                var notificationDetails = {
-                    text: body,
-                    title: title,
-                    timeout: 10000,
-                    image: icon,
-                    onclick: function () {
-                        window.open(click_url);
-                    }
-                };
-                GM_notification(notificationDetails);
-            },
-            /**
-             * 加入AV预览内容图
-             * @param avid av唯一码
-             * @param @function func 函数
-             */
-            addAvImg: function (avid, func) {
-                //异步请求搜索blogjav.net的番号
-                GM_xmlhttpRequest({
-                    method: "GET",
-                    //大图地址
-                    url: 'http://blogjav.net/?s=' + avid,
-                    onload: function (result) {
-                        //console.log("时间111111:"+ new Date().getTime());
-                        var doc = Common.parsetext(result.responseText);
-                        //console.log("时间222222:"+ new Date().getTime());
-                        let a_array = $(doc).find(".more-link");
-                        let a = a_array[0];
-                        for (let i = 0; i < a_array.length; i++) {
-                            var fhd_idx = a_array[i].innerHTML.search(/FHD/);
-                            //debugger;
-                            if (fhd_idx > 0) {
-                                a = a_array[i];
-                                break;
-                            }
-                        }
-
-                        if (a) {
-                            //异步请求调用内页详情的访问地址
-                            GM_xmlhttpRequest({
-                                method: "GET",
-                                //大图地址
-                                url: a.href,
-                                headers: {
-                                    referrer: "http://pixhost.org/" //绕过防盗图的关键
-                                },
-                                onload: function (XMLHttpRequest) {
-                                    //console.log("时间333333:"+ new Date().getTime());
-                                    var bodyStr = XMLHttpRequest.responseText;
-                                    var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
-
-                                    var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.org\/thumbs\//);
-                                    //如果找到内容大图
-                                    if (img_start_idx > 0) {
-                                        var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
-                                        var targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
-
-                                        //如果找到全高清大图优先显示全高清的
-                                        console.log("图片地址:" + targetImgUrl);
-
-                                        //创建img元素,加载目标图片地址
-                                        //创建新img元素
-                                        var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)"></img>');
-                                        $img.attr("src", targetImgUrl);
-                                        $img.attr("style", "float: left;cursor: pointer;");
-
-                                        //将新img元素插入指定位置
-                                        func($img);
-                                        console.log("时间444444:" + new Date().getTime());
-                                    }
-                                },
-                                onerror: function (e) {
-                                    console.log(e);
-                                }
-                            });//end  GM_xmlhttpRequest
-                        }
-                    },
-                    onerror: function (e) {
-                        console.log(e);
-                    }
-                });//end  GM_xmlhttpRequest
+        /**
+         * html文本转换为Document对象
+         * @param {String} text
+         * @returns {Document}
+         */
+        parsetext: function (text) {
+            var doc = null;
+            try {
+                doc = document.implementation.createHTMLDocument('');
+                doc.documentElement.innerHTML = text;
+                return doc;
             }
-            ,
-        }
-    ;
+            catch (e) {
+                alert('parse error');
+            }
+        },
+
+        /**
+         * 判断日期是否最近X个月份的日期
+         * @param {String} DateStr 日期
+         * @param {Number} MonthNum 月数(X)
+         * @returns {boolean}
+         */
+        isLastXMonth: function (DateStr, MonthNum) {
+            let now = new Date(); //当前日期
+            let compDate = new Date(DateStr);
+            let m2 = now.getFullYear() * 12 + now.getMonth();
+            let m1 = compDate.getFullYear() * 12 + compDate.getMonth();
+            if ((m2 - m1) < MonthNum) {
+                return true;
+            }
+            return false;
+        },
+
+        /**
+         * 方法: 通用chrome通知
+         * @param title
+         * @param body
+         * @param icon
+         * @param click_url
+         */
+        notifiy: function (title, body, icon, click_url) {
+            var notificationDetails = {
+                text: body,
+                title: title,
+                timeout: 10000,
+                image: icon,
+                onclick: function () {
+                    window.open(click_url);
+                }
+            };
+            GM_notification(notificationDetails);
+        },
+        /**
+         * 加入AV预览内容图
+         * @param avid av唯一码
+         * @param @function func 函数
+         */
+        addAvImg: function (avid, func) {
+            //异步请求搜索blogjav.net的番号
+            GM_xmlhttpRequest({
+                method: "GET",
+                //大图地址
+                url: 'http://blogjav.net/?s=' + avid,
+                onload: function (result) {
+                    //console.log("时间111111:"+ new Date().getTime());
+                    var doc = Common.parsetext(result.responseText);
+                    //console.log("时间222222:"+ new Date().getTime());
+                    let a_array = $(doc).find(".more-link");
+                    let a = a_array[0];
+                    for (let i = 0; i < a_array.length; i++) {
+                        var fhd_idx = a_array[i].innerHTML.search(/FHD/);
+                        //debugger;
+                        if (fhd_idx > 0) {
+                            a = a_array[i];
+                            break;
+                        }
+                    }
+
+                    if (a) {
+                        //异步请求调用内页详情的访问地址
+                        GM_xmlhttpRequest({
+                            method: "GET",
+                            //大图地址
+                            url: a.href,
+                            headers: {
+                                referrer: "http://pixhost.org/" //绕过防盗图的关键
+                            },
+                            onload: function (XMLHttpRequest) {
+                                //console.log("时间333333:"+ new Date().getTime());
+                                var bodyStr = XMLHttpRequest.responseText;
+                                var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
+
+                                var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.org\/thumbs\//);
+                                //如果找到内容大图
+                                if (img_start_idx > 0) {
+                                    var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
+                                    var targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
+
+                                    //如果找到全高清大图优先显示全高清的
+                                    console.log("图片地址:" + targetImgUrl);
+
+                                    //创建img元素,加载目标图片地址
+                                    //创建新img元素
+                                    var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)"></img>');
+                                    $img.attr("src", targetImgUrl);
+                                    $img.attr("style", "float: left;cursor: pointer;");
+
+                                    //将新img元素插入指定位置
+                                    func($img);
+                                    console.log("时间444444:" + new Date().getTime());
+                                }
+                            },
+                            onerror: function (e) {
+                                console.log(e);
+                            }
+                        });//end  GM_xmlhttpRequest
+                    }
+                },
+                onerror: function (e) {
+                    console.log(e);
+                }
+            });//end  GM_xmlhttpRequest
+        },
+    };
 
     //定义函数全局变量
     let MyMovie;
@@ -277,7 +282,7 @@
         DBinit: function () {
 
             // 配置
-            persistence.store.websql.config(persistence, "MyMovie1001", 'database', 5 * 1024 * 1024);
+            persistence.store.websql.config(persistence, "MyMovie1020", 'database', 5 * 1024 * 1024);
 
 
             // 我的影片
@@ -1382,11 +1387,13 @@
                 onload: function (result) {
                     let doc = result.responseText;
                     let re = /download\/\w+-\w+-\w+-\w+-\w+'/;
+                    //download/ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号'
                     let arr = re.exec(doc);
                     if (!arr) {
                         $("#video_info").append("<div id='divZm' class='item'><table><tbody><tr><td class='header'>外挂字幕:</td><td style='color: red;'>&nbsp;暂无字幕</td></tr></tbody></table></div></div>");
                         return;
                     }
+                    //debugger;
                     let zm = arr[0].slice(8, -1);
                     $("#video_info").append("<div id='divZm' class='item'><table><tbody><tr><td class='header'>外挂字幕:</td><td><a href='http://www.163sub.com/LinkInfo" + zm + "' target='_blank' style='color: red;'>&nbsp;下载</a></td></tr></tbody></table></div>");
                 },
@@ -1398,22 +1405,10 @@
 
     };
 
-    function loadData(pageName) {
-
-        // GM_xmlhttpRequest({
-        //     method: "GET",
-        //     url: location.host + "/cn/" + pageName + ".php?&sort=added&page=1",
-        //     onload: function (result) {
-        //
-        //     },
-        //     onerror: function (e) {
-        //         console.log('打开我想要的页面出现错误');
-        //     }
-        // });
-        // 立即下载数据
-
-        function loadPageNumData(pageName, PageNum, func) {
+    function loadData(pageName, func) {
+        var loadPageNumData = function (pageName, PageNum, func) {
             console.log("打开链接url:" + location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + PageNum);
+            // 浏览器对同一域名进行请求的最大并发连接数:chrome为6
             GM_xmlhttpRequest({
                 method: "GET",
                 url: location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + PageNum,
@@ -1443,27 +1438,12 @@
 
                         // 创建时间
                         let add_time = $($(movie).children("td").get(2)).text();
-                        //MyBrowse.findBy(persistence, null, 'index_cd', index_cd, function (findObj) {
-                        //if (!findObj) {//不存在
 
                         indexArrStr = indexArrStr + index_cd + ',';
                         timeArrStr = timeArrStr + add_time + "|";
                         myBrowseJson = myBrowseJson + '{"index_cd":"' + index_cd + '","add_time":"' + add_time + '"},';
-
-                        //}
-                        //});
-                        //persistence.flush();
-                        // GM_xmlhttpRequest({
-                        //     method: "GET",
-                        //     url: "http://www.ja14b.com/cn/?v=" + index_cd,
-                        //     onload: function (result) {
-                        //
-                        //     },
-                        //     onerror: function (e) {
-                        //         console.log('出现错误');
-                        //     }
-                        // });
                     }
+
                     // debugger;
                     GM_setValue(pageName + "_myBrowseJson" + result.finalUrl.split("page=")[1], myBrowseJson);
                     //GM_setValue(pageName + "_indexArr" + result.finalUrl.split("page=")[1], indexArrStr);
@@ -1481,8 +1461,23 @@
 
         loadPageNumData(pageName, 1, function () {
             for (let i = 2; i < GM_getValue(pageName + "_pageNum") + 1; i++) {
-                loadPageNumData(pageName, i, function () {
-                });
+                // 每读取6页数据暂停一些时间
+                let j = parseInt(i / 6);
+                console.log("j=" + j);
+
+                setTimeout(function () {
+                    loadPageNumData(pageName, i, function () {
+                    });
+                }, j * 500);
+
+
+                if (i == GM_getValue(pageName + "_pageNum")) {
+                    setTimeout(function () {
+                        console.log("parseInt(i / 6):" + parseInt(i / 6));
+                        func();
+                    }, parseInt(i / 6) * 500);
+                }
+
             }
         });
     }
@@ -1509,6 +1504,7 @@
                         else {
                             //停止s2循环
                             //console.log(pageName + "Json:" + GM_getValue(pageName + "_myBrowseJsonAll"));
+                            console.log(pageName + "doNum:" + (GM_getValue("doNum") + 1));
                             GM_setValue("doNum", GM_getValue("doNum") + 1);
                             clearInterval(s2);
                         }
@@ -1552,6 +1548,7 @@
                 abc.index_cd = jsonObj.index_cd;
                 abc.add_time = jsonObj.add_time;
                 persistence.add(abc);
+                persistence.flush();
                 //debugger;
             }
             //debugger;
@@ -1598,6 +1595,7 @@
                 persistence.add(movie);
                 //persistence.flush();
                 GM_setValue("addMovieNum", GM_getValue("addMovieNum") + 1);
+                console.log("addmovieNum:" + (GM_getValue("addMovieNum") + 1));
             },
             onerror: function (e) {
                 console.log('出现错误');
@@ -1626,8 +1624,15 @@
                 //todo
             }
 
-            //数据库初始化
+            //重置数据库
+            // persistence.reset();
+            // persistence.schemaSync();
+
+            //debugger;
+            //数据库初始化  start01
             JavWebSql.DBinit();
+            persistence.flush();
+            //end01 cpu忽略
 
             //a href="myaccount.php"
             if ($('a[href="myaccount.php"]').length) {//已经登录
@@ -1640,103 +1645,122 @@
                     GM_setValue("mv_wanted_pageNum", 0);
                     GM_setValue("mv_wanted_pageNum", 0);
                     GM_setValue("mv_wanted_pageNum", 0);
-                    loadData("mv_wanted");
-                    loadData("mv_watched");
-                    loadData("mv_owned");
 
-                    GM_setValue("doNum", 0);
-                    mergeJson("mv_wanted");
-                    mergeJson("mv_watched");
-                    mergeJson("mv_owned");
+                    //debugger;
+                    //start02
+                    loadData("mv_wanted", function () {
+                        loadData("mv_watched", function () {
+                            loadData("mv_owned", function () {
+                                //end02 cpu最高20
+                                //debugger;
+                                //start03
+                                GM_setValue("doNum", 0);
+                                mergeJson("mv_wanted");
+                                mergeJson("mv_watched");
+                                mergeJson("mv_owned");
+                                //end03 cpu忽略
+                                //debugger;
+                                var s3 = setInterval(function () {
+                                    let n = GM_getValue("doNum");
+                                    if (n === 3) {
+                                        let j1 = GM_getValue("mv_wanted_myBrowseJsonAll");
+                                        let j2 = GM_getValue("mv_watched_myBrowseJsonAll");
+                                        let j3 = GM_getValue("mv_owned_myBrowseJsonAll");
+                                        let mv_owned_myBrowseJsonAll = j3.substring(0, j3.length - 1);
+                                        let myBrowseAll = j1 + j2 + mv_owned_myBrowseJsonAll;
 
 
-                    var s3 = setInterval(function () {
-                        let n = GM_getValue("doNum");
-                        if (n === 3) {
-                            let j1 = GM_getValue("mv_wanted_myBrowseJsonAll");
-                            let j2 = GM_getValue("mv_watched_myBrowseJsonAll");
-                            let j3 = GM_getValue("mv_owned_myBrowseJsonAll");
-                            let mv_owned_myBrowseJsonAll = j3.substring(0, j3.length - 1);
-                            let myBrowseAll = j1 + j2 + mv_owned_myBrowseJsonAll;
+                                        var myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
+                                        var myWantArray = JSON.parse("[" + j1.substring(0, j1.length - 1) + "]");
+                                        var mySeenArray = JSON.parse("[" + j2.substring(0, j2.length - 1) + "]");
+                                        var myHaveArray = JSON.parse("[" + mv_owned_myBrowseJsonAll + "]");
 
 
-                            var myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
-                            var myWantArray = JSON.parse("[" + j1.substring(0, j1.length - 1) + "]");
-                            var mySeenArray = JSON.parse("[" + j2.substring(0, j2.length - 1) + "]");
-                            var myHaveArray = JSON.parse("[" + mv_owned_myBrowseJsonAll + "]");
-
-
-                            //debugger;
-                            myBrowseArray = uniqueArray(myBrowseArray, "index_cd", function (item, resultObj) {
-                                if (item["add_time"] < resultObj["add_time"]) {
-                                    resultObj["add_time"] = item["add_time"];
-                                }
-                            });
-
-                            GM_setValue("myBrowseAll", JSON.stringify(myBrowseArray));
-                            //console.log(myBrowseArray);
-
-                            var hasStepOne = GM_getValue("stepOne", false);
-                            var startTime = new Date();
-                            addJsonsToDB(hasStepOne, myBrowseArray, function () {
-                                return new MyBrowse();
-                            }, function () {
-                                addJsonsToDB(hasStepOne, myWantArray, function () {
-                                    return new MyWant();
-                                }, function () {
-                                    addJsonsToDB(hasStepOne, mySeenArray, function () {
-                                        return new MySeen();
-                                    }, function () {
-                                        addJsonsToDB(hasStepOne, myHaveArray, function () {
-                                            return new MyHave();
-                                        }, function () {
-                                            GM_setValue("stepOne", true);
-                                            let b = GM_getValue("stepTwo", false);
-                                            if (!b) {
-                                                GM_setValue("addMovieNum", 0);
-                                                for (let i = 0; i < myBrowseArray.length; i++) {
-                                                    //console.log("aaaa:" + (GM_getValue("stepTwoNum", 1) == 1) + "  bbbb:" + (i >= GM_getValue("stepTwoNum", 1)));
-                                                    if ((GM_getValue("stepTwoNum", 1) == 1) || (i >= GM_getValue("stepTwoNum", 1))) {
-                                                        //debugger;
-                                                        let jsonObj = myBrowseArray[i];
-                                                        addMovie(jsonObj.index_cd);
-                                                    }
-                                                    else {
-                                                        GM_setValue("addMovieNum", i + 1);
-                                                    }
-                                                }
-
-                                                console.log("time:" + (new Date() - startTime));
-
-                                                var s4 = setInterval(function () {
-                                                    let num = GM_getValue("addMovieNum", 0);
-                                                    let stepTwoNum = GM_getValue("stepTwoNum", 1);
-                                                    console.log("i = " + num)
-                                                    if (num === myBrowseArray.length) {
-                                                        persistence.flush(function () {
-                                                            GM_setValue("stepTwo", true);
-                                                            GM_setValue("doDataSyncStepAll", true);
-                                                            console.log("time:" + (new Date() - startTime));
-                                                        });
-                                                        clearInterval(s4);
-                                                    }
-                                                    console.log("1111:" + (num > stepTwoNum) + "  22222:" + ((num <= 50) || (num % stepTwoNum >= 50)));
-                                                    //debugger;
-                                                    if (num >= stepTwoNum && ((num - stepTwoNum) >= 50)) {
-                                                        persistence.flush(function () {
-                                                            GM_setValue("stepTwoNum", num);
-                                                        })
-                                                    }
-                                                }, 150);
+                                        //debugger;
+                                        myBrowseArray = uniqueArray(myBrowseArray, "index_cd", function (item, resultObj) {
+                                            if (item["add_time"] < resultObj["add_time"]) {
+                                                resultObj["add_time"] = item["add_time"];
                                             }
                                         });
-                                    });
-                                });
-                            });
-                            clearInterval(s3);
-                        }
 
-                    }, 100)
+                                        GM_setValue("myBrowseAll", JSON.stringify(myBrowseArray));
+                                        //console.log(myBrowseArray);
+
+                                        var hasStepOne = GM_getValue("stepOne", false);
+                                        var startTime = new Date();
+                                        //debugger;
+                                        addJsonsToDB(hasStepOne, myBrowseArray, function () {
+                                            return new MyBrowse();
+                                        }, function () {
+                                            //debugger;
+                                            addJsonsToDB(hasStepOne, myWantArray, function () {
+                                                return new MyWant();
+                                            }, function () {
+                                                //debugger;
+                                                addJsonsToDB(hasStepOne, mySeenArray, function () {
+                                                    return new MySeen();
+                                                }, function () {
+                                                    //debugger;
+                                                    addJsonsToDB(hasStepOne, myHaveArray, function () {
+                                                        return new MyHave();
+                                                    }, function () {
+                                                        //debugger;
+                                                        GM_setValue("stepOne", true);
+                                                        let b = GM_getValue("stepTwo", false);
+                                                        if (!b) {
+                                                            GM_setValue("addMovieNum", 0);
+                                                            for (let i = 0; i < myBrowseArray.length; i++) {
+                                                                //console.log("aaaa:" + (GM_getValue("stepTwoNum", 1) == 1) + "  bbbb:" + (i >= GM_getValue("stepTwoNum", 1)));
+                                                                if ((GM_getValue("stepTwoNum", 1) == 1) || (i >= GM_getValue("stepTwoNum", 1))) {
+                                                                    //debugger;
+                                                                    let jsonObj = myBrowseArray[i];
+                                                                    addMovie(jsonObj.index_cd);
+                                                                }
+                                                                else {
+                                                                    GM_setValue("addMovieNum", i + 1);
+                                                                }
+                                                            }
+
+                                                            // persistence.flush(function () {
+                                                            //     GM_setValue("stepTwoNum", GM_getValue("addMovieNum", 0));
+                                                            // });
+
+                                                            //console.log("time:" + (new Date() - startTime));
+
+                                                            var s4 = setInterval(function () {
+                                                                let num = GM_getValue("addMovieNum", 0);
+                                                                let stepTwoNum = GM_getValue("stepTwoNum", 1);
+                                                                //console.log("i = " + num)
+                                                                if (num === myBrowseArray.length) {
+                                                                    persistence.flush(function () {
+                                                                        GM_setValue("stepTwo", true);
+                                                                        GM_setValue("doDataSyncStepAll", true);
+                                                                        console.log("time:" + (new Date() - startTime));
+                                                                    });
+                                                                    clearInterval(s4);
+                                                                }
+                                                                //console.log("1111:" + (num > stepTwoNum) + "  22222:" + ((num <= 50) || (num % stepTwoNum >= 50)));
+                                                                //debugger;
+                                                                // 没超过50个数据，持久化一次
+                                                                if (num >= stepTwoNum && ((num - stepTwoNum) >= 600)) {
+                                                                    persistence.flush(function () {
+                                                                        GM_setValue("stepTwoNum", num);
+                                                                    })
+                                                                }
+                                                            }, 150);
+                                                        }
+                                                    });
+                                                });
+                                            });
+                                        });
+                                        clearInterval(s3);
+                                    }
+                                }, 300)
+                            });
+                        });
+                    });
+
+
                 }
 
 
@@ -1818,7 +1842,7 @@
             }
 
             //debugger;
-            console.log("番号输出:"+AVID);
+            console.log("番号输出:" + AVID);
             //console.log("时间000000:"+ new Date().getTime());
             Common.addAvImg(AVID, function ($img) {
                 //https://www.javbus.com/CHN-141
