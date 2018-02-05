@@ -1177,7 +1177,8 @@
                 console.info('The End');
                 document.removeEventListener('scroll', this.scroll.bind(this));
                 document.removeEventListener('wheel', this.wheel.bind(this));
-                $(this.anchor).replaceWith($(`<h1>The End</h1>`));
+                let $end = $(`<h1>The End</h1>`)
+                $(this.anchor).replaceWith($end);
             };
             waterfall.prototype.reachBottom = function (elem, limit) {
                 return (elem.getBoundingClientRect().top - $(window).height()) < limit;
@@ -1320,6 +1321,8 @@
                                             let indexCd_id = "#vid_" + findObj.index_cd;
                                             $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
                                             $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + findObj.release_date + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + findObj.score + "</div>");
+                                            $(indexCd_id).children("a").attr("release_date", findObj.release_date);
+                                            $(indexCd_id).children("a").attr("score", findObj.score.replace(/[\\(\\)]/g, ""));
 
                                             setbgcolor(indexCd_id, findObj.release_date);
                                             filerMonth(indexCd_id, findObj.release_date);
@@ -1355,6 +1358,8 @@
                                         }
                                         let indexCd_id = "#vid_" + vid;
                                         $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + dateString + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
+                                        $(indexCd_id).children("a").attr("release_date", dateString);
+                                        $(indexCd_id).children("a").attr("score", pingfengString.replace(/[\\(\\)]/g, ""));
 
                                         setbgcolor(indexCd_id, dateString);
                                         filerMonth(indexCd_id, dateString);
@@ -1616,6 +1621,65 @@
                 $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
                 //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
                 //todo
+                let a1 = document.createElement('a');
+                let a2 = document.createElement('a');
+                $(a1).append('&nbsp;按评分排序&nbsp;');
+                $(a1).css({
+                    "color": "blue",
+                    "font": "bold 12px monospace"
+                });
+                $(a1).attr("href", "#");
+                $(a1).click(function () {
+                    let div_array = $("div.videos div.video");
+                    div_array.sort(function (a, b) {
+                        //debugger;
+                        let a_score = parseFloat($(a).children("a").attr("score"));
+                        let b_score = parseFloat($(b).children("a").attr("score"));
+                        if (a_score > b_score) {
+                            return -1;
+                        }
+                        // else if (a_score === a_score) {
+                        //     return 0;
+                        // }
+                        else {
+                            return 1;
+                        }
+                    });
+
+                    // 删除Dom列表数据关系，重新添加排序数据
+                    div_array.detach().appendTo("#waterfall");
+
+                });
+
+                $(a2).append('&nbsp;按时间排序&nbsp;');
+                $(a2).css({
+                    "color": "blue",
+                    "font": "bold 12px monospace"
+                });
+                $(a2).attr("href", "#");
+                $(a2).click(function () {
+                    let div_array = $("div.videos div.video");
+                    div_array.sort(function (a, b) {
+                        //debugger;
+                        let a_time = new Date($(a).children("a").attr("release_date").replace(/-/g, "\/"));
+                        let b_time = new Date($(b).children("a").attr("release_date").replace(/-/g, "\/"));
+                        if (a_time > b_time) {
+                            return -1;
+                        }
+                        else if (a_time == b_time) {
+                            return 0;
+                        }
+                        else {
+                            return 1;
+                        }
+                    });
+
+                    // 删除Dom列表数据关系，重新添加排序数据
+                    div_array.detach().appendTo("#waterfall");
+
+                });
+                $(".left select").after($(a2));
+                $(".left select").after($(a1));
             }
             else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0) {
                 $(".displaymode .right").prepend("<a href='?delete9down' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
@@ -1689,8 +1753,8 @@
                                         var hasStepOne = GM_getValue("stepOne", false);
                                         var startTime = new Date();
                                         //debugger;
-                                        addJsonsToDB(hasStepOne, myBrowseArray, function () {
-                                            return new MyBrowse();
+                                        addJsonsToDB(hasStepOne, myHaveArray, function () {
+                                            return new MyHave();
                                         }, function () {
                                             //debugger;
                                             addJsonsToDB(hasStepOne, myWantArray, function () {
@@ -1701,8 +1765,8 @@
                                                     return new MySeen();
                                                 }, function () {
                                                     //debugger;
-                                                    addJsonsToDB(hasStepOne, myHaveArray, function () {
-                                                        return new MyHave();
+                                                    addJsonsToDB(hasStepOne, myBrowseArray, function () {
+                                                        return new MyBrowse();
                                                     }, function () {
                                                         //debugger;
                                                         GM_setValue("stepOne", true);
