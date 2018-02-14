@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.4
+// @version      2.0.6
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
@@ -25,6 +25,7 @@
 // @include     http*://*ja14b.com/*
 // @include     http*://*13vlib.com/*
 // @include     http*://*j17v.com/*
+// @include     http*://*j18ib.com/*
 
 // @include     https://www.javbus.com/*
 // @include     https://www.javbus2.com/*
@@ -33,11 +34,12 @@
 // @include     https://www.javbus.me/*
 // @include     http*://www.javbus.com/*
 
-// @include     http*://*amvoo.com/*
+// @include     http*://*avmoo.com/*
 // @include     http*://*avmo.pw/*
 // @include     http*://*avso.pw/*
 // @include     http*://*avmo.club/*
 // @include     http*://*javtag.com/*
+// @include     http*://*javmoo.net/*
 
 // @include     http*://*avsox.com/*
 // @include     http*://*avio.pw/*
@@ -74,11 +76,14 @@
 // @copyright    hobby 2016-12-18
 
 // 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
+// 上车请使用chrome浏览器，其他浏览器的问题本人不支持发现和修复相关问题。
 
 // 注意:2.0在每个版本号更新后,首次运行脚本并在登录javlibrary的情况下,根据电脑性能情况不同,需消耗2分钟以上缓存个人数据到本地浏览器中.
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.0.6 修复已知问题。
+// v2.0.5 增加Jav列表“按评分排序”、“按时间排序”功能(仅javlib)，及更新Jav站点域名。
 // v2.0.4 2.0版本性能优化。
 // v2.0.3 修复已知问题。
 // v2.0.2 修复已知问题。
@@ -372,7 +377,7 @@
         //av信息查询 类
         jav: {
             type: 0,
-            re: /(avio|avmo|avso|avxo|javtag|javfee).*movie.*/,
+            re: /(avio|avmo|avso|avxo|javtag|javfee|javmoo).*movie.*/,
             vid: function () {
                 return $('.header')[0].nextElementSibling.innerHTML;
             },
@@ -400,7 +405,7 @@
         },
         javlibrary: {
             type: 0,
-            re: /(javlibrary|javlib3|look4lib|5avlib|javli6|j8vlib|j9lib|jav11b|ja14b|13vlib|j17v).*\?v=.*/,
+            re: /(javlibrary|javlib3|look4lib|5avlib|javli6|j8vlib|j9lib|jav11b|ja14b|13vlib|j17v|j18ib).*\?v=.*/,
             vid: function () {
                 return $('#video_id')[0].getElementsByClassName('text')[0].innerHTML;
             },
@@ -1322,7 +1327,16 @@
                                             $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
                                             $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + findObj.release_date + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + findObj.score + "</div>");
                                             $(indexCd_id).children("a").attr("release_date", findObj.release_date);
-                                            $(indexCd_id).children("a").attr("score", findObj.score.replace(/[\\(\\)]/g, ""));
+
+                                            let r = Math.random() / 100;
+                                            let s = 0;
+                                            if (findObj.score.replace(/[\\(\\)]/g, "") != '') {
+                                                s = r + parseFloat(findObj.score.replace(/[\\(\\)]/g, ""));
+                                            }
+                                            else {
+                                                s = 0 + r;
+                                            }
+                                            $(indexCd_id).children("a").attr("score", s);
 
                                             setbgcolor(indexCd_id, findObj.release_date);
                                             filerMonth(indexCd_id, findObj.release_date);
@@ -1358,8 +1372,18 @@
                                         }
                                         let indexCd_id = "#vid_" + vid;
                                         $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + dateString + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
+
                                         $(indexCd_id).children("a").attr("release_date", dateString);
-                                        $(indexCd_id).children("a").attr("score", pingfengString.replace(/[\\(\\)]/g, ""));
+
+                                        let r = Math.random() / 100;
+                                        let s = 0;
+                                        if (pingfengString.replace(/[\\(\\)]/g, "") != '') {
+                                            s = r + parseFloat(pingfengString.replace(/[\\(\\)]/g, ""));
+                                        }
+                                        else {
+                                            s = 0 + r;
+                                        }
+                                        $(indexCd_id).children("a").attr("score", s);
 
                                         setbgcolor(indexCd_id, dateString);
                                         filerMonth(indexCd_id, dateString);
@@ -1614,16 +1638,11 @@
         }
 
         if (document.title.search(/JAVLibrary/) > 0) {
-            if (document.URL.indexOf("bestrated") > 0) {
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
-                //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
-                //todo
+            if ((/(bestrated|newrelease|vl_update|mostwanted|vl_star)/g).test(document.URL)) {
+
                 let a1 = document.createElement('a');
                 let a2 = document.createElement('a');
-                $(a1).append('&nbsp;按评分排序&nbsp;');
+                $(a1).append('&nbsp;&nbsp;按评分排序');
                 $(a1).css({
                     "color": "blue",
                     "font": "bold 12px monospace"
@@ -1638,9 +1657,9 @@
                         if (a_score > b_score) {
                             return -1;
                         }
-                        // else if (a_score === a_score) {
-                        //     return 0;
-                        // }
+                        else if (a_score === b_score) {
+                            return 0;
+                        }
                         else {
                             return 1;
                         }
@@ -1651,7 +1670,7 @@
 
                 });
 
-                $(a2).append('&nbsp;按时间排序&nbsp;');
+                $(a2).append('&nbsp;&nbsp;按时间排序');
                 $(a2).css({
                     "color": "blue",
                     "font": "bold 12px monospace"
@@ -1659,15 +1678,18 @@
                 $(a2).attr("href", "#");
                 $(a2).click(function () {
                     let div_array = $("div.videos div.video");
+                    debugger;
                     div_array.sort(function (a, b) {
                         //debugger;
-                        let a_time = new Date($(a).children("a").attr("release_date").replace(/-/g, "\/"));
-                        let b_time = new Date($(b).children("a").attr("release_date").replace(/-/g, "\/"));
+                        let a_time = new Date($(a).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
+                        let b_time = new Date($(b).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
+                        let a_score = parseFloat($(a).children("a").attr("score"));
+                        let b_score = parseFloat($(b).children("a").attr("score"));
                         if (a_time > b_time) {
                             return -1;
                         }
-                        else if (a_time == b_time) {
-                            return 0;
+                        else if (a_time === b_time) {
+                            return (a_score > b_score) ? -1 : 1;
                         }
                         else {
                             return 1;
@@ -1680,6 +1702,17 @@
                 });
                 $(".left select").after($(a2));
                 $(".left select").after($(a1));
+            }
+
+
+            if (document.URL.indexOf("bestrated") > 0) {
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
+                //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
+                //todo
+
             }
             else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0) {
                 $(".displaymode .right").prepend("<a href='?delete9down' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
@@ -1699,7 +1732,8 @@
             //end01 cpu忽略
 
             //a href="myaccount.php"
-            if ($('a[href="myaccount.php"]').length) {//已经登录
+            if ($('a[href="myaccount.php"]').length) {
+                // 已经登录
                 // 从未同步过,同步云数据到本地数据库
                 let isSync = GM_getValue("doDataSyncStepAll", false);
 
@@ -1853,6 +1887,11 @@
         if ($('.header').length) {
             let AVID = $('.header')[0].nextElementSibling.textContent;
 
+            window.onload = function () {
+                $('iframe').remove();
+            };
+            $($('.header')[0]).attr("class","header_hobby");
+
             // 只支持javlibray处理已阅影片
             if (document.title.search(/JAVLibrary/) > 0) {
                 let movie = new MyMovie();
@@ -1920,9 +1959,6 @@
                             this.parentElement.parentElement.scrollIntoView();
                         }
                     });
-                    //$img.load(function() {
-                    //    console.log('load compeleted');
-                    //});
                 }
                 // http://www.javlibrary.com/cn/?v=javlilzo4e
                 divEle = $("div[id='video_favorite_edit']")[0];
