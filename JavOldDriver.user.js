@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.6
+// @version      2.0.9
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
@@ -82,6 +82,9 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.0.9 修复已知问题。
+// v2.0.8 修复已知问题。
+// v2.0.7 增加一种情况Jav列表排序功能支持(仅javlib)。
 // v2.0.6 修复已知问题。
 // v2.0.5 增加Jav列表“按评分排序”、“按时间排序”功能(仅javlib)，及更新Jav站点域名。
 // v2.0.4 2.0版本性能优化。
@@ -379,7 +382,7 @@
             type: 0,
             re: /(avio|avmo|avso|avxo|javtag|javfee|javmoo).*movie.*/,
             vid: function () {
-                return $('.header')[0].nextElementSibling.innerHTML;
+                return $('.header_hobby')[0].nextElementSibling.innerHTML;
             },
             proc: function () {
                 //insert_after('#movie-share');
@@ -392,7 +395,7 @@
             type: 0,
             re: /javbus/,
             vid: function () {
-                var a = $('.header')[0].nextElementSibling;
+                var a = $('.header_hobby')[0].nextElementSibling;
                 return a ? a.textContent : '';
             },
             proc: function () {
@@ -1873,6 +1876,7 @@
             '.col-md-9 {width: inherit;}',
             '.footer {padding: 20px 0;background: #1d1a18;float: left;}',
             '#nong-table-new {margin: initial !important;important;color: #666 !important;font-size: 13px;text-align: center;background-color: #F2F2F2;float: left;}',
+            '.header_hobby {font-weight: bold;text-align: right;width: 75px;}',
         ].join(''));
 
         //获取所有番号影片链接的a元素
@@ -1884,7 +1888,7 @@
 
         var AVID = "";
         //获取番号影片详情页的番号  例如：https://www.javbus.com/CHN-141 || ttp://www.javlibrary.com/cn/?v=javlilzo4e
-        if ($('.header').length) {
+        if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) && $('.header').length) {
             let AVID = $('.header')[0].nextElementSibling.textContent;
 
             window.onload = function () {
