@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.9
+// @version      2.0.10
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
@@ -78,10 +78,11 @@
 // 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 // 上车请使用chrome浏览器，其他浏览器的问题本人不支持发现和修复相关问题。
 
-// 注意:2.0在每个版本号更新后,首次运行脚本并在登录javlibrary的情况下,根据电脑性能情况不同,需消耗2分钟以上缓存个人数据到本地浏览器中.
+// 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本,根据电脑性能情况不同,需消耗约2分钟以上(以1000个车牌量计算)缓存个人数据到本地浏览器中.
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+//v2.0.10 修复已知问题。
 // v2.0.9 修复已知问题。
 // v2.0.8 修复已知问题。
 // v2.0.7 增加一种情况Jav列表排序功能支持(仅javlib)。
@@ -290,8 +291,7 @@
         DBinit: function () {
 
             // 配置
-            persistence.store.websql.config(persistence, "MyMovie1020", 'database', 5 * 1024 * 1024);
-
+            persistence.store.websql.config(persistence, "MyMovie1021", 'database', 5 * 1024 * 1024);
 
             // 我的影片
             MyMovie = persistence.define('my_movie', {
@@ -1681,7 +1681,7 @@
                 $(a2).attr("href", "#");
                 $(a2).click(function () {
                     let div_array = $("div.videos div.video");
-                    debugger;
+                    //debugger;
                     div_array.sort(function (a, b) {
                         //debugger;
                         let a_time = new Date($(a).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
@@ -1738,9 +1738,9 @@
             if ($('a[href="myaccount.php"]').length) {
                 // 已经登录
                 // 从未同步过,同步云数据到本地数据库
-                let isSync = GM_getValue("doDataSyncStepAll", false);
+                let isSync = GM_getValue(location.host + "_doDataSyncStepAll", false);
 
-                console.log("是否从未同步过：" + !isSync);
+                console.log(location.href + "是否从未同步过：" + !isSync);
                 if (!isSync) {
                     // 立即下载数据
                     GM_setValue("mv_wanted_pageNum", 0);
@@ -1787,7 +1787,7 @@
                                         GM_setValue("myBrowseAll", JSON.stringify(myBrowseArray));
                                         //console.log(myBrowseArray);
 
-                                        var hasStepOne = GM_getValue("stepOne", false);
+                                        var hasStepOne = GM_getValue(location.host + "_stepOne", false);
                                         var startTime = new Date();
                                         //debugger;
                                         addJsonsToDB(hasStepOne, myHaveArray, function () {
@@ -1806,13 +1806,13 @@
                                                         return new MyBrowse();
                                                     }, function () {
                                                         //debugger;
-                                                        GM_setValue("stepOne", true);
-                                                        let b = GM_getValue("stepTwo", false);
+                                                        GM_setValue(location.host + "_stepOne", true);
+                                                        let b = GM_getValue(location.host + "_stepTwo", false);
                                                         if (!b) {
                                                             GM_setValue("addMovieNum", 0);
                                                             for (let i = 0; i < myBrowseArray.length; i++) {
                                                                 //console.log("aaaa:" + (GM_getValue("stepTwoNum", 1) == 1) + "  bbbb:" + (i >= GM_getValue("stepTwoNum", 1)));
-                                                                if ((GM_getValue("stepTwoNum", 1) == 1) || (i >= GM_getValue("stepTwoNum", 1))) {
+                                                                if ((GM_getValue(location.host + "_stepTwoNum", 1) == 1) || (i >= GM_getValue(location.host + "_stepTwoNum", 1))) {
                                                                     //debugger;
                                                                     let jsonObj = myBrowseArray[i];
                                                                     addMovie(jsonObj.index_cd);
@@ -1830,12 +1830,12 @@
 
                                                             var s4 = setInterval(function () {
                                                                 let num = GM_getValue("addMovieNum", 0);
-                                                                let stepTwoNum = GM_getValue("stepTwoNum", 1);
+                                                                let stepTwoNum = GM_getValue(location.host + "_stepTwoNum", 1);
                                                                 //console.log("i = " + num)
                                                                 if (num === myBrowseArray.length) {
                                                                     persistence.flush(function () {
-                                                                        GM_setValue("stepTwo", true);
-                                                                        GM_setValue("doDataSyncStepAll", true);
+                                                                        GM_setValue(location.host + "_stepTwo", true);
+                                                                        GM_setValue(location.host + "_doDataSyncStepAll", true);
                                                                         console.log("time:" + (new Date() - startTime));
                                                                     });
                                                                     clearInterval(s4);
@@ -1845,7 +1845,7 @@
                                                                 // 没超过50个数据，持久化一次
                                                                 if (num >= stepTwoNum && ((num - stepTwoNum) >= 600)) {
                                                                     persistence.flush(function () {
-                                                                        GM_setValue("stepTwoNum", num);
+                                                                        GM_setValue(location.host + "_stepTwoNum", num);
                                                                     })
                                                                 }
                                                             }, 150);
@@ -1894,7 +1894,7 @@
             window.onload = function () {
                 $('iframe').remove();
             };
-            $($('.header')[0]).attr("class","header_hobby");
+            $($('.header')[0]).attr("class", "header_hobby");
 
             // 只支持javlibray处理已阅影片
             if (document.title.search(/JAVLibrary/) > 0) {
