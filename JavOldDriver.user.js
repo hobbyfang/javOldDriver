@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.10
+// @version      2.0.11
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
@@ -61,6 +61,7 @@
 // @grant        GM_getResourceURL
 
 // @connect      blogjav.net
+// @connect      blogjav.me
 // @connect      pixhost.org
 // @connect      115.com
 // @connect      btso.pw
@@ -68,6 +69,7 @@
 // @connect      sukebei.nyaa.si
 // @connect      btkitty.pet
 // @connect      cnbtkitty.com
+// @connect      cnbtkitty.net
 // @connect      www.torrentkitty.tv
 // @connect      btlibrary.pw
 // @connect      ja14b.com
@@ -82,6 +84,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+//v2.0.11 更新两个站点域名。
 //v2.0.10 修复已知问题。
 // v2.0.9 修复已知问题。
 // v2.0.8 修复已知问题。
@@ -209,7 +212,7 @@
             GM_xmlhttpRequest({
                 method: "GET",
                 //大图地址
-                url: 'http://blogjav.net/?s=' + avid,
+                url: 'http://blogjav.me/?s=' + avid,
                 onload: function (result) {
                     //console.log("时间111111:"+ new Date().getTime());
                     var doc = Common.parsetext(result.responseText);
@@ -593,7 +596,7 @@
                 3: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
-                        url: "https://cnbtkitty.com/",
+                        url: "https://cnbtkitty.net/",
                         data: "keyword=" + kw + "&hidden=true",
                         headers: {
                             "Content-Type": "application/x-www-form-urlencoded"
