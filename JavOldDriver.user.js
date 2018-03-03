@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.11
+// @version      2.0.12
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
@@ -84,6 +84,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+//v2.0.12 修复已知问题。
 //v2.0.11 更新两个站点域名。
 //v2.0.10 修复已知问题。
 // v2.0.9 修复已知问题。
@@ -1979,8 +1980,9 @@
                         }
                     });
                 }
-                thirdparty.subDown(AVID);
             });
+
+            thirdparty.subDown(AVID);
         }
 
         // 挊
