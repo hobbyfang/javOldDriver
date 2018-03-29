@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.12
+// @version      2.0.14
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
@@ -61,8 +61,7 @@
 // @grant        GM_getResourceURL
 
 // @connect      blogjav.net
-// @connect      blogjav.me
-// @connect      pixhost.org
+// @connect      pixhost.to
 // @connect      115.com
 // @connect      btso.pw
 // @connect      btdb.to
@@ -84,6 +83,8 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+//v2.0.14 修复缩略图域名失效问题。
+//v2.0.13 修复已知问题。
 //v2.0.12 修复已知问题。
 //v2.0.11 更新两个站点域名。
 //v2.0.10 修复已知问题。
@@ -122,7 +123,7 @@
     let icon = GM_getResourceURL('icon');
 
     // 对Date的扩展，将 Date 转化为指定格式的String
-    // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，
+    // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
     // 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
     // 例子：
     // (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423
@@ -213,7 +214,7 @@
             GM_xmlhttpRequest({
                 method: "GET",
                 //大图地址
-                url: 'http://blogjav.me/?s=' + avid,
+                url: 'http://blogjav.net/?s=' + avid,
                 onload: function (result) {
                     //console.log("时间111111:"+ new Date().getTime());
                     var doc = Common.parsetext(result.responseText);
@@ -236,14 +237,14 @@
                             //大图地址
                             url: a.href,
                             headers: {
-                                referrer: "http://pixhost.org/" //绕过防盗图的关键
+                                referrer: "http://pixhost.to/" //绕过防盗图的关键
                             },
                             onload: function (XMLHttpRequest) {
                                 //console.log("时间333333:"+ new Date().getTime());
                                 var bodyStr = XMLHttpRequest.responseText;
                                 var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
 
-                                var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.org\/thumbs\//);
+                                var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.to\/thumbs\//);
                                 //如果找到内容大图
                                 if (img_start_idx > 0) {
                                     var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
