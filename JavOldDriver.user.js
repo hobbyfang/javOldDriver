@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.14
+// @version      2.0.15
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
 // @author       Hobby
 
@@ -26,6 +26,7 @@
 // @include     http*://*13vlib.com/*
 // @include     http*://*j17v.com/*
 // @include     http*://*j18ib.com/*
+// @include     http*://*19lib.com/*
 
 // @include     https://www.javbus.com/*
 // @include     https://www.javbus2.com/*
@@ -83,6 +84,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+//v2.0.15 修复已知问题。更新javlib新域名支持。新域名首次运行会出现cpu占比较高，正常等待几分钟即可。
 //v2.0.14 修复缩略图域名失效问题。
 //v2.0.13 修复已知问题。
 //v2.0.12 修复已知问题。
@@ -296,7 +298,7 @@
         DBinit: function () {
 
             // 配置
-            persistence.store.websql.config(persistence, "MyMovie1021", 'database', 5 * 1024 * 1024);
+            persistence.store.websql.config(persistence, "MyMovie1021", 'database', 10 * 1024 * 1024);
 
             // 我的影片
             MyMovie = persistence.define('my_movie', {
@@ -413,7 +415,7 @@
         },
         javlibrary: {
             type: 0,
-            re: /(javlibrary|javlib3|look4lib|5avlib|javli6|j8vlib|j9lib|jav11b|ja14b|13vlib|j17v|j18ib).*\?v=.*/,
+            re: /(javlibrary|javlib3|look4lib|5avlib|javli6|j8vlib|j9lib|jav11b|ja14b|13vlib|j17v|j18ib|19lib).*\?v=.*/,
             vid: function () {
                 return $('#video_id')[0].getElementsByClassName('text')[0].innerHTML;
             },
@@ -1585,7 +1587,7 @@
                 abc.index_cd = jsonObj.index_cd;
                 abc.add_time = jsonObj.add_time;
                 persistence.add(abc);
-                persistence.flush();
+                //persistence.flush(); 出现my_browse插入不了数据的情况，然后注释了。
                 //debugger;
             }
             //debugger;
@@ -1795,8 +1797,8 @@
                                         var hasStepOne = GM_getValue(location.host + "_stepOne", false);
                                         var startTime = new Date();
                                         //debugger;
-                                        addJsonsToDB(hasStepOne, myHaveArray, function () {
-                                            return new MyHave();
+                                        addJsonsToDB(hasStepOne, myBrowseArray, function () {
+                                            return new MyBrowse();
                                         }, function () {
                                             //debugger;
                                             addJsonsToDB(hasStepOne, myWantArray, function () {
@@ -1807,8 +1809,8 @@
                                                     return new MySeen();
                                                 }, function () {
                                                     //debugger;
-                                                    addJsonsToDB(hasStepOne, myBrowseArray, function () {
-                                                        return new MyBrowse();
+                                                    addJsonsToDB(hasStepOne, myHaveArray, function () {
+                                                        return new MyHave();
                                                     }, function () {
                                                         //debugger;
                                                         GM_setValue(location.host + "_stepOne", true);
