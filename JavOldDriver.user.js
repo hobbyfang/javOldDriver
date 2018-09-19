@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name         JAV老司机
-// @namespace    https://sleazyfork.org/zh-CN/users/85065
-// @version      2.0.15
-// @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载,自动获取JAVLIB的字幕。。。。没时间解释了，快上车！
+// @namespace    https://sleazyfork.org/zh-CN/users/25794
+// @version      2.0.16
+// @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
+// @source       https://github.com/hobbyfang/javOldDriver
+// @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
 // @author       Hobby
 
 // @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
@@ -15,40 +17,22 @@
 
 // @include     http*://*javlibrary.com/*
 // @include     http*://*javlib.com/*
-// @include     http*://*5avlib.com/*
-// @include     http*://*look4lib.com/*
-// @include     http*://*javlib3.com/*
-// @include     http*://*javli6.com/*
-// @include     http*://*j8vlib.com/*
-// @include     http*://*j9lib.com/*
-// @include     http*://*jav11b.com/*
-// @include     http*://*ja14b.com/*
-// @include     http*://*13vlib.com/*
-// @include     http*://*j17v.com/*
-// @include     http*://*j18ib.com/*
-// @include     http*://*19lib.com/*
+// @include     http*://*/vl_update*
+// @include     http*://*/vl_newrelease*
+// @include     http*://*/vl_newentries*
+// @include     http*://*/vl_mostwanted*
+// @include     http*://*/vl_bestrated*
+// @include     http*://*/vl_genre*
+// @include     http*://*/vl_star*
+// @include     http*://*/?v=jav*
 
-// @include     https://www.javbus.com/*
-// @include     https://www.javbus2.com/*
-// @include     https://www.javbus3.com/*
-// @include     https://www.javbus5.com/*
-// @include     https://www.javbus.me/*
-// @include     http*://www.javbus.com/*
+// @include     http*://www.javbus*/*
 
-// @include     http*://*avmoo.com/*
-// @include     http*://*avmo.pw/*
-// @include     http*://*avso.pw/*
-// @include     http*://*avmo.club/*
-// @include     http*://*javtag.com/*
-// @include     http*://*javmoo.net/*
-
-// @include     http*://*avsox.com/*
-// @include     http*://*avio.pw/*
-// @include     http*://*avso.club/*
-// @include     http*://*javfee.com/*
-
-// @include     http*://*avmemo.com/*
-// @include     http*://*avxo.pw/*
+// @include     http*://*/movie/*
+// @include     http*://*/cn*
+// @include     http*://*/tw*
+// @include     http*://*/ja*
+// @include     http*://*/en*
 
 // @include     http://115.com/*
 
@@ -72,8 +56,6 @@
 // @connect      cnbtkitty.net
 // @connect      www.torrentkitty.tv
 // @connect      btlibrary.pw
-// @connect      ja14b.com
-// @connect      www.163sub.com
 
 // @copyright    hobby 2016-12-18
 
@@ -84,6 +66,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+//v2.0.16 更新永久支持javlib新域名（能科学上网的司机们建议访问javlibrary原始域名，这样减少每次更换域名消耗同步数据时间）。jav字幕站点已失效，移除下载字幕功能。
 //v2.0.15 修复已知问题。更新javlib新域名支持。新域名首次运行会出现cpu占比较高，正常等待几分钟即可。
 //v2.0.14 修复缩略图域名失效问题。
 //v2.0.13 修复已知问题。
@@ -247,10 +230,11 @@
                                 var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
 
                                 var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.to\/thumbs\//);
+                                debugger;
                                 //如果找到内容大图
                                 if (img_start_idx > 0) {
                                     var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
-                                    var targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
+                                    var targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('https', 'http');
 
                                     //如果找到全高清大图优先显示全高清的
                                     console.log("图片地址:" + targetImgUrl);
@@ -385,9 +369,10 @@
 
     let main = {
         //av信息查询 类
+        //avsox|avmoo
         jav: {
             type: 0,
-            re: /(avio|avmo|avso|avxo|javtag|javfee|javmoo).*movie.*/,
+            re: /.*movie.*/,
             vid: function () {
                 return $('.header_hobby')[0].nextElementSibling.innerHTML;
             },
@@ -415,7 +400,7 @@
         },
         javlibrary: {
             type: 0,
-            re: /(javlibrary|javlib3|look4lib|5avlib|javli6|j8vlib|j9lib|jav11b|ja14b|13vlib|j17v|j18ib|19lib).*\?v=.*/,
+            re: /.*\?v=jav.*/,
             vid: function () {
                 return $('#video_id')[0].getElementsByClassName('text')[0].innerHTML;
             },
@@ -1289,11 +1274,11 @@
                     //过滤X评分以下的影片
                     //if(vid == 'javlikq7qu')debugger;
                     if ($(indexCd_id).context.URL.indexOf("?delete") > 0) {
-                        if ($(indexCd_id).context.URL.indexOf("php?delete8down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 8) {
+                        if ($(indexCd_id).context.URL.indexOf("delete8down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 8) {
                             //debugger;
                             $(indexCd_id).remove();
                         }
-                        else if ($(indexCd_id).context.URL.indexOf("php?delete9down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 9) {
+                        else if ($(indexCd_id).context.URL.indexOf("delete9down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 9) {
                             $(indexCd_id).remove();
                         }
                     }
@@ -1417,31 +1402,6 @@
                 '#waterfall .movie-box .photo-frame {overflow: visible;}',
             ].join(''));
         },
-        // 字幕下载
-        subDown: function (AVID) {
-            //debugger;
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: "http://www.163sub.com/Search?id=" + AVID,
-                onload: function (result) {
-                    let doc = result.responseText;
-                    let re = /download\/\w+-\w+-\w+-\w+-\w+'/;
-                    //download/ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号‘-’ + 多个字母或数字 + 符号'
-                    let arr = re.exec(doc);
-                    if (!arr) {
-                        $("#video_info").append("<div id='divZm' class='item'><table><tbody><tr><td class='header'>外挂字幕:</td><td style='color: red;'>&nbsp;暂无字幕</td></tr></tbody></table></div></div>");
-                        return;
-                    }
-                    //debugger;
-                    let zm = arr[0].slice(8, -1);
-                    $("#video_info").append("<div id='divZm' class='item'><table><tbody><tr><td class='header'>外挂字幕:</td><td><a href='http://www.163sub.com/LinkInfo" + zm + "' target='_blank' style='color: red;'>&nbsp;下载</a></td></tr></tbody></table></div>");
-                },
-                onerror: function (e) {
-                    console.log('搜索字幕出现错误');
-                }
-            });
-        },
-
     };
 
     function loadData(pageName, func) {
@@ -1647,355 +1607,360 @@
             thirdparty.login115Run();
         }
 
-        if (document.title.search(/JAVLibrary/) > 0) {
-            if ((/(bestrated|newrelease|vl_update|mostwanted|vl_star)/g).test(document.URL)) {
+        if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title)){
+            GM_addStyle([
+                '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
+                '.container {width: 100%;float: left;}',
+                '.col-md-3 {float: left;max-width: 260px;}',
+                '.col-md-9 {width: inherit;}',
+                '.footer {padding: 20px 0;background: #1d1a18;float: left;}',
+                '#nong-table-new {margin: initial !important;important;color: #666 !important;font-size: 13px;text-align: center;background-color: #F2F2F2;float: left;}',
+                '.header_hobby {font-weight: bold;text-align: right;width: 75px;}',
+            ].join(''));
 
-                let a1 = document.createElement('a');
-                let a2 = document.createElement('a');
-                $(a1).append('&nbsp;&nbsp;按评分排序');
-                $(a1).css({
-                    "color": "blue",
-                    "font": "bold 12px monospace"
-                });
-                $(a1).attr("href", "#");
-                $(a1).click(function () {
-                    let div_array = $("div.videos div.video");
-                    div_array.sort(function (a, b) {
-                        //debugger;
-                        let a_score = parseFloat($(a).children("a").attr("score"));
-                        let b_score = parseFloat($(b).children("a").attr("score"));
-                        if (a_score > b_score) {
-                            return -1;
-                        }
-                        else if (a_score === b_score) {
-                            return 0;
-                        }
-                        else {
-                            return 1;
-                        }
+            if (document.title.search(/JAVLibrary/) > 0) {
+                if ((/(bestrated|newrelease|vl_update|mostwanted|vl_star|vl_genre)/g).test(document.URL)) {
+
+                    let a1 = document.createElement('a');
+                    let a2 = document.createElement('a');
+                    $(a1).append('&nbsp;&nbsp;按评分排序');
+                    $(a1).css({
+                        "color": "blue",
+                        "font": "bold 12px monospace"
+                    });
+                    $(a1).attr("href", "#");
+                    $(a1).click(function () {
+                        let div_array = $("div.videos div.video");
+                        div_array.sort(function (a, b) {
+                            //debugger;
+                            let a_score = parseFloat($(a).children("a").attr("score"));
+                            let b_score = parseFloat($(b).children("a").attr("score"));
+                            if (a_score > b_score) {
+                                return -1;
+                            }
+                            else if (a_score === b_score) {
+                                return 0;
+                            }
+                            else {
+                                return 1;
+                            }
+                        });
+
+                        // 删除Dom列表数据关系，重新添加排序数据
+                        div_array.detach().appendTo("#waterfall");
+
                     });
 
-                    // 删除Dom列表数据关系，重新添加排序数据
-                    div_array.detach().appendTo("#waterfall");
-
-                });
-
-                $(a2).append('&nbsp;&nbsp;按时间排序');
-                $(a2).css({
-                    "color": "blue",
-                    "font": "bold 12px monospace"
-                });
-                $(a2).attr("href", "#");
-                $(a2).click(function () {
-                    let div_array = $("div.videos div.video");
-                    //debugger;
-                    div_array.sort(function (a, b) {
-                        //debugger;
-                        let a_time = new Date($(a).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
-                        let b_time = new Date($(b).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
-                        let a_score = parseFloat($(a).children("a").attr("score"));
-                        let b_score = parseFloat($(b).children("a").attr("score"));
-                        if (a_time > b_time) {
-                            return -1;
-                        }
-                        else if (a_time === b_time) {
-                            return (a_score > b_score) ? -1 : 1;
-                        }
-                        else {
-                            return 1;
-                        }
+                    $(a2).append('&nbsp;&nbsp;按时间排序');
+                    $(a2).css({
+                        "color": "blue",
+                        "font": "bold 12px monospace"
                     });
+                    $(a2).attr("href", "#");
+                    $(a2).click(function () {
+                        let div_array = $("div.videos div.video");
+                        //debugger;
+                        div_array.sort(function (a, b) {
+                            //debugger;
+                            let a_time = new Date($(a).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
+                            let b_time = new Date($(b).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
+                            let a_score = parseFloat($(a).children("a").attr("score"));
+                            let b_score = parseFloat($(b).children("a").attr("score"));
+                            if (a_time > b_time) {
+                                return -1;
+                            }
+                            else if (a_time === b_time) {
+                                return (a_score > b_score) ? -1 : 1;
+                            }
+                            else {
+                                return 1;
+                            }
+                        });
 
-                    // 删除Dom列表数据关系，重新添加排序数据
-                    div_array.detach().appendTo("#waterfall");
+                        // 删除Dom列表数据关系，重新添加排序数据
+                        div_array.detach().appendTo("#waterfall");
 
-                });
-                $(".left select").after($(a2));
-                $(".left select").after($(a1));
-            }
-
-
-            if (document.URL.indexOf("bestrated") > 0) {
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
-                //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
-                //todo
-
-            }
-            else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0) {
-                $(".displaymode .right").prepend("<a href='?delete9down' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='?delete8down' style='color: red;'>只看8分以上&nbsp;&nbsp;</a>");
-                //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
-                //todo
-            }
-
-            //重置数据库
-            // persistence.reset();
-            // persistence.schemaSync();
-
-            //debugger;
-            //数据库初始化  start01
-            JavWebSql.DBinit();
-            persistence.flush();
-            //end01 cpu忽略
-
-            //a href="myaccount.php"
-            if ($('a[href="myaccount.php"]').length) {
-                // 已经登录
-                // 从未同步过,同步云数据到本地数据库
-                let isSync = GM_getValue(location.host + "_doDataSyncStepAll", false);
-
-                console.log(location.href + "是否从未同步过：" + !isSync);
-                if (!isSync) {
-                    // 立即下载数据
-                    GM_setValue("mv_wanted_pageNum", 0);
-                    GM_setValue("mv_wanted_pageNum", 0);
-                    GM_setValue("mv_wanted_pageNum", 0);
-
-                    //debugger;
-                    //start02
-                    loadData("mv_wanted", function () {
-                        loadData("mv_watched", function () {
-                            loadData("mv_owned", function () {
-                                //end02 cpu最高20
-                                //debugger;
-                                //start03
-                                GM_setValue("doNum", 0);
-                                mergeJson("mv_wanted");
-                                mergeJson("mv_watched");
-                                mergeJson("mv_owned");
-                                //end03 cpu忽略
-                                //debugger;
-                                var s3 = setInterval(function () {
-                                    let n = GM_getValue("doNum");
-                                    if (n === 3) {
-                                        let j1 = GM_getValue("mv_wanted_myBrowseJsonAll");
-                                        let j2 = GM_getValue("mv_watched_myBrowseJsonAll");
-                                        let j3 = GM_getValue("mv_owned_myBrowseJsonAll");
-                                        let mv_owned_myBrowseJsonAll = j3.substring(0, j3.length - 1);
-                                        let myBrowseAll = j1 + j2 + mv_owned_myBrowseJsonAll;
+                    });
+                    $(".left select").after($(a2));
+                    $(".left select").after($(a1));
+                }
 
 
-                                        var myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
-                                        var myWantArray = JSON.parse("[" + j1.substring(0, j1.length - 1) + "]");
-                                        var mySeenArray = JSON.parse("[" + j2.substring(0, j2.length - 1) + "]");
-                                        var myHaveArray = JSON.parse("[" + mv_owned_myBrowseJsonAll + "]");
+                if (document.URL.indexOf("bestrated") > 0) {
+                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
+                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
+                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
+                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
+                    //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
+                    //todo
+
+                }
+                else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0 || document.URL.indexOf("vl_genre") > 0) {
+                    debugger;
+                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                        + "?delete9down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
+                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                        + "?delete8down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看8分以上&nbsp;&nbsp;</a>");
+                    //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
+                    //todo
+                }
+
+                //重置数据库
+                // persistence.reset();
+                // persistence.schemaSync();
+
+                //debugger;
+                //数据库初始化  start01
+                JavWebSql.DBinit();
+                persistence.flush();
+                //end01 cpu忽略
+
+                //a href="myaccount.php"
+                if ($('a[href="myaccount.php"]').length) {
+                    // 已经登录
+                    // 从未同步过,同步云数据到本地数据库
+                    let isSync = GM_getValue(location.host + "_doDataSyncStepAll", false);
+
+                    console.log(location.href + "是否从未同步过：" + !isSync);
+                    if (!isSync) {
+                        // 立即下载数据
+                        GM_setValue("mv_wanted_pageNum", 0);
+                        GM_setValue("mv_wanted_pageNum", 0);
+                        GM_setValue("mv_wanted_pageNum", 0);
+
+                        //debugger;
+                        //start02
+                        loadData("mv_wanted", function () {
+                            loadData("mv_watched", function () {
+                                loadData("mv_owned", function () {
+                                    //end02 cpu最高20
+                                    //debugger;
+                                    //start03
+                                    GM_setValue("doNum", 0);
+                                    mergeJson("mv_wanted");
+                                    mergeJson("mv_watched");
+                                    mergeJson("mv_owned");
+                                    //end03 cpu忽略
+                                    //debugger;
+                                    var s3 = setInterval(function () {
+                                        let n = GM_getValue("doNum");
+                                        if (n === 3) {
+                                            let j1 = GM_getValue("mv_wanted_myBrowseJsonAll");
+                                            let j2 = GM_getValue("mv_watched_myBrowseJsonAll");
+                                            let j3 = GM_getValue("mv_owned_myBrowseJsonAll");
+                                            let mv_owned_myBrowseJsonAll = j3.substring(0, j3.length - 1);
+                                            let myBrowseAll = j1 + j2 + mv_owned_myBrowseJsonAll;
 
 
-                                        //debugger;
-                                        myBrowseArray = uniqueArray(myBrowseArray, "index_cd", function (item, resultObj) {
-                                            if (item["add_time"] < resultObj["add_time"]) {
-                                                resultObj["add_time"] = item["add_time"];
-                                            }
-                                        });
+                                            var myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
+                                            var myWantArray = JSON.parse("[" + j1.substring(0, j1.length - 1) + "]");
+                                            var mySeenArray = JSON.parse("[" + j2.substring(0, j2.length - 1) + "]");
+                                            var myHaveArray = JSON.parse("[" + mv_owned_myBrowseJsonAll + "]");
 
-                                        GM_setValue("myBrowseAll", JSON.stringify(myBrowseArray));
-                                        //console.log(myBrowseArray);
 
-                                        var hasStepOne = GM_getValue(location.host + "_stepOne", false);
-                                        var startTime = new Date();
-                                        //debugger;
-                                        addJsonsToDB(hasStepOne, myBrowseArray, function () {
-                                            return new MyBrowse();
-                                        }, function () {
                                             //debugger;
-                                            addJsonsToDB(hasStepOne, myWantArray, function () {
-                                                return new MyWant();
+                                            myBrowseArray = uniqueArray(myBrowseArray, "index_cd", function (item, resultObj) {
+                                                if (item["add_time"] < resultObj["add_time"]) {
+                                                    resultObj["add_time"] = item["add_time"];
+                                                }
+                                            });
+
+                                            GM_setValue("myBrowseAll", JSON.stringify(myBrowseArray));
+                                            //console.log(myBrowseArray);
+
+                                            var hasStepOne = GM_getValue(location.host + "_stepOne", false);
+                                            var startTime = new Date();
+                                            //debugger;
+                                            addJsonsToDB(hasStepOne, myBrowseArray, function () {
+                                                return new MyBrowse();
                                             }, function () {
                                                 //debugger;
-                                                addJsonsToDB(hasStepOne, mySeenArray, function () {
-                                                    return new MySeen();
+                                                addJsonsToDB(hasStepOne, myWantArray, function () {
+                                                    return new MyWant();
                                                 }, function () {
                                                     //debugger;
-                                                    addJsonsToDB(hasStepOne, myHaveArray, function () {
-                                                        return new MyHave();
+                                                    addJsonsToDB(hasStepOne, mySeenArray, function () {
+                                                        return new MySeen();
                                                     }, function () {
                                                         //debugger;
-                                                        GM_setValue(location.host + "_stepOne", true);
-                                                        let b = GM_getValue(location.host + "_stepTwo", false);
-                                                        if (!b) {
-                                                            GM_setValue("addMovieNum", 0);
-                                                            for (let i = 0; i < myBrowseArray.length; i++) {
-                                                                //console.log("aaaa:" + (GM_getValue("stepTwoNum", 1) == 1) + "  bbbb:" + (i >= GM_getValue("stepTwoNum", 1)));
-                                                                if ((GM_getValue(location.host + "_stepTwoNum", 1) == 1) || (i >= GM_getValue(location.host + "_stepTwoNum", 1))) {
+                                                        addJsonsToDB(hasStepOne, myHaveArray, function () {
+                                                            return new MyHave();
+                                                        }, function () {
+                                                            //debugger;
+                                                            GM_setValue(location.host + "_stepOne", true);
+                                                            let b = GM_getValue(location.host + "_stepTwo", false);
+                                                            if (!b) {
+                                                                GM_setValue("addMovieNum", 0);
+                                                                for (let i = 0; i < myBrowseArray.length; i++) {
+                                                                    //console.log("aaaa:" + (GM_getValue("stepTwoNum", 1) == 1) + "  bbbb:" + (i >= GM_getValue("stepTwoNum", 1)));
+                                                                    if ((GM_getValue(location.host + "_stepTwoNum", 1) == 1) || (i >= GM_getValue(location.host + "_stepTwoNum", 1))) {
+                                                                        //debugger;
+                                                                        let jsonObj = myBrowseArray[i];
+                                                                        addMovie(jsonObj.index_cd);
+                                                                    }
+                                                                    else {
+                                                                        GM_setValue("addMovieNum", i + 1);
+                                                                    }
+                                                                }
+
+                                                                // persistence.flush(function () {
+                                                                //     GM_setValue("stepTwoNum", GM_getValue("addMovieNum", 0));
+                                                                // });
+
+                                                                //console.log("time:" + (new Date() - startTime));
+
+                                                                var s4 = setInterval(function () {
+                                                                    let num = GM_getValue("addMovieNum", 0);
+                                                                    let stepTwoNum = GM_getValue(location.host + "_stepTwoNum", 1);
+                                                                    //console.log("i = " + num)
+                                                                    if (num === myBrowseArray.length) {
+                                                                        persistence.flush(function () {
+                                                                            GM_setValue(location.host + "_stepTwo", true);
+                                                                            GM_setValue(location.host + "_doDataSyncStepAll", true);
+                                                                            console.log("time:" + (new Date() - startTime));
+                                                                        });
+                                                                        clearInterval(s4);
+                                                                    }
+                                                                    //console.log("1111:" + (num > stepTwoNum) + "  22222:" + ((num <= 50) || (num % stepTwoNum >= 50)));
                                                                     //debugger;
-                                                                    let jsonObj = myBrowseArray[i];
-                                                                    addMovie(jsonObj.index_cd);
-                                                                }
-                                                                else {
-                                                                    GM_setValue("addMovieNum", i + 1);
-                                                                }
+                                                                    // 没超过50个数据，持久化一次
+                                                                    if (num >= stepTwoNum && ((num - stepTwoNum) >= 600)) {
+                                                                        persistence.flush(function () {
+                                                                            GM_setValue(location.host + "_stepTwoNum", num);
+                                                                        })
+                                                                    }
+                                                                }, 150);
                                                             }
-
-                                                            // persistence.flush(function () {
-                                                            //     GM_setValue("stepTwoNum", GM_getValue("addMovieNum", 0));
-                                                            // });
-
-                                                            //console.log("time:" + (new Date() - startTime));
-
-                                                            var s4 = setInterval(function () {
-                                                                let num = GM_getValue("addMovieNum", 0);
-                                                                let stepTwoNum = GM_getValue(location.host + "_stepTwoNum", 1);
-                                                                //console.log("i = " + num)
-                                                                if (num === myBrowseArray.length) {
-                                                                    persistence.flush(function () {
-                                                                        GM_setValue(location.host + "_stepTwo", true);
-                                                                        GM_setValue(location.host + "_doDataSyncStepAll", true);
-                                                                        console.log("time:" + (new Date() - startTime));
-                                                                    });
-                                                                    clearInterval(s4);
-                                                                }
-                                                                //console.log("1111:" + (num > stepTwoNum) + "  22222:" + ((num <= 50) || (num % stepTwoNum >= 50)));
-                                                                //debugger;
-                                                                // 没超过50个数据，持久化一次
-                                                                if (num >= stepTwoNum && ((num - stepTwoNum) >= 600)) {
-                                                                    persistence.flush(function () {
-                                                                        GM_setValue(location.host + "_stepTwoNum", num);
-                                                                    })
-                                                                }
-                                                            }, 150);
-                                                        }
+                                                        });
                                                     });
                                                 });
                                             });
-                                        });
-                                        clearInterval(s3);
-                                    }
-                                }, 300)
+                                            clearInterval(s3);
+                                        }
+                                    }, 300)
+                                });
                             });
                         });
-                    });
 
 
-                }
-
-
-                // 增加同步数据到本地的触发按钮
-            }
-        }
-
-        GM_addStyle([
-            '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
-            '.container {width: 100%;float: left;}',
-            '.col-md-3 {float: left;max-width: 260px;}',
-            '.col-md-9 {width: inherit;}',
-            '.footer {padding: 20px 0;background: #1d1a18;float: left;}',
-            '#nong-table-new {margin: initial !important;important;color: #666 !important;font-size: 13px;text-align: center;background-color: #F2F2F2;float: left;}',
-            '.header_hobby {font-weight: bold;text-align: right;width: 75px;}',
-        ].join(''));
-
-        //获取所有番号影片链接的a元素
-        var a_array = $("div[class='item'] a");
-        for (var index = 0; index < a_array.length; index++) {
-            var aEle = a_array[index];
-            $(aEle).attr("target", "_blank");
-        }
-
-        var AVID = "";
-        //获取番号影片详情页的番号  例如：https://www.javbus.com/CHN-141 || ttp://www.javlibrary.com/cn/?v=javlilzo4e
-        if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) && $('.header').length) {
-            let AVID = $('.header')[0].nextElementSibling.textContent;
-
-            window.onload = function () {
-                $('iframe').remove();
-            };
-            $($('.header')[0]).attr("class", "header_hobby");
-
-            // 只支持javlibray处理已阅影片
-            if (document.title.search(/JAVLibrary/) > 0) {
-                let movie = new MyMovie();
-
-                let vid = location.search.split("=")[1];
-
-                movie.index_cd = vid;
-                movie.code = AVID;
-                movie.release_date = $('#video_date .text').text();
-                movie.duration = $('#video_length .text').text();
-                movie.director = $('#video_director .text').text();
-                movie.maker = $('#video_maker .text').text();
-                movie.score = $('#video_review .text .score').text();
-                movie.actor = $('#video_cast .text').text();
-                movie.cover_img_url = $('#video_jacket_img').attr("src");
-                movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
-                movie.movie_name = $('#video_title a').text();
-                movie.publisher = $('#video_label .text a').text();
-                movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-
-                //查找是否存在此番号数据
-                MyMovie.findBy(persistence, null, 'code', AVID, function (findObj) {
-                    let my_borwse = new MyBrowse();
-                    if (!findObj) {//不存在
-                        persistence.add(movie);
-
-                        my_borwse.index_cd = movie.index_cd;
-                        my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-                        persistence.add(my_borwse);
-                        persistence.flush();
                     }
-                    else {//存在
-                        movie.movie_id = findObj.movie_id;
-                        movie.add_time = findObj.add_time;
-                        persistence.remove(findObj);
-                        persistence.add(movie);
 
-                        MyBrowse.findBy(persistence, null, 'index_cd', movie.index_cd, function (findObj) {
+
+                    // 增加同步数据到本地的触发按钮
+                }
+            }
+
+
+            //获取所有番号影片链接的a元素
+            var a_array = $("div[class='item'] a");
+            for (var index = 0; index < a_array.length; index++) {
+                var aEle = a_array[index];
+                $(aEle).attr("target", "_blank");
+            }
+
+
+            //var AVID = "";
+            //获取番号影片详情页的番号  例如：https://www.javbus.com/CHN-141 || ttp://www.javlibrary.com/cn/?v=javlilzo4e
+            if ($('.header').length) {
+                let AVID = $('.header')[0].nextElementSibling.textContent;
+
+                window.onload = function () {
+                    $('iframe').remove();
+                };
+                $($('.header')[0]).attr("class", "header_hobby");
+
+                // 只支持javlibray处理已阅影片
+                if (document.title.search(/JAVLibrary/) > 0) {
+                    let movie = new MyMovie();
+
+                    let vid = location.search.split("=")[1];
+
+                    movie.index_cd = vid;
+                    movie.code = AVID;
+                    movie.release_date = $('#video_date .text').text();
+                    movie.duration = $('#video_length .text').text();
+                    movie.director = $('#video_director .text').text();
+                    movie.maker = $('#video_maker .text').text();
+                    movie.score = $('#video_review .text .score').text();
+                    movie.actor = $('#video_cast .text').text();
+                    movie.cover_img_url = $('#video_jacket_img').attr("src");
+                    movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+                    movie.movie_name = $('#video_title a').text();
+                    movie.publisher = $('#video_label .text a').text();
+                    movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+
+                    //查找是否存在此番号数据
+                    MyMovie.findBy(persistence, null, 'code', AVID, function (findObj) {
+                        let my_borwse = new MyBrowse();
+                        if (!findObj) {//不存在
+                            persistence.add(movie);
+
                             my_borwse.index_cd = movie.index_cd;
                             my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-                            if (findObj) {//存在
-                                persistence.remove(findObj);
-                            }
                             persistence.add(my_borwse);
                             persistence.flush();
+                        }
+                        else {//存在
+                            movie.movie_id = findObj.movie_id;
+                            movie.add_time = findObj.add_time;
+                            persistence.remove(findObj);
+                            persistence.add(movie);
+
+                            MyBrowse.findBy(persistence, null, 'index_cd', movie.index_cd, function (findObj) {
+                                my_borwse.index_cd = movie.index_cd;
+                                my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+                                if (findObj) {//存在
+                                    persistence.remove(findObj);
+                                }
+                                persistence.add(my_borwse);
+                                persistence.flush();
+                            });
+
+                        }
+
+                    });
+                }
+
+                //debugger;
+                console.log("番号输出:" + AVID);
+                //console.log("时间000000:"+ new Date().getTime());
+                Common.addAvImg(AVID, function ($img) {
+                    //https://www.javbus.com/CHN-141
+                    var divEle = $("div[class='col-md-3 info']")[0];
+                    $(divEle).attr("id", "video_info");
+                    if (divEle) {
+                        $(divEle.parentElement).append($img);
+                        $img.click(function () {
+                            $(this).toggleClass('min');
+                            if ($(this).attr("class")) {
+                                this.parentElement.parentElement.scrollIntoView();
+                            }
                         });
-
                     }
-
+                    // http://www.javlibrary.com/cn/?v=javlilzo4e
+                    divEle = $("div[id='video_favorite_edit']")[0];
+                    if (divEle) {
+                        $img.attr("style", "cursor: pointer;");
+                        $(divEle).after($img);
+                        $img.click(function () {
+                            $(this).toggleClass('min');
+                            if ($(this).attr("class")) {
+                                this.parentElement.parentElement.scrollIntoView();
+                            }
+                        });
+                    }
                 });
             }
 
-            //debugger;
-            console.log("番号输出:" + AVID);
-            //console.log("时间000000:"+ new Date().getTime());
-            Common.addAvImg(AVID, function ($img) {
-                //https://www.javbus.com/CHN-141
-                var divEle = $("div[class='col-md-3 info']")[0];
-                $(divEle).attr("id", "video_info");
-                if (divEle) {
-                    $(divEle.parentElement).append($img);
-                    $img.click(function () {
-                        $(this).toggleClass('min');
-                        if ($(this).attr("class")) {
-                            this.parentElement.parentElement.scrollIntoView();
-                        }
-                    });
-                }
-                // http://www.javlibrary.com/cn/?v=javlilzo4e
-                divEle = $("div[id='video_favorite_edit']")[0];
-                if (divEle) {
-                    $img.attr("style", "cursor: pointer;");
-                    $(divEle).after($img);
-                    $img.click(function () {
-                        $(this).toggleClass('min');
-                        if ($(this).attr("class")) {
-                            this.parentElement.parentElement.scrollIntoView();
-                        }
-                    });
-                }
-            });
+            // 挊
+            if (GM_getValue('search_index', null) === null) {
+                GM_setValue('search_index', 0);
+            }
+            thirdparty.nong.searchMagnetRun();
 
-            thirdparty.subDown(AVID);
+            // 瀑布流脚本
+            thirdparty.waterfallScrollInit();
         }
-
-        // 挊
-        if (GM_getValue('search_index', null) === null) {
-            GM_setValue('search_index', 0);
-        }
-        thirdparty.nong.searchMagnetRun();
-
-        // 瀑布流脚本
-        thirdparty.waterfallScrollInit();
     }
 
     mainRun();
