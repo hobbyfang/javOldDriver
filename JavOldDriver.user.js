@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.0.17
+// @version      2.1.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -70,6 +70,8 @@
 // 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本,根据电脑性能情况不同,需消耗约2分钟以上(以1000个车牌量计算)缓存个人数据到本地浏览器中.
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
+
+// v2.1.0 增加javbus站内磁链列表的复制、115离线的快捷键功能。
 
 // v2.0.16 更新永久支持javlib新域名（能科学上网的司机们建议访问javlibrary原始域名，这样减少每次更换域名消耗同步数据时间）。jav字幕站点已失效，移除下载字幕功能。
 // v2.0.15 修复已知问题。更新javlib新域名支持。新域名首次运行会出现cpu占比较高，正常等待几分钟即可。
@@ -218,7 +220,7 @@
                                 var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
 
                                 var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.to\/thumbs\//);
-                                debugger;
+                                //debugger;
                                 //如果找到内容大图
                                 if (img_start_idx > 0) {
                                     var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
@@ -1590,12 +1592,34 @@
         });
     }
 
+    /**
+     * javbus详情页磁链列表增加复制、115离线快捷键功能函数
+     */
+    function javbusUs() {
+        $('#magnet-table tbody tr td[colspan="4"]').attr("colspan","5");
+        let tr_array = $('#magnet-table tr[height="35px"]');
+
+        for (var i = 0; i < tr_array.length; i++) {
+            let trEle = tr_array[i];
+            //debugger;
+            let magnetUrl = $(trEle).find("td a")[0].href;
+            $(trEle).append("<td style='text-align:center;'><div><a class='nong-copy' href='" + magnetUrl + "'>复制</a></div></td>");
+            $(trEle).append("<td><div class='nong-offline'><a class='nong-offline-download' target='_blank' href='http://115.com/?tab=offline&amp;mode=wangpan'>115离线</a></div></td>");
+            //TODO
+            $(trEle).attr("maglink", magnetUrl);
+            $(trEle).find(".nong-copy")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
+            $(trEle).find(".nong-offline-download")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
+            //.addEventListener('click', this.handle_event, false);
+        }
+    }
+
     function mainRun() {
         if (location.host.indexOf('115.com') >= 0) {
             thirdparty.login115Run();
         }
 
-        if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title)){
+        if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
+
             GM_addStyle([
                 '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
                 '.container {width: 100%;float: left;}',
@@ -1938,7 +1962,21 @@
                         });
                     }
                 });
+
+
+                // 修改javbus磁链列表头，增加两列
+                $('#magnet-table tbody tr').append('<td style="text-align:center;white-space:nowrap">操作</td><td style="text-align:center;white-space:nowrap">离线下载</td>');
+                // 先执行一次，针对已经提前加载出磁链列表结果时有效
+                javbusUs();
+                // 针对为提前加载出磁链列表结果，通过dom元素是否改变事件来判断是否执行功能。
+                $('#magnet-table').on("DOMNodeInserted",function () {
+                    // 触发后关闭监听事件
+                    $('#magnet-table').off();
+                    javbusUs();
+                });
             }
+
+
 
             // 挊
             if (GM_getValue('search_index', null) === null) {
