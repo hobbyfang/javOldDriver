@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.0.16
+// @version      2.0.17
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -17,6 +17,11 @@
 
 // @include     http*://*javlibrary.com/*
 // @include     http*://*javlib.com/*
+// @include     http*://www.javbus.com/*
+// @include     http*://tellme.pw/avsox
+// @include     http*://tellme.pw/avmoo
+// @include     http*://115.com/*
+
 // @include     http*://*/vl_update*
 // @include     http*://*/vl_newrelease*
 // @include     http*://*/vl_newentries*
@@ -26,7 +31,8 @@
 // @include     http*://*/vl_star*
 // @include     http*://*/?v=jav*
 
-// @include     http*://www.javbus*/*
+// @include     http*://www.*bus*/*
+// @include     http*://www.*dmm*/*
 
 // @include     http*://*/movie/*
 // @include     http*://*/cn*
@@ -34,7 +40,6 @@
 // @include     http*://*/ja*
 // @include     http*://*/en*
 
-// @include     http://115.com/*
 
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -45,17 +50,17 @@
 // @grant        GM_setClipboard
 // @grant        GM_getResourceURL
 
-// @connect      blogjav.net
-// @connect      pixhost.to
-// @connect      115.com
-// @connect      btso.pw
-// @connect      btdb.to
-// @connect      sukebei.nyaa.si
-// @connect      btkitty.pet
-// @connect      cnbtkitty.com
-// @connect      cnbtkitty.net
-// @connect      www.torrentkitty.tv
-// @connect      btlibrary.pw
+// @connect      *
+// connect      blogjav.net
+// connect      pixhost.to
+// connect      115.com
+// connect      btso.pw
+// connect      btdb.to
+// connect      sukebei.nyaa.si
+// connect      btkitty.pet
+// connect      cnbtkitty.me
+// connect      www.torrentkitty.tv
+// connect      btlibrary.xyz
 
 // @copyright    hobby 2016-12-18
 
@@ -66,37 +71,20 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
-//v2.0.16 更新永久支持javlib新域名（能科学上网的司机们建议访问javlibrary原始域名，这样减少每次更换域名消耗同步数据时间）。jav字幕站点已失效，移除下载字幕功能。
-//v2.0.15 修复已知问题。更新javlib新域名支持。新域名首次运行会出现cpu占比较高，正常等待几分钟即可。
-//v2.0.14 修复缩略图域名失效问题。
-//v2.0.13 修复已知问题。
-//v2.0.12 修复已知问题。
-//v2.0.11 更新两个站点域名。
-//v2.0.10 修复已知问题。
-// v2.0.9 修复已知问题。
-// v2.0.8 修复已知问题。
+// v2.0.16 更新永久支持javlib新域名（能科学上网的司机们建议访问javlibrary原始域名，这样减少每次更换域名消耗同步数据时间）。jav字幕站点已失效，移除下载字幕功能。
+// v2.0.15 修复已知问题。更新javlib新域名支持。新域名首次运行会出现cpu占比较高，正常等待几分钟即可。
+// v2.0.14 修复缩略图域名失效问题。
+// v2.0.11 更新两个站点域名。
 // v2.0.7 增加一种情况Jav列表排序功能支持(仅javlib)。
-// v2.0.6 修复已知问题。
 // v2.0.5 增加Jav列表“按评分排序”、“按时间排序”功能(仅javlib)，及更新Jav站点域名。
 // v2.0.4 2.0版本性能优化。
-// v2.0.3 修复已知问题。
-// v2.0.2 修复已知问题。
-// v2.0.1 修复已知问题,增加amvoo、avsox新域名。
 // v2.0.0 增加自动同步个人数据缓存到本地,jav列表能识别个人已阅览过的内容(需登录javlibray),针对javlibrary的高评价栏目,增加过滤"不看我阅览过"功能。
 
-// v1.2.3 更新avmo域名。
-// v1.2.2 修复了已知问题。
-// v1.2.1 修复了新近产生的问题。
 // v1.2.0 针对javlibrary的高评价栏目，增加过滤“只看当前月份”、“只看近两月份”功能。另默认此栏目近两月份的内容增加背景颜色区分。
 // v1.2.0 更新了合成“挊”脚本的更多网站的支持，感谢作者thunderhit，同时修复原脚本部分网站功能失效问题。
-// v1.1.4 原j12lib.com(大陆)访问失效，改为ja14b.com的支持，还有btdb.in改为btdb.to
-// v1.1.3 原avmo.pw访问失效,改增加avio.pw的支持。
-// v1.1.2 修复已知问题。
-// v1.1.1 修复已知问题。
 // v1.1.0 优化更新了JAV列表无限滚动自动加载的代码,增加JAV列表中显示"发行日期"和"评分"的排版,以及修复了已知问题。
 // v1.0.3 优化了高清预览大图的获取。
 // v1.0.2 优化了javlibrary排版,做了最低分辨率1280x800的排版适配调整，及修复了已知问题。
-// v1.0.1 修复已知问题。
 // v1.0.0 支持javlibrary.com、javbus.com、avmo.pw、avso.pw等老司机站点，第一版发布。
 
 // ==/UserScript==
@@ -385,7 +373,7 @@
         },
         javbus: {
             type: 0,
-            re: /javbus/,
+            re: /bus|dmm/,
             vid: function () {
                 var a = $('.header_hobby')[0].nextElementSibling;
                 return a ? a.textContent : '';
@@ -585,7 +573,7 @@
                 3: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
-                        url: "https://cnbtkitty.net/",
+                        url: "https://cnbtkitty.me/",
                         data: "keyword=" + kw + "&hidden=true",
                         headers: {
                             "Content-Type": "application/x-www-form-urlencoded"
@@ -660,7 +648,7 @@
                 5: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
-                        url: "http://btlibrary.pw",
+                        url: "http://btlibrary.xyz",
                         data: "keyword=" + kw,
                         headers: {
                             "Content-Type": "application/x-www-form-urlencoded"
