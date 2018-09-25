@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.1.0
+// @version      2.1.1
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -40,7 +40,6 @@
 // @include     http*://*/ja*
 // @include     http*://*/en*
 
-
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -51,17 +50,6 @@
 // @grant        GM_getResourceURL
 
 // @connect      *
-// connect      blogjav.net
-// connect      pixhost.to
-// connect      115.com
-// connect      btso.pw
-// connect      btdb.to
-// connect      sukebei.nyaa.si
-// connect      btkitty.pet
-// connect      cnbtkitty.me
-// connect      www.torrentkitty.tv
-// connect      btlibrary.xyz
-
 // @copyright    hobby 2016-12-18
 
 // 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
@@ -71,6 +59,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.1.1 增加jav站点瀑布流控制按钮功能。
 // v2.1.0 增加javbus站内磁链列表的复制、115离线的快捷键功能。
 
 // v2.0.16 更新永久支持javlib新域名（能科学上网的司机们建议访问javlibrary原始域名，这样减少每次更换域名消耗同步数据时间）。jav字幕站点已失效，移除下载字幕功能。
@@ -96,6 +85,9 @@
     let jav_userID = GM_getValue('jav_user_id', 0); //115用户ID
     //icon图标
     let icon = GM_getResourceURL('icon');
+
+    // 瀑布流状态：1：开启、0：关闭
+    let waterfallScrollStatus = GM_getValue('scroll_status', 1);
 
     // 对Date的扩展，将 Date 转化为指定格式的String
     // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
@@ -1087,10 +1079,14 @@
                 };
 
                 if ($(this.selector.item).length) {
-                    document.addEventListener('scroll', this.scroll.bind(this));
-                    document.addEventListener('wheel', this.wheel.bind(this));
+                    // 开启关闭瀑布流判断
+                    if(waterfallScrollStatus > 0) {
+                        document.addEventListener('scroll', this.scroll.bind(this));
+                        document.addEventListener('wheel', this.wheel.bind(this));
+                    }
                     this.appendElems(this._1func);
                 }
+
             }
 
             waterfall.prototype.getBaseURI = function () {
@@ -1199,44 +1195,46 @@
         })(),
         // 瀑布流脚本
         waterfallScrollInit: function () {
-            var w = new thirdparty.waterfall({});
-            // javbus.com、avmo.pw、avso.pw
-            var $pages = $('div#waterfall div.item');
-            if ($pages.length) {
-                // javbus.com
-                if ($('a#next').length) {
-                    w = new thirdparty.waterfall({
-                        next: 'a#next',
-                        item: 'div#waterfall div.item',
-                        cont: '#waterfall',
-                        pagi: '.pagination-lg',
-                    });
-                }
-                //avmo.pw、avso.pw
-                if ($('a[name="nextpage"]').length) {
-                    w = new thirdparty.waterfall({
-                        next: 'a[name="nextpage"]',//nextpage
-                        item: 'div#waterfall div.item',
-                        cont: '#waterfall',
-                        pagi: '.pagination',
-                    });
-                }
-            }
 
-            // javlibrary
-            var $pages2 = $('div.videos div.video');
-            if ($pages2.length) {
-                GM_addStyle([
-                    '.videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}',
-                ].join(''));
-                $pages2[0].parentElement.id = "waterfall";
-                w = new thirdparty.waterfall({
-                    next: 'a[class="page next"]',
-                    item: 'div.videos div.video',
-                    cont: '#waterfall',
-                    pagi: '.page_selector',
-                });
-            }
+                var w = new thirdparty.waterfall({});
+                // javbus.com、avmo.pw、avso.pw
+                var $pages = $('div#waterfall div.item');
+                if ($pages.length) {
+                    // javbus.com
+                    if ($('a#next').length) {
+                        w = new thirdparty.waterfall({
+                            next: 'a#next',
+                            item: 'div#waterfall div.item',
+                            cont: '#waterfall',
+                            pagi: '.pagination-lg',
+                        });
+                    }
+                    //avmo.pw、avso.pw
+                    if ($('a[name="nextpage"]').length) {
+                        w = new thirdparty.waterfall({
+                            next: 'a[name="nextpage"]',//nextpage
+                            item: 'div#waterfall div.item',
+                            cont: '#waterfall',
+                            pagi: '.pagination',
+                        });
+                    }
+                }
+
+                // javlibrary
+                var $pages2 = $('div.videos div.video');
+                if ($pages2.length) {
+                    GM_addStyle([
+                        '.videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}',
+                    ].join(''));
+                    $pages2[0].parentElement.id = "waterfall";
+                    w = new thirdparty.waterfall({
+                        next: 'a[class="page next"]',
+                        item: 'div.videos div.video',
+                        cont: '#waterfall',
+                        pagi: '.page_selector',
+                    });
+                }
+
 
             w.setSecondCallback(function (cont, elems) {
                 if (location.pathname.includes('/star/')) {
@@ -1630,11 +1628,37 @@
                 '.header_hobby {font-weight: bold;text-align: right;width: 75px;}',
             ].join(''));
 
+            // 瀑布流ui按钮
+            let a3 = document.createElement('a');
+            (waterfallScrollStatus > 0) ? $(a3).append('&nbsp;&nbsp;关闭瀑布流') : $(a3).append('&nbsp;&nbsp;开启瀑布流');
+            $(a3).css({
+                "color": "blue",
+                "font": "bold 12px monospace"
+            });
+            $(a3).attr("href", "#");
+            $(a3).click(function () {
+                if ((/关闭/g).test($(this).html())) {
+                    //$(this).html('&nbsp;&nbsp;开启瀑布流');
+                    GM_setValue('scroll_status', 0);
+                }
+                else {
+                    //$(this).html('&nbsp;&nbsp;关闭瀑布流');
+                    GM_setValue('scroll_status', 1);
+                }
+                window.location.reload();
+            });
+
+
             if (document.title.search(/JAVLibrary/) > 0) {
-                if ((/(bestrated|newrelease|vl_update|mostwanted|vl_star|vl_genre)/g).test(document.URL)) {
+
+                if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre)/g).test(document.URL)) {
+
+                    // 指定站点页面加入瀑布流控制按钮
+                    $(".displaymode .right").append($(a3));
 
                     let a1 = document.createElement('a');
                     let a2 = document.createElement('a');
+
                     $(a1).append('&nbsp;&nbsp;按评分排序');
                     $(a1).css({
                         "color": "blue",
@@ -1693,6 +1717,7 @@
                         div_array.detach().appendTo("#waterfall");
 
                     });
+
                     $(".left select").after($(a2));
                     $(".left select").after($(a1));
                 }
@@ -1708,7 +1733,7 @@
 
                 }
                 else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0 || document.URL.indexOf("vl_genre") > 0) {
-                    debugger;
+                    //debugger;
                     $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
                         + "?delete9down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
                     $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
@@ -1862,6 +1887,15 @@
                 }
             }
 
+            if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
+                // 指定站点页面加入瀑布流控制按钮
+                let li_elem = document.createElement('li');
+                $(li_elem).append($(a3));
+                // JavBus
+                $(".visible-md-block").closest(".dropdown").after($(li_elem));
+                // AVMOO|AVSOX
+                $(".active").closest(".navbar-nav").append($(li_elem));
+            }
 
             //获取所有番号影片链接的a元素
             var a_array = $("div[class='item'] a");
