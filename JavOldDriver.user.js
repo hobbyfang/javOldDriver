@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.1.1
+// @version      2.1.2
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -59,6 +59,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.1.2 修改搜索磁链资源站点问题。
 // v2.1.1 增加jav站点瀑布流控制按钮功能。
 // v2.1.0 增加javbus站内磁链列表的复制、115离线的快捷键功能。
 
@@ -163,7 +164,7 @@
             var notificationDetails = {
                 text: body,
                 title: title,
-                timeout: 10000,
+                timeout: 3000,
                 image: icon,
                 onclick: function () {
                     window.open(click_url);
@@ -465,7 +466,7 @@
                 0: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: 'GET',
-                        url: 'https://btso.pw/search/' + kw,
+                        url: 'https://btsow.pw/search/' + kw,
                         onload: function (result) {
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             var doc = Common.parsetext(result.responseText);
@@ -497,7 +498,7 @@
                 1: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: 'GET',
-                        url: 'http://btdb.to/q/' + kw + '/',
+                        url: 'https://btdb.to/q/' + kw + '/',
                         onload: function (result) {
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             var doc = Common.parsetext(result.responseText);
@@ -514,7 +515,7 @@
                                     'src': 'https://btdb.to' + elems[i].firstChild.getAttribute('href'),
                                 });
                             }
-                            console.log(data);
+
                             cb(result.finalUrl, data);
                         },
                         onerror: function (e) {
@@ -546,15 +547,6 @@
                                     });
                                 }
                             }
-                            else {
-                                data.push({
-                                    "title": "没有找到磁链接",
-                                    "maglink": "",
-                                    //"torrent_url": "",
-                                    "size": "0",
-                                    "src": result.finalUrl,
-                                });
-                            }
 
                             cb(result.finalUrl, data);
                         },
@@ -565,45 +557,6 @@
                     });
                 },
                 3: function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: "POST",
-                        url: "https://cnbtkitty.me/",
-                        data: "keyword=" + kw + "&hidden=true",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded"
-                        },
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            let doc = Common.parsetext(result.responseText);
-                            let data = [];
-                            let t = doc.getElementsByClassName("list-con");
-                            if (t) {
-                                for (let elem of t) {
-                                    data.push({
-                                        "title": elem.querySelector("dt a").textContent,
-                                        "maglink": elem.querySelector("dd a").href,
-                                        "size": elem.querySelector(".option span:nth-child(3) b").textContent,
-                                        "src": elem.querySelector("dt a").href,
-                                    });
-                                }
-                            }
-                            else {
-                                data.push({
-                                    "title": "没有找到磁链接",
-                                    "maglink": "",
-                                    "size": "0",
-                                    "src": result.finalUrl,
-                                });
-                            }
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.error(e);
-                            throw "search error";
-                        }
-                    });
-                },
-                4: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "GET",
                         url: "https://www.torrentkitty.tv/search/" + kw,
@@ -639,7 +592,7 @@
                         }
                     });
                 },
-                5: function (kw, cb) {
+                4: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
                         url: "http://btlibrary.xyz",
@@ -656,9 +609,44 @@
                                 for (let elem of t) {
                                     data.push({
                                         "title": elem.querySelector(".item-title>a").textContent,
-                                        "maglink": elem.querySelector(".item-detail>span:nth-child(1)>a").href,
-                                        "size": elem.querySelector(".item-detail>span:nth-child(3)>b").textContent,
+                                        "maglink": "magnet:?xt=urn:btih:" + elem.querySelector(".item-detail>span:nth-child(1)>a").href.match(/[0-9a-zA-Z]{40,}/g),
+                                        "size": elem.querySelector(".item-detail>span:nth-child(4)>b").textContent,
                                         "src": elem.querySelector(".item-title>a").href,
+                                    });
+                                }
+                            }
+                            cb(result.finalUrl, data);
+                        },
+                        onerror: function (e) {
+                            console.error(e);
+                            throw "search error";
+                        }
+                    });
+                },
+                5: function (kw, cb) {
+                    GM_xmlhttpRequest({
+                        method: "POST",
+                        url: "http://cnbtkitty.pw/", //地址不对则无法搜索
+                        data: "keyword=" + kw + "&hidden=true",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        },
+                        onload: function (result) {
+                            //debugger;
+                            //console.log(result.responseHeaders);
+
+                            thirdparty.nong.search_engines.full_url = result.finalUrl;
+                            let doc = Common.parsetext(result.responseText);
+                            let data = [];
+                            let t = doc.getElementsByClassName("list-con");
+                            if (t) {
+                                for (let elem of t) {
+                                    data.push({
+                                        "title": elem.querySelector("dt a").textContent,
+                                        "maglink": "magnet:?xt=urn:btih:" + elem.querySelector(".input-group:nth-child(1)").value.match(/[0-9a-zA-Z]{40,}/g),
+                                        //elem.querySelector("dd a").href
+                                        "size": elem.querySelector(".option span:nth-child(4) b").textContent,
+                                        "src": elem.querySelector("dt a").href,
                                     });
                                 }
                             }
@@ -696,7 +684,7 @@
                             var b = this.head.cloneNode(true);
                             if (i === 0) {
                                 var select = document.createElement("select");
-                                var ops = ["btso", "btdb", "nyaa.si", "btkitty", "torrentkitty", "btlibrary"];
+                                var ops = ["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty"];
                                 var cur_index = GM_getValue("search_index", 0);
                                 for (var j = 0; j < ops.length; j++) {
                                     var op = document.createElement("option");
@@ -988,6 +976,7 @@
                                 });
 
                                 thirdparty.nong.search_engines.cur_engine(main.cur_vid, function (src, data) {
+                                    console.log(src);
                                     if (data.length === 0) {
                                         $('#nong-table-new')[0].querySelectorAll('#notice')[0].textContent = 'No search result';
                                     }
@@ -1651,7 +1640,7 @@
 
             if (document.title.search(/JAVLibrary/) > 0) {
 
-                if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre)/g).test(document.URL)) {
+                if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre|vl_searchbycombo)/g).test(document.URL)) {
 
                     // 指定站点页面加入瀑布流控制按钮
                     $(".displaymode .right").append($(a3));
