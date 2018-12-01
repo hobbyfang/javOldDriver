@@ -632,8 +632,8 @@
                             "Content-Type": "application/x-www-form-urlencoded"
                         },
                         onload: function (result) {
-                            //debugger;
                             //console.log(result.responseHeaders);
+                            let hostString = "cnbtkitty.pw";
 
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
@@ -643,21 +643,52 @@
                                 for (let elem of t) {
                                     data.push({
                                         "title": elem.querySelector("dt a").textContent,
-                                        "maglink": "magnet:?xt=urn:btih:" + elem.querySelector(".input-group:nth-child(1)").value.match(/[0-9a-zA-Z]{40,}/g),
-                                        //elem.querySelector("dd a").href
+                                        "maglink": elem.querySelector(".option span:nth-child(2) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
+                                        //elem.querySelector("dd a").href todo 111
                                         "size": elem.querySelector(".option span:nth-child(4) b").textContent,
-                                        "src": elem.querySelector("dt a").href,
+                                        "src": elem.querySelector("dt a").href.replace(location.host,hostString),
+                                        "id": elem.querySelector("dt a").href.replace("http://"+ location.host +"/t/","").replace(".html",""),
                                     });
                                 }
                             }
-                            else {
-                                data.push({
-                                    "title": "没有找到磁链接",
-                                    "maglink": "",
-                                    "size": "0",
-                                    "src": result.finalUrl,
-                                });
+
+                            cb(result.finalUrl, data);
+                        },
+                        onerror: function (e) {
+                            console.error(e);
+                            throw "search error";
+                        }
+                    });
+                },
+                6: function (kw, cb) {
+                    GM_xmlhttpRequest({
+                        method: "POST",
+                        url: "http://btdiggs.xyz/", //地址不对则无法搜索
+                        data: "keyword=" + kw + "&hidden=true",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        },
+                        onload: function (result) {
+                            //console.log(result.responseHeaders);
+                            let hostString = "btdiggs.xyz";
+
+                            thirdparty.nong.search_engines.full_url = result.finalUrl;
+                            let doc = Common.parsetext(result.responseText);
+                            let data = [];
+                            let t = doc.querySelectorAll(".list dl");
+                            if (t) {
+                                for (let elem of t) {
+                                    data.push({
+                                        "title": elem.querySelector("dt a").textContent,
+                                        "maglink": elem.querySelector(".attr span:nth-child(6) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
+                                        //elem.querySelector("dd a").href todo 111
+                                        "size": elem.querySelector(".attr span:nth-child(2) b").textContent,
+                                        "src": elem.querySelector("dt a").href.replace(location.host,hostString),
+                                        "id": elem.querySelector("dt a").href.replace("http://"+ location.host +"/","").replace(".html",""),
+                                    });
+                                }
                             }
+
                             cb(result.finalUrl, data);
                         },
                         onerror: function (e) {
@@ -684,7 +715,7 @@
                             var b = this.head.cloneNode(true);
                             if (i === 0) {
                                 var select = document.createElement("select");
-                                var ops = ["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty"];
+                                var ops = ["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"];
                                 var cur_index = GM_getValue("search_index", 0);
                                 for (var j = 0; j < ops.length; j++) {
                                     var op = document.createElement("option");
@@ -712,6 +743,26 @@
                         var a = document.createElement('tr');
                         a.className = 'jav-nong-row';
                         a.setAttribute('maglink', data.maglink);
+                        //debugger;
+                        // 暂时针对cnbtkitty.pw站点生效。
+                        if(data.maglink.indexOf("#magnetlink")>-1)
+                        {//todo 222
+                            a.setAttribute('id', data.id);
+                            GM_xmlhttpRequest({
+                                method: "GET",
+                                url: data.maglink + "?hobbyId=" + data.id,// 传递修改hobbyId，用于修改时定位。
+                                onload: function (result) {
+                                    //定位磁链编码开始下标位置
+                                    let indexNum = result.responseText.indexOf('#website#infohash#');
+                                    if (indexNum >= 0) {
+                                        let magnetlink = result.responseText.substring(indexNum + 18, indexNum + 58);
+                                        let hobbyId = result.finalUrl.substring(result.finalUrl.indexOf('?hobbyId=') + 9, result.finalUrl.length);
+                                        $("#" + hobbyId).attr("maglink", "magnet:?xt=urn:btih:" + magnetlink);
+                                    }
+                                }
+                            });
+                        }
+
                         var b = document.createElement('td');
                         var list = [
                             this.create_info(data.title, data.maglink),
@@ -847,16 +898,18 @@
                     return tab;
                 },
                 handle_event: function (event) {
+                    var maglink = event.target.parentElement.parentElement.getAttribute('maglink') || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
+                    // todo 333
                     if (event.target.className == 'nong-copy') {
                         event.target.innerHTML = '成功';
-                        GM_setClipboard(event.target.href);
+                        GM_setClipboard(maglink);
                         setTimeout(function () {
                             event.target.innerHTML = '复制';
                         }, 1000);
                         event.preventDefault(); //阻止跳转
                     }
                     else if (event.target.className == 'nong-offline-download') {
-                        var maglink = event.target.parentElement.parentElement.getAttribute('maglink') || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
+
                         GM_setValue('magnet', maglink);
 
                         var token_url = 'http://115.com/?ct=offline&ac=space&_='; //获取115 token接口
@@ -1971,6 +2024,38 @@
                                 this.parentElement.parentElement.scrollIntoView();
                             }
                         });
+
+                        let se = () => {
+                            let curGenres = '', a = document.querySelectorAll('input[name="gr_sel"]:checked'), arr = [];
+                            a.forEach(e => {
+                                arr.push(e.value);
+                            });
+                            console.log(arr.join('-'));
+                            arr = arr.join('-');
+                            if (arr[0]) {
+                                window.location.href = 'genre/' + arr;
+                            }
+                        };
+                        let CreateSearch = () => {         //get <p>
+                            let p = document.querySelector('span.genre > a[href*="https://www.javbus.com/genre/"]');
+                            if (!p) return;
+                            p = p.parentNode.parentNode;
+                            p.querySelectorAll('a').forEach(e => {
+                                let i = document.createElement('input'), val = e.href.split('/');             //https://www.javbus.com/genre/4 --> get > 4
+                                val = val[val.length - 1];
+                                i.setAttribute('type', 'checkbox');
+                                i.setAttribute('name', 'gr_sel');
+                                i.setAttribute('value', val);
+                                i.setAttribute('style', 'margin-right: 5px;');
+                                e.parentNode.insertBefore(i, e);
+                            });
+                            let a = document.createElement('a');
+                            a.setAttribute('style', 'cursor: pointer; display: block; color: blue;');
+                            a.textContent = '搜索';
+                            p.appendChild(a);
+                            a.addEventListener('click', se, false);
+                        };
+                        CreateSearch();
                     }
                     // http://www.javlibrary.com/cn/?v=javlilzo4e
                     divEle = $("div[id='video_favorite_edit']")[0];
