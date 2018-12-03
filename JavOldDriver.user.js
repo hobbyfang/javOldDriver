@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.1.2
+// @version      2.1.4
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -59,6 +59,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.1.3 增加btdigg磁链资源站点。修复了已知问题。
 // v2.1.2 修改搜索磁链的资源站点问题。
 // v2.1.1 增加jav站点瀑布流控制按钮功能。
 // v2.1.0 增加javbus站内磁链列表的复制、115离线的快捷键功能。
@@ -641,13 +642,14 @@
                             let t = doc.getElementsByClassName("list-con");
                             if (t) {
                                 for (let elem of t) {
+                                    //debugger;
                                     data.push({
                                         "title": elem.querySelector("dt a").textContent,
                                         "maglink": elem.querySelector(".option span:nth-child(2) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
                                         //elem.querySelector("dd a").href todo 111
                                         "size": elem.querySelector(".option span:nth-child(4) b").textContent,
                                         "src": elem.querySelector("dt a").href.replace(location.host,hostString),
-                                        "id": elem.querySelector("dt a").href.replace("http://"+ location.host +"/t/","").replace(".html",""),
+                                        "id": elem.querySelector("dt a").href.replace("https","").replace("http","").replace("://"+ location.host +"/t/","").replace(".html",""),
                                     });
                                 }
                             }
@@ -684,7 +686,7 @@
                                         //elem.querySelector("dd a").href todo 111
                                         "size": elem.querySelector(".attr span:nth-child(2) b").textContent,
                                         "src": elem.querySelector("dt a").href.replace(location.host,hostString),
-                                        "id": elem.querySelector("dt a").href.replace("http://"+ location.host +"/","").replace(".html",""),
+                                        "id": elem.querySelector("dt a").href.replace("https","").replace("http","").replace("://"+ location.host +"/","").replace(".html",""),
                                     });
                                 }
                             }
@@ -2030,7 +2032,7 @@
                             a.forEach(e => {
                                 arr.push(e.value);
                             });
-                            console.log(arr.join('-'));
+                            //console.log(arr.join('-'));
                             arr = arr.join('-');
                             if (arr[0]) {
                                 window.location.href = 'genre/' + arr;
