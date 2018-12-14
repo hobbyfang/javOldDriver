@@ -125,12 +125,10 @@
          * @param {String} text
          * @returns {Document}
          */
-        parsetext: function (text) {
-            var doc = null;
+        parsetext: function (text, type = 'text/html') {
             try {
-                doc = document.implementation.createHTMLDocument('');
-                doc.documentElement.innerHTML = text;
-                return doc;
+                //https://developer.mozilla.org/zh-CN/docs/Web/API/DOMParser
+                return (new DOMParser()).parseFromString(text, type);
             }
             catch (e) {
                 alert('parse error');
