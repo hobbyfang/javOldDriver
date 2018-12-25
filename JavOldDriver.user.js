@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.1.4
+// @version      2.1.5
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -30,6 +30,10 @@
 // @include     http*://*/vl_genre*
 // @include     http*://*/vl_star*
 // @include     http*://*/?v=jav*
+// @include     http*://*/mv_owned*
+// @include     http*://*/mv_watched*
+// @include     http*://*/mv_wanted*
+// @include     http*://*/mv_visited*
 
 // @include     http*://www.*bus*/*
 // @include     http*://www.*dmm*/*
@@ -59,6 +63,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.1.5 增加点击番号完成复制功能。
 // v2.1.3 增加btdigg磁链资源站点。修复了已知问题。
 // v2.1.2 修改搜索磁链的资源站点问题。
 // v2.1.1 增加jav站点瀑布流控制按钮功能。
@@ -231,7 +236,7 @@
 
                                     //将新img元素插入指定位置
                                     func($img);
-                                    console.log("时间444444:" + new Date().getTime());
+                                    console.log("时间238:" + new Date().getTime());
                                 }
                             },
                             onerror: function (e) {
@@ -358,7 +363,7 @@
             type: 0,
             re: /.*movie.*/,
             vid: function () {
-                return $('.header_hobby')[0].nextElementSibling.innerHTML;
+                return $('.header_hobby')[0].nextElementSibling.getAttribute("avid");
             },
             proc: function () {
                 //insert_after('#movie-share');
@@ -372,7 +377,7 @@
             re: /bus|dmm/,
             vid: function () {
                 var a = $('.header_hobby')[0].nextElementSibling;
-                return a ? a.textContent : '';
+                return a ? a.getAttribute("avid") : '';
             },
             proc: function () {
                 var divE = $("div[class='col-md-3 info']")[0];
@@ -386,7 +391,7 @@
             type: 0,
             re: /.*\?v=jav.*/,
             vid: function () {
-                return $('#video_id')[0].getElementsByClassName('text')[0].innerHTML;
+                return $('#video_id')[0].getElementsByClassName('text')[0].getAttribute("avid");
             },
             proc: function () {
                 //insert_after('#video_info');
@@ -458,12 +463,14 @@
                     if (!z) {
                         alert("search engine not found");
                     }
+                    //debugger;
                     return z(kw, cb);
                 },
                 parse_error: function (a) {
                     alert("调用搜索引擎错误，可能需要更新，请向作者反馈。i=" + a);
                 },
                 full_url: '',
+                search_name_string:["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"],
                 0: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: 'GET',
@@ -596,12 +603,14 @@
                 4: function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
-                        url: "http://btlibrary.xyz",
+                        url: "http://btlibrary.xyz/",
                         data: "keyword=" + kw,
                         headers: {
-                            "Content-Type": "application/x-www-form-urlencoded"
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            withCredentials:true
                         },
                         onload: function (result) {
+                            console.log(result);
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
                             let data = [];
@@ -630,10 +639,14 @@
                         url: "http://cnbtkitty.pw/", //地址不对则无法搜索
                         data: "keyword=" + kw + "&hidden=true",
                         headers: {
-                            "Content-Type": "application/x-www-form-urlencoded"
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            withCredentials:true,
+                            Origin: "http://cnbtkitty.pw"
                         },
                         onload: function (result) {
-                            //console.log(result.responseHeaders);
+                            console.log("642:" + result.finalUrl);
+                            console.log(result);
+                            debugger;
                             let hostString = "cnbtkitty.pw";
 
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -654,7 +667,7 @@
                                 }
                             }
 
-                            cb(result.finalUrl, data);
+                            cb(result.finalUrl, data); // todo 181224
                         },
                         onerror: function (e) {
                             console.error(e);
@@ -668,9 +681,11 @@
                         url: "http://btdiggs.xyz/", //地址不对则无法搜索
                         data: "keyword=" + kw + "&hidden=true",
                         headers: {
-                            "Content-Type": "application/x-www-form-urlencoded"
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            withCredentials:true
                         },
                         onload: function (result) {
+                            console.log(result);
                             //console.log(result.responseHeaders);
                             let hostString = "btdiggs.xyz";
 
@@ -717,7 +732,7 @@
                             var b = this.head.cloneNode(true);
                             if (i === 0) {
                                 var select = document.createElement("select");
-                                var ops = ["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"];
+                                var ops = thirdparty.nong.search_engines.search_name_string;
                                 var cur_index = GM_getValue("search_index", 0);
                                 for (var j = 0; j < ops.length; j++) {
                                     var op = document.createElement("option");
@@ -1017,25 +1032,32 @@
 
                                 ].join(''));
                                 main.cur_tab = thirdparty.nong.magnet_table.full();
-                                console.log('挊的番号：', main.cur_vid);
+                                console.log('h1026 挊的番号：', main.cur_vid);
                                 v.proc();
 
                                 // console.log(main.cur_tab)
                                 let t = $('#jav-nong-head')[0].firstChild;
                                 t.firstChild.addEventListener('change', function (e) {
-                                    console.log(e.target.value);
+                                    //debugger;
+                                    console.log("a1033:" + e.target.value);
                                     GM_setValue('search_index', e.target.value);
                                     let s = $('#nong-table-new')[0];
                                     s.parentElement.removeChild(s);
                                     thirdparty.nong.searchMagnetRun();
                                 });
 
+                                //debugger;
+
                                 thirdparty.nong.search_engines.cur_engine(main.cur_vid, function (src, data) {
-                                    console.log(src);
+
                                     if (data.length === 0) {
-                                        $('#nong-table-new')[0].querySelectorAll('#notice')[0].textContent = 'No search result';
+                                        debugger;
+                                        console.log("111:" + src);
+                                        $('#nong-table-new')[0].querySelectorAll('#notice')[0].textContent = 'No search result';   //todo 181224
                                     }
                                     else {
+                                        debugger;
+                                        console.log("222:" + src);
                                         thirdparty.nong.magnet_table.updata_table(src, data, 'full');
                                         /*display search url*/
                                         var y = $('#jav-nong-head th')[1].firstChild;
@@ -1951,13 +1973,26 @@
 
             //var AVID = "";
             //获取番号影片详情页的番号  例如：https://www.javbus.com/CHN-141 || ttp://www.javlibrary.com/cn/?v=javlilzo4e
-            if ($('.header').length) {
+            if ($('.header').length && $('meta[name="keywords"]').length) {
                 let AVID = $('.header')[0].nextElementSibling.textContent;
+
+                // 实现点击番号复制到系统剪贴板 todo 181221v1
+                $('.header')[0].nextElementSibling.id = "avid";
+                $('#avid').empty().attr("title","点击复制番号").attr("avid", AVID);
+
+                let a_avid = document.createElement('a');
+                $(a_avid).attr("href", "#").append(AVID + "<span style='color:red;'>(点击复制)</span>");
+                $(a_avid).click(function () {
+                        GM_setClipboard($('#avid').attr("avid"));
+                    });
+                $('#avid').append(a_avid);
 
                 window.onload = function () {
                     $('iframe').remove();
                 };
+
                 $($('.header')[0]).attr("class", "header_hobby");
+
 
                 // 只支持javlibray处理已阅影片
                 if (document.title.search(/JAVLibrary/) > 0) {
