@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.1.5
+// @version      2.1.6
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -442,6 +442,286 @@
 
     // 第三方脚本调用
     var thirdparty = {
+        // javbus详情页增加多类别联合查找功能
+        busTypeSearch : function () {
+            let se = () => {
+                let curGenres = '', a = document.querySelectorAll('input[name="gr_sel"]:checked'), arr = [];
+                a.forEach(e => {
+                    arr.push(e.value);
+                });
+                //console.log(arr.join('-'));
+                arr = arr.join('-');
+                if (arr[0]) {
+                    window.location.href = 'genre/' + arr;
+                }
+            };
+            let CreateSearch = () => {         //get <p>
+                let p = document.querySelector('span.genre > a[href*="https://www.javbus.com/genre/"]');
+                if (!p) return;
+                p = p.parentNode.parentNode;
+                p.querySelectorAll('a').forEach(e => {
+                    let i = document.createElement('input'), val = e.href.split('/');             //https://www.javbus.com/genre/4 --> get > 4
+                    val = val[val.length - 1];
+                    i.setAttribute('type', 'checkbox');
+                    i.setAttribute('name', 'gr_sel');
+                    i.setAttribute('value', val);
+                    i.setAttribute('style', 'margin-right: 5px;');
+                    e.parentNode.insertBefore(i, e);
+                });
+                let a = document.createElement('a');
+                a.setAttribute('style', 'cursor: pointer; display: block; color: blue;');
+                a.textContent = '搜索';
+                p.appendChild(a);
+                a.addEventListener('click', se, false);
+            };
+            CreateSearch();
+        },
+        // 登录115执行脚本，自动离线下载准备步骤
+        login115Run: function () {
+            jav_userID = GM_getValue('jav_user_id', 0); //115用户ID缓存
+            //获取115ID
+            if (jav_userID === 0) {
+                if (location.host.indexOf('115.com') >= 0) {
+                    if (typeof (window.wrappedJSObject.user_id) != 'undefined') {
+                        jav_userID = window.wrappedJSObject.user_id;
+                        GM_setValue('jav_user_id', jav_userID);
+                        alert('115登陆成功！');
+                        return;
+                    }
+                } else {
+                    //alert('请先登录115账户！');
+                    Common.notifiy("115还没有登录",
+                        '请先登录115账户后,再离线下载！',
+                        icon,
+                        'http://115.com/?mode=login'
+                    );
+                    GM_setValue('jav_user_id', 0);
+                }
+            }
+
+            if (location.host.indexOf('115.com') >= 0) {
+                /*if(location.href.indexOf('#115helper') < 0)
+                {
+                    console.log("jav老司机:115.com, 不初始化.");
+                    return false;
+                }*/
+                console.log('jav老司机:115.com,尝试获取userid.');
+                jav_userID = GM_getValue('jav_user_id', 0);
+                //debugger;
+                if (jav_userID !== 0) {
+                    console.log("jav老司机: 115账号:" + jav_userID + ",无需初始化.");
+                    return false;
+                }
+                jav_userID = $.cookie("OOFL");
+                console.log("jav老司机: 115账号:" + jav_userID);
+                if (!jav_userID) {
+                    console.log("jav老司机: 尚未登录115账号");
+                    return false;
+                } else {
+                    console.log("jav老司机: 初始化成功");
+                    Common.notifiy('老司机自动开车', '登陆初始化成功,赶紧上车把!', icon, "");
+                    GM_setValue('jav_user_id', jav_userID);
+                }
+                return false;
+            }
+        },
+        // 瀑布流脚本
+        waterfallScrollInit: function () {
+
+            var w = new thirdparty.waterfall({});
+            // javbus.com、avmo.pw、avso.pw
+            var $pages = $('div#waterfall div.item');
+            if ($pages.length) {
+                // javbus.com
+                if ($('a#next').length) {
+                    w = new thirdparty.waterfall({
+                        next: 'a#next',
+                        item: 'div#waterfall div.item',
+                        cont: '#waterfall',
+                        pagi: '.pagination-lg',
+                    });
+                }
+                //avmo.pw、avso.pw
+                if ($('a[name="nextpage"]').length) {
+                    w = new thirdparty.waterfall({
+                        next: 'a[name="nextpage"]',//nextpage
+                        item: 'div#waterfall div.item',
+                        cont: '#waterfall',
+                        pagi: '.pagination',
+                    });
+                }
+            }
+
+            // javlibrary
+            var $pages2 = $('div.videos div.video');
+            if ($pages2.length) {
+                GM_addStyle([
+                    '.videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}',
+                ].join(''));
+                $pages2[0].parentElement.id = "waterfall";
+                w = new thirdparty.waterfall({
+                    next: 'a[class="page next"]',
+                    item: 'div.videos div.video',
+                    cont: '#waterfall',
+                    pagi: '.page_selector',
+                });
+            }
+
+
+            w.setSecondCallback(function (cont, elems) {
+                if (location.pathname.includes('/star/')) {
+                    cont.append(elems.slice(1));
+                } else {
+                    cont.append(elems);
+                }
+            });
+
+            w.setThirdCallback(function (elems) {
+                // hobby mod script
+                function filerMonth(indexCd_id, dateString) {
+                    //过滤最新X月份的影片
+                    if ($(indexCd_id).context.URL.indexOf("bestrated.php?delete") > 0) {
+                        if ($(indexCd_id).context.URL.indexOf("bestrated.php?deleteOneMonthAway") > 0 && !Common.isLastXMonth(dateString, 1)) {
+                            $(indexCd_id).remove();
+                        }
+                        else if ($(indexCd_id).context.URL.indexOf("bestrated.php?deleteTwoMonthAway") > 0 && !Common.isLastXMonth(dateString, 2)) {
+                            $(indexCd_id).remove();
+                        }
+                    }
+                };
+
+                function filerScore(indexCd_id, pingfengString) {
+                    //过滤X评分以下的影片
+                    //if(vid == 'javlikq7qu')debugger;
+                    if ($(indexCd_id).context.URL.indexOf("?delete") > 0) {
+                        if ($(indexCd_id).context.URL.indexOf("delete8down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 8) {
+                            //debugger;
+                            $(indexCd_id).remove();
+                        }
+                        else if ($(indexCd_id).context.URL.indexOf("delete9down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 9) {
+                            $(indexCd_id).remove();
+                        }
+                    }
+                };
+
+                function setbgcolor(indexCd_id, dateString) {
+                    // 如果是最近两个月份的影片标上背景色
+                    if ($(indexCd_id).context.URL.indexOf("bestrated") > 0 && Common.isLastXMonth(dateString, 2)) {
+                        //$(indexCd_id).css("background-color", "blanchedalmond");
+                        $('div[style="color: red;"]', $(indexCd_id)).css("background-color", "yellow");
+                        //debugger;
+                    }
+                };
+
+                if (document.title.search(/JAVLibrary/) > 0 && elems) {
+                    for (let i = 0; i < elems.length; i++) {
+                        let _vid = $(elems[i]).attr("id").replace('vid_', '');//vid_javlikd42y
+                        // 给列表中的影片添加鼠标点击事件
+                        $("a", $("#vid_" + _vid)).first().mousedown(function (event) {
+                            // 判断鼠标左键或中间才执行
+                            if (event.button < 2) {
+                                // 设置点击后填充新的背景色peachpuff
+                                $("#vid_" + _vid).css("background-color", "peachpuff");
+                            }
+                        });
+
+                        // 查找影片是否存在我浏览过的表中
+                        MyBrowse.findBy(persistence, null, 'index_cd', _vid, function (findObj) {
+                            //debugger;
+                            if (findObj) {//存在
+                                //debugger;
+                                let indexCd_id = "#vid_" + findObj.index_cd;
+                                if ($(indexCd_id).context.URL.indexOf("bestrated.php?filterMyBrowse") > 0) {
+                                    $(indexCd_id).remove();
+                                }
+                                else {
+                                    // 查找影片是否存在我的影片资料表中
+                                    MyMovie.findBy(persistence, null, 'index_cd', findObj.index_cd, function (findObj) {
+                                        if (findObj) {//存在
+                                            let indexCd_id = "#vid_" + findObj.index_cd;
+                                            $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
+                                            $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + findObj.release_date + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + findObj.score + "</div>");
+                                            $(indexCd_id).children("a").attr("release_date", findObj.release_date);
+
+                                            let r = Math.random() / 100;
+                                            let s = 0;
+                                            if (findObj.score.replace(/[\\(\\)]/g, "") != '') {
+                                                s = r + parseFloat(findObj.score.replace(/[\\(\\)]/g, ""));
+                                            }
+                                            else {
+                                                s = 0 + r;
+                                            }
+                                            $(indexCd_id).children("a").attr("score", s);
+
+                                            setbgcolor(indexCd_id, findObj.release_date);
+                                            filerMonth(indexCd_id, findObj.release_date);
+                                            filerScore(indexCd_id, findObj.score);
+                                        }
+                                        else {//不存在
+                                            // 加入影片资料到表中
+                                            //debugger;
+                                            addMovie(_vid);
+                                            persistence.flush();
+                                        }
+                                    });
+                                }
+                            }
+                            else {//不存在
+                                //console.log(`vid = ${_vid}`);
+                                //debugger;
+                                //异步请求调用内页详情的访问地址
+                                //debugger;
+                                GM_xmlhttpRequest({
+                                    method: "GET",
+                                    //内页地址
+                                    url: location.origin + "/cn/?v=" + _vid,
+                                    onload: function (result) {
+                                        let vid = result.finalUrl.split("=")[1];//例如：http://www.j12lib.com/cn/?v=javlikd42a
+                                        let bodyStr = result.responseText;
+                                        let date_idx = bodyStr.search(/"video_date" class="item"/);//<span class="score">(9.70)</span>
+                                        let yixieBody = bodyStr.substring(date_idx, bodyStr.search(/"video_genres"/));
+                                        let dateString = yixieBody.substring(yixieBody.indexOf('video_date') + 92, yixieBody.indexOf('video_date') + 102);
+                                        let pingfengString = "";
+                                        if (yixieBody.indexOf('score">') > 0) {
+                                            pingfengString = yixieBody.substring(yixieBody.indexOf('score">') + 7, yixieBody.indexOf('score">') + 14).replace('</span>', '').replace('<', '');
+                                        }
+                                        let indexCd_id = "#vid_" + vid;
+                                        $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + dateString + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
+
+                                        $(indexCd_id).children("a").attr("release_date", dateString);
+
+                                        let r = Math.random() / 100;
+                                        let s = 0;
+                                        if (pingfengString.replace(/[\\(\\)]/g, "") != '') {
+                                            s = r + parseFloat(pingfengString.replace(/[\\(\\)]/g, ""));
+                                        }
+                                        else {
+                                            s = 0 + r;
+                                        }
+                                        $(indexCd_id).children("a").attr("score", s);
+
+                                        setbgcolor(indexCd_id, dateString);
+                                        filerMonth(indexCd_id, dateString);
+                                        filerScore(indexCd_id, pingfengString);
+                                    },
+                                    onerror: function (e) {
+                                        console.log(e);
+                                    }
+                                });//end  GM_xmlhttpRequest
+                            }
+                        });
+
+                    }
+                }
+            });
+            // javbus.com、avmo.pw、avso.pw 样式
+            GM_addStyle([
+                '#waterfall {height: initial !important;width: initial !important;display: flex;flex-direction: row;flex-wrap: wrap;}',
+                '#waterfall .item.item {position: relative !important;top: initial !important;left: initial !important;float: none;flex: 20%;}',
+                '#waterfall .movie-box,#waterfall .avatar-box {width: initial !important;display: flex;}',
+                '#waterfall .movie-box .photo-frame {overflow: visible;}',
+            ].join(''));
+        },
         // 挊
         nong: {
             offline_sites: {
@@ -1075,55 +1355,6 @@
                 }
             },
         },
-        // 登录115执行脚本，自动离线下载准备步骤
-        login115Run: function () {
-            jav_userID = GM_getValue('jav_user_id', 0); //115用户ID缓存
-            //获取115ID
-            if (jav_userID === 0) {
-                if (location.host.indexOf('115.com') >= 0) {
-                    if (typeof (window.wrappedJSObject.user_id) != 'undefined') {
-                        jav_userID = window.wrappedJSObject.user_id;
-                        GM_setValue('jav_user_id', jav_userID);
-                        alert('115登陆成功！');
-                        return;
-                    }
-                } else {
-                    //alert('请先登录115账户！');
-                    Common.notifiy("115还没有登录",
-                        '请先登录115账户后,再离线下载！',
-                        icon,
-                        'http://115.com/?mode=login'
-                    );
-                    GM_setValue('jav_user_id', 0);
-                }
-            }
-
-            if (location.host.indexOf('115.com') >= 0) {
-                /*if(location.href.indexOf('#115helper') < 0)
-                {
-                    console.log("jav老司机:115.com, 不初始化.");
-                    return false;
-                }*/
-                console.log('jav老司机:115.com,尝试获取userid.');
-                jav_userID = GM_getValue('jav_user_id', 0);
-                //debugger;
-                if (jav_userID !== 0) {
-                    console.log("jav老司机: 115账号:" + jav_userID + ",无需初始化.");
-                    return false;
-                }
-                jav_userID = $.cookie("OOFL");
-                console.log("jav老司机: 115账号:" + jav_userID);
-                if (!jav_userID) {
-                    console.log("jav老司机: 尚未登录115账号");
-                    return false;
-                } else {
-                    console.log("jav老司机: 初始化成功");
-                    Common.notifiy('老司机自动开车', '登陆初始化成功,赶紧上车把!', icon, "");
-                    GM_setValue('jav_user_id', jav_userID);
-                }
-                return false;
-            }
-        },
         // 瀑布流脚本
         waterfall: (function () {
             function waterfall(selectorcfg = {}) {
@@ -1263,203 +1494,6 @@
 
             return waterfall;
         })(),
-        // 瀑布流脚本
-        waterfallScrollInit: function () {
-
-                var w = new thirdparty.waterfall({});
-                // javbus.com、avmo.pw、avso.pw
-                var $pages = $('div#waterfall div.item');
-                if ($pages.length) {
-                    // javbus.com
-                    if ($('a#next').length) {
-                        w = new thirdparty.waterfall({
-                            next: 'a#next',
-                            item: 'div#waterfall div.item',
-                            cont: '#waterfall',
-                            pagi: '.pagination-lg',
-                        });
-                    }
-                    //avmo.pw、avso.pw
-                    if ($('a[name="nextpage"]').length) {
-                        w = new thirdparty.waterfall({
-                            next: 'a[name="nextpage"]',//nextpage
-                            item: 'div#waterfall div.item',
-                            cont: '#waterfall',
-                            pagi: '.pagination',
-                        });
-                    }
-                }
-
-                // javlibrary
-                var $pages2 = $('div.videos div.video');
-                if ($pages2.length) {
-                    GM_addStyle([
-                        '.videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}',
-                    ].join(''));
-                    $pages2[0].parentElement.id = "waterfall";
-                    w = new thirdparty.waterfall({
-                        next: 'a[class="page next"]',
-                        item: 'div.videos div.video',
-                        cont: '#waterfall',
-                        pagi: '.page_selector',
-                    });
-                }
-
-
-            w.setSecondCallback(function (cont, elems) {
-                if (location.pathname.includes('/star/')) {
-                    cont.append(elems.slice(1));
-                } else {
-                    cont.append(elems);
-                }
-            });
-
-            w.setThirdCallback(function (elems) {
-                // hobby mod script
-                function filerMonth(indexCd_id, dateString) {
-                    //过滤最新X月份的影片
-                    if ($(indexCd_id).context.URL.indexOf("bestrated.php?delete") > 0) {
-                        if ($(indexCd_id).context.URL.indexOf("bestrated.php?deleteOneMonthAway") > 0 && !Common.isLastXMonth(dateString, 1)) {
-                            $(indexCd_id).remove();
-                        }
-                        else if ($(indexCd_id).context.URL.indexOf("bestrated.php?deleteTwoMonthAway") > 0 && !Common.isLastXMonth(dateString, 2)) {
-                            $(indexCd_id).remove();
-                        }
-                    }
-                };
-
-                function filerScore(indexCd_id, pingfengString) {
-                    //过滤X评分以下的影片
-                    //if(vid == 'javlikq7qu')debugger;
-                    if ($(indexCd_id).context.URL.indexOf("?delete") > 0) {
-                        if ($(indexCd_id).context.URL.indexOf("delete8down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 8) {
-                            //debugger;
-                            $(indexCd_id).remove();
-                        }
-                        else if ($(indexCd_id).context.URL.indexOf("delete9down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 9) {
-                            $(indexCd_id).remove();
-                        }
-                    }
-                };
-
-                function setbgcolor(indexCd_id, dateString) {
-                    // 如果是最近两个月份的影片标上背景色
-                    if ($(indexCd_id).context.URL.indexOf("bestrated") > 0 && Common.isLastXMonth(dateString, 2)) {
-                        //$(indexCd_id).css("background-color", "blanchedalmond");
-                        $('div[style="color: red;"]', $(indexCd_id)).css("background-color", "yellow");
-                        //debugger;
-                    }
-                };
-
-                if (document.title.search(/JAVLibrary/) > 0 && elems) {
-                    for (let i = 0; i < elems.length; i++) {
-                        let _vid = $(elems[i]).attr("id").replace('vid_', '');//vid_javlikd42y
-                        // 给列表中的影片添加鼠标点击事件
-                        $("a", $("#vid_" + _vid)).first().mousedown(function (event) {
-                            // 判断鼠标左键或中间才执行
-                            if (event.button < 2) {
-                                // 设置点击后填充新的背景色peachpuff
-                                $("#vid_" + _vid).css("background-color", "peachpuff");
-                            }
-                        });
-
-                        // 查找影片是否存在我浏览过的表中
-                        MyBrowse.findBy(persistence, null, 'index_cd', _vid, function (findObj) {
-                            //debugger;
-                            if (findObj) {//存在
-                                //debugger;
-                                let indexCd_id = "#vid_" + findObj.index_cd;
-                                if ($(indexCd_id).context.URL.indexOf("bestrated.php?filterMyBrowse") > 0) {
-                                    $(indexCd_id).remove();
-                                }
-                                else {
-                                    // 查找影片是否存在我的影片资料表中
-                                    MyMovie.findBy(persistence, null, 'index_cd', findObj.index_cd, function (findObj) {
-                                        if (findObj) {//存在
-                                            let indexCd_id = "#vid_" + findObj.index_cd;
-                                            $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
-                                            $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + findObj.release_date + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + findObj.score + "</div>");
-                                            $(indexCd_id).children("a").attr("release_date", findObj.release_date);
-
-                                            let r = Math.random() / 100;
-                                            let s = 0;
-                                            if (findObj.score.replace(/[\\(\\)]/g, "") != '') {
-                                                s = r + parseFloat(findObj.score.replace(/[\\(\\)]/g, ""));
-                                            }
-                                            else {
-                                                s = 0 + r;
-                                            }
-                                            $(indexCd_id).children("a").attr("score", s);
-
-                                            setbgcolor(indexCd_id, findObj.release_date);
-                                            filerMonth(indexCd_id, findObj.release_date);
-                                            filerScore(indexCd_id, findObj.score);
-                                        }
-                                        else {//不存在
-                                            // 加入影片资料到表中
-                                            //debugger;
-                                            addMovie(_vid);
-                                            persistence.flush();
-                                        }
-                                    });
-                                }
-                            }
-                            else {//不存在
-                                //console.log(`vid = ${_vid}`);
-                                //debugger;
-                                //异步请求调用内页详情的访问地址
-                                //debugger;
-                                GM_xmlhttpRequest({
-                                    method: "GET",
-                                    //内页地址
-                                    url: location.origin + "/cn/?v=" + _vid,
-                                    onload: function (result) {
-                                        let vid = result.finalUrl.split("=")[1];//例如：http://www.j12lib.com/cn/?v=javlikd42a
-                                        let bodyStr = result.responseText;
-                                        let date_idx = bodyStr.search(/"video_date" class="item"/);//<span class="score">(9.70)</span>
-                                        let yixieBody = bodyStr.substring(date_idx, bodyStr.search(/"video_genres"/));
-                                        let dateString = yixieBody.substring(yixieBody.indexOf('video_date') + 92, yixieBody.indexOf('video_date') + 102);
-                                        let pingfengString = "";
-                                        if (yixieBody.indexOf('score">') > 0) {
-                                            pingfengString = yixieBody.substring(yixieBody.indexOf('score">') + 7, yixieBody.indexOf('score">') + 14).replace('</span>', '').replace('<', '');
-                                        }
-                                        let indexCd_id = "#vid_" + vid;
-                                        $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + dateString + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
-
-                                        $(indexCd_id).children("a").attr("release_date", dateString);
-
-                                        let r = Math.random() / 100;
-                                        let s = 0;
-                                        if (pingfengString.replace(/[\\(\\)]/g, "") != '') {
-                                            s = r + parseFloat(pingfengString.replace(/[\\(\\)]/g, ""));
-                                        }
-                                        else {
-                                            s = 0 + r;
-                                        }
-                                        $(indexCd_id).children("a").attr("score", s);
-
-                                        setbgcolor(indexCd_id, dateString);
-                                        filerMonth(indexCd_id, dateString);
-                                        filerScore(indexCd_id, pingfengString);
-                                    },
-                                    onerror: function (e) {
-                                        console.log(e);
-                                    }
-                                });//end  GM_xmlhttpRequest
-                            }
-                        });
-
-                    }
-                }
-            });
-            // javbus.com、avmo.pw、avso.pw 样式
-            GM_addStyle([
-                '#waterfall {height: initial !important;width: initial !important;display: flex;flex-direction: row;flex-wrap: wrap;}',
-                '#waterfall .item.item {position: relative !important;top: initial !important;left: initial !important;float: none;flex: 20%;}',
-                '#waterfall .movie-box,#waterfall .avatar-box {width: initial !important;display: flex;}',
-                '#waterfall .movie-box .photo-frame {overflow: visible;}',
-            ].join(''));
-        },
     };
 
     function loadData(pageName, func) {
@@ -1681,6 +1715,8 @@
         }
     }
 
+
+
     function mainRun() {
         if (location.host.indexOf('115.com') >= 0) {
             thirdparty.login115Run();
@@ -1721,7 +1757,8 @@
 
             if (document.title.search(/JAVLibrary/) > 0) {
 
-                if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre|vl_searchbycombo)/g).test(document.URL)) {
+                if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre|vl_searchbycombo|mv_owned|mv_watched|mv_wanted|mv_visited)/g)
+                        .test(document.URL)) {
 
                     // 指定站点页面加入瀑布流控制按钮
                     $(".displaymode .right").append($(a3));
@@ -1976,7 +2013,7 @@
 
 
             //var AVID = "";
-            //获取番号影片详情页的番号  例如：https://www.javbus.com/CHN-141 || ttp://www.javlibrary.com/cn/?v=javlilzo4e
+            //获取番号影片详情页的番号  例如：https://www.javbus.com/AVVR-323 || http://www.javlibrary.com/cn/?v=javli7j724
             if ($('.header').length && $('meta[name="keywords"]').length) {
                 let AVID = $('.header')[0].nextElementSibling.textContent;
 
@@ -2065,38 +2102,6 @@
                                 this.parentElement.parentElement.scrollIntoView();
                             }
                         });
-
-                        let se = () => {
-                            let curGenres = '', a = document.querySelectorAll('input[name="gr_sel"]:checked'), arr = [];
-                            a.forEach(e => {
-                                arr.push(e.value);
-                            });
-                            //console.log(arr.join('-'));
-                            arr = arr.join('-');
-                            if (arr[0]) {
-                                window.location.href = 'genre/' + arr;
-                            }
-                        };
-                        let CreateSearch = () => {         //get <p>
-                            let p = document.querySelector('span.genre > a[href*="https://www.javbus.com/genre/"]');
-                            if (!p) return;
-                            p = p.parentNode.parentNode;
-                            p.querySelectorAll('a').forEach(e => {
-                                let i = document.createElement('input'), val = e.href.split('/');             //https://www.javbus.com/genre/4 --> get > 4
-                                val = val[val.length - 1];
-                                i.setAttribute('type', 'checkbox');
-                                i.setAttribute('name', 'gr_sel');
-                                i.setAttribute('value', val);
-                                i.setAttribute('style', 'margin-right: 5px;');
-                                e.parentNode.insertBefore(i, e);
-                            });
-                            let a = document.createElement('a');
-                            a.setAttribute('style', 'cursor: pointer; display: block; color: blue;');
-                            a.textContent = '搜索';
-                            p.appendChild(a);
-                            a.addEventListener('click', se, false);
-                        };
-                        CreateSearch();
                     }
                     // http://www.javlibrary.com/cn/?v=javlilzo4e
                     divEle = $("div[id='video_favorite_edit']")[0];
@@ -2113,6 +2118,7 @@
                 });
 
 
+                thirdparty.busTypeSearch();
                 // 修改javbus磁链列表头，增加两列
                 $('#magnet-table tbody tr').append('<td style="text-align:center;white-space:nowrap">操作</td><td style="text-align:center;white-space:nowrap">离线下载</td>');
                 // 先执行一次，针对已经提前加载出磁链列表结果时有效
