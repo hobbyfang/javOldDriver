@@ -459,7 +459,8 @@
                     return i;
                 },
                 cur_engine: function (kw, cb) {
-                    var z = this[GM_getValue('search_index', 0)];
+                    var z = thirdparty.nong.resource_sites[GM_getValue('search_index', "btsow.pw")];
+                    //debugger;
                     if (!z) {
                         alert("search engine not found");
                     }
@@ -470,71 +471,74 @@
                     alert("调用搜索引擎错误，可能需要更新，请向作者反馈。i=" + a);
                 },
                 full_url: '',
-                search_name_string:["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"],
-                0: function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: 'GET',
-                        url: 'https://btsow.pw/search/' + kw,
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            var doc = Common.parsetext(result.responseText);
-                            if (!doc) {
-                                thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
-                            }
-                            var data = [];
-                            var t = doc.getElementsByClassName('data-list')[0];
-                            if (t) {
-                                var a = t.getElementsByTagName('a');
-                                for (var i = 0; i < a.length; i++) {
-                                    if (!a[i].className.match('btn')) {
-                                        data.push({
-                                            'title': a[i].title,
-                                            'maglink': 'magnet:?xt=urn:btih:' + a[i].outerHTML.replace(/.*hash\//, '').replace(/" .*\n.*\n.*\n.*/, ''),
-                                            'size': a[i].nextElementSibling.textContent,
-                                            'src': a[i].href,
-                                        });
-                                    }
-                                }
-                            }
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.log(e);
-                        }
-                    });
-                },
-                1: function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: 'GET',
-                        url: 'https://btdb.to/q/' + kw + '/',
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            var doc = Common.parsetext(result.responseText);
-                            if (!doc) {
-                                thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
-                            }
-                            var data = [];
-                            var elems = doc.getElementsByClassName('item-title');
-                            for (var i = 0; i < elems.length; i++) {
-                                data.push({
-                                    'title': elems[i].firstChild.title,
-                                    'maglink': elems[i].nextElementSibling.firstElementChild.href,
-                                    'size': elems[i].nextElementSibling.children[1].textContent,
-                                    'src': 'https://btdb.to' + elems[i].firstChild.getAttribute('href'),
-                                });
-                            }
 
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.log(e);
-                        }
-                    });
-                },
-                2: function (kw, cb) {
+            },
+            resource_sites:{
+                //search_name_string:["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"],
+                // "btsow.pw": function (kw, cb) {
+                //     GM_xmlhttpRequest({
+                //         method: 'GET',
+                //         url: 'https://" + GM_getValue('search_index') + "/search/' + kw,
+                //         onload: function (result) {
+                //             thirdparty.nong.search_engines.full_url = result.finalUrl;
+                //             var doc = Common.parsetext(result.responseText);
+                //             if (!doc) {
+                //                 thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
+                //             }
+                //             var data = [];
+                //             var t = doc.getElementsByClassName('data-list')[0];
+                //             if (t) {
+                //                 var a = t.getElementsByTagName('a');
+                //                 for (var i = 0; i < a.length; i++) {
+                //                     if (!a[i].className.match('btn')) {
+                //                         data.push({
+                //                             'title': a[i].title,
+                //                             'maglink': 'magnet:?xt=urn:btih:' + a[i].outerHTML.replace(/.*hash\//, '').replace(/" .*\n.*\n.*\n.*/, ''),
+                //                             'size': a[i].nextElementSibling.textContent,
+                //                             'src': a[i].href,
+                //                         });
+                //                     }
+                //                 }
+                //             }
+                //             cb(result.finalUrl, data);
+                //         },
+                //         onerror: function (e) {
+                //             console.log(e);
+                //         }
+                //     });
+                // },
+                // "btdb.to": function (kw, cb) {
+                //     GM_xmlhttpRequest({
+                //         method: 'GET',
+                //         url: 'https://" + GM_getValue('search_index') + "/q/' + kw + '/',
+                //         onload: function (result) {
+                //             thirdparty.nong.search_engines.full_url = result.finalUrl;
+                //             var doc = Common.parsetext(result.responseText);
+                //             if (!doc) {
+                //                 thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
+                //             }
+                //             var data = [];
+                //             var elems = doc.getElementsByClassName('item-title');
+                //             for (var i = 0; i < elems.length; i++) {
+                //                 data.push({
+                //                     'title': elems[i].firstChild.title,
+                //                     'maglink': elems[i].nextElementSibling.firstElementChild.href,
+                //                     'size': elems[i].nextElementSibling.children[1].textContent,
+                //                     'src': 'https://btdb.to' + elems[i].firstChild.getAttribute('href'),
+                //                 });
+                //             }
+                //
+                //             cb(result.finalUrl, data);
+                //         },
+                //         onerror: function (e) {
+                //             console.log(e);
+                //         }
+                //     });
+                // },
+                "sukebei.nyaa.si": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "GET",
-                        url: "https://sukebei.nyaa.si/?f=0&c=0_0&q=" + kw,
+                        url: "https://" + GM_getValue('search_index') + "/?f=0&c=0_0&q=" + kw,
                         onload: function (result) {
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
@@ -564,10 +568,10 @@
                         }
                     });
                 },
-                3: function (kw, cb) {
+                "www.torrentkitty.tv": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "GET",
-                        url: "https://www.torrentkitty.tv/search/" + kw,
+                        url: "https://" + GM_getValue('search_index') + "/search/" + kw,
                         onload: function (result) {
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
@@ -600,10 +604,10 @@
                         }
                     });
                 },
-                4: function (kw, cb) {
+                "btlibrary.xyz": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
-                        url: "http://btlibrary.xyz/",
+                        url: "http://"+ GM_getValue('search_index') +"/",
                         data: "keyword=" + kw,
                         headers: {
                             "Content-Type": "application/x-www-form-urlencoded",
@@ -633,21 +637,21 @@
                         }
                     });
                 },
-                5: function (kw, cb) {
+                "cnbtkitty.pw": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
-                        url: "http://cnbtkitty.pw/", //地址不对则无法搜索
+                        url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
                         data: "keyword=" + kw + "&hidden=true",
                         headers: {
                             "Content-Type": "application/x-www-form-urlencoded",
                             withCredentials:true,
-                            Origin: "http://cnbtkitty.pw"
+                            Origin: "http://"+ GM_getValue('search_index')
                         },
                         onload: function (result) {
                             console.log("642:" + result.finalUrl);
                             console.log(result);
-                            debugger;
-                            let hostString = "cnbtkitty.pw";
+                            //debugger;
+                            let hostString = GM_getValue('search_index');
 
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
@@ -675,7 +679,7 @@
                         }
                     });
                 },
-                6: function (kw, cb) {
+                "btdiggs.xyz": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
                         url: "http://btdiggs.xyz/", //地址不对则无法搜索
@@ -732,13 +736,13 @@
                             var b = this.head.cloneNode(true);
                             if (i === 0) {
                                 var select = document.createElement("select");
-                                var ops = thirdparty.nong.search_engines.search_name_string;
-                                var cur_index = GM_getValue("search_index", 0);
+                                var ops = Object.keys(thirdparty.nong.resource_sites); // todo 181225
+                                var cur_index = GM_getValue("search_index", ops[0]);
                                 for (var j = 0; j < ops.length; j++) {
                                     var op = document.createElement("option");
-                                    op.value = j.toString();
+                                    op.value = ops[j];
                                     op.textContent = ops[j];
-                                    if (cur_index == j) {
+                                    if (cur_index == ops[j]) {
                                         op.setAttribute("selected", "selected");
                                     }
                                     select.appendChild(op);
@@ -1051,12 +1055,12 @@
                                 thirdparty.nong.search_engines.cur_engine(main.cur_vid, function (src, data) {
 
                                     if (data.length === 0) {
-                                        debugger;
+                                        //debugger;
                                         console.log("111:" + src);
                                         $('#nong-table-new')[0].querySelectorAll('#notice')[0].textContent = 'No search result';   //todo 181224
                                     }
                                     else {
-                                        debugger;
+                                        //debugger;
                                         console.log("222:" + src);
                                         thirdparty.nong.magnet_table.updata_table(src, data, 'full');
                                         /*display search url*/
