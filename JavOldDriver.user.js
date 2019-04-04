@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.1.7
+// @version      2.2.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -21,6 +21,7 @@
 // @include     http*://tellme.pw/avsox
 // @include     http*://tellme.pw/avmoo
 // @include     http*://115.com/*
+// @include     http*://*onejav.com/*
 
 // @include     http*://*/vl_update*
 // @include     http*://*/vl_newrelease*
@@ -63,6 +64,8 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.2.0 增加onejav网站内容排版的支持，热门Jav预览搜集更省时省力。更换两个磁链资源新地址。
+
 // v2.1.5 增加点击番号完成复制功能。
 // v2.1.3 增加btdigg磁链资源站点。修复了已知问题。
 // v2.1.2 修改搜索磁链的资源站点问题。
@@ -100,7 +103,7 @@
     // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
     // 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
     // 例子：
-    // (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423
+    // (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423f
     // (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
     Date.prototype.Format = function (fmt) { //author: meizz
         var o = {
@@ -179,11 +182,23 @@
             GM_notification(notificationDetails);
         },
         /**
+         * 获取带-的番号
+         * @param {String} avid 番号如:ABP888
+         * @returns {String}  带-的番号
+         */
+        getAvCode:function (avid) {
+            let letter = avid.match(/^[a-z|A-Z]+/gi);
+            let num = avid.match(/\d+$/gi);
+            return letter+"-"+num;
+        },
+        /**
          * 加入AV预览内容图
          * @param avid av唯一码
          * @param @function func 函数
+         * @param {boolean} isZoom 是否放大,默认true
          */
-        addAvImg: function (avid, func) {
+        addAvImg: function (avid, func, isZoom) {
+
             //异步请求搜索blogjav.net的番号
             GM_xmlhttpRequest({
                 method: "GET",
@@ -230,7 +245,11 @@
 
                                     //创建img元素,加载目标图片地址
                                     //创建新img元素
-                                    var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)"></img>');
+                                    let className = "";
+                                    if(isZoom != undefined && !isZoom){
+                                        className = "min";
+                                    }
+                                    var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)" class="' + className + '"></img>');
                                     $img.attr("src", targetImgUrl);
                                     $img.attr("style", "float: left;cursor: pointer;");
 
@@ -567,6 +586,47 @@
                 });
             }
 
+            // onejav
+            var $pages3 = $('div.container div.card.mb-3');
+            if ($pages3.length) {
+                $pages3[0].parentElement.id = "waterfall";
+                w = new thirdparty.waterfall({
+                    next: 'a.pagination-next.button.is-primary',
+                    item: 'div.container div.card.mb-3',
+                    cont: '#waterfall',
+                    pagi: '.pagination.is-centered',
+                });
+            }
+            //<a class="pagination-next button is-primary" href="?page=2">Next</a>
+            w.setFourthCallback(function (elems) { // todo 20190404
+                if (document.title.search(/OneJAV/) > 0 && elems) {
+                    // 增加对应所有番号的Javlib的跳转链接,
+                    for (let index = 0; index < elems.length; index++) {
+                        let aEle = $(elems[index]).find("h5.title.is-4.is-spaced a")[0];
+                        let avid = $(aEle).text().replace(/[ ]/g,"").replace(/[\r\n]/g,"")//去掉空格//去掉回车换行
+                        //修改样式
+                        $(aEle.parentElement.parentElement).attr("style","flex-direction: column;");
+                        // Javlib的跳转链接
+                        $(aEle.parentElement).append("<a style='color:red;' href='http://www.javlibrary.com/cn/vl_searchbyid.php?keyword="
+                            + Common.getAvCode(avid) +"&"+avid+ "' target='_blank' title='点击到Javlib看看'>&nbsp;&nbsp;Javlib</a>");
+                        // 番号预览大图
+                        Common.addAvImg(Common.getAvCode(avid), function ($img) {
+                            //debugger;
+                            let divEle = $(elems[index]).find("div.column.is-5")[0];
+                            if (divEle) {
+                                $(divEle).append($img);
+                                $img.click(function () {
+                                    //如果存在min就去除min,否则不存在则添加上min
+                                    $(this).toggleClass('min');
+                                    if ($(this).attr("class")) {
+                                        this.parentElement.parentElement.scrollIntoView();
+                                    }
+                                });
+                            }
+                        },false);
+                    }
+                }
+            });
 
             w.setSecondCallback(function (cont, elems) {
                 if (location.pathname.includes('/star/')) {
@@ -588,8 +648,7 @@
                             $(indexCd_id).remove();
                         }
                     }
-                };
-
+                }
                 function filerScore(indexCd_id, pingfengString) {
                     //过滤X评分以下的影片
                     //if(vid == 'javlikq7qu')debugger;
@@ -602,8 +661,7 @@
                             $(indexCd_id).remove();
                         }
                     }
-                };
-
+                }
                 function setbgcolor(indexCd_id, dateString) {
                     // 如果是最近两个月份的影片标上背景色
                     if ($(indexCd_id).context.URL.indexOf("bestrated") > 0 && Common.isLastXMonth(dateString, 2)) {
@@ -611,8 +669,7 @@
                         $('div[style="color: red;"]', $(indexCd_id)).css("background-color", "yellow");
                         //debugger;
                     }
-                };
-
+                }
                 if (document.title.search(/JAVLibrary/) > 0 && elems) {
                     for (let i = 0; i < elems.length; i++) {
                         let _vid = $(elems[i]).attr("id").replace('vid_', '');//vid_javlikd42y
@@ -714,13 +771,16 @@
                     }
                 }
             });
-            // javbus.com、avmo.pw、avso.pw 样式
-            GM_addStyle([
-                '#waterfall {height: initial !important;width: initial !important;display: flex;flex-direction: row;flex-wrap: wrap;}',
-                '#waterfall .item.item {position: relative !important;top: initial !important;left: initial !important;float: none;flex: 20%;}',
-                '#waterfall .movie-box,#waterfall .avatar-box {width: initial !important;display: flex;}',
-                '#waterfall .movie-box .photo-frame {overflow: visible;}',
-            ].join(''));
+
+            if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) {
+                // javbus.com、avmo.pw、avso.pw 样式
+                GM_addStyle([
+                    '#waterfall {height: initial !important;width: initial !important;display: flex;flex-direction: row;flex-wrap: wrap;}',
+                    '#waterfall .item.item {position: relative !important;top: initial !important;left: initial !important;float: none;flex: 20%;}',
+                    '#waterfall .movie-box,#waterfall .avatar-box {width: initial !important;display: flex;}',
+                    '#waterfall .movie-box .photo-frame {overflow: visible;}',
+                ].join(''));
+            }
         },
         // 挊
         nong: {
@@ -742,7 +802,10 @@
                     var z = thirdparty.nong.resource_sites[GM_getValue('search_index', "btsow.pw")];
                     //debugger;
                     if (!z) {
-                        alert("search engine not found");
+                        //alert("search engine not found");
+                        debugger;
+                        GM_setValue('search_index', Object.keys(thirdparty.nong.resource_sites)[0]);
+                        z = thirdparty.nong.resource_sites[GM_getValue('search_index')];
                     }
                     //debugger;
                     return z(kw, cb);
@@ -883,7 +946,7 @@
                 //     });
                 // },
 
-                "cnbtkitty.ws": function (kw, cb) {
+                "btkitty.pet": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
                         url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
@@ -926,7 +989,7 @@
                     });
                 },
                 //btdiggs.cc
-                "btdiggs.cc": function (kw, cb) {
+                "btdiggs.org": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
                         url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
@@ -1458,6 +1521,7 @@
                         this._count += 1;
                         // hobby mod script
                         this._3func(elems);
+                        this._4func(elems);
                     })
                     ;
                 }
@@ -1468,7 +1532,7 @@
                 console.info('The End');
                 document.removeEventListener('scroll', this.scroll.bind(this));
                 document.removeEventListener('wheel', this.wheel.bind(this));
-                let $end = $(`<h1>The End</h1>`)
+                let $end = $(`<h1>The End</h1>`);
                 $(this.anchor).replaceWith($end);
             };
             waterfall.prototype.reachBottom = function (elem, limit) {
@@ -1494,6 +1558,9 @@
             };
             waterfall.prototype.setThirdCallback = function (f) {
                 this._3func = f;
+            };
+            waterfall.prototype.setFourthCallback = function (f) {
+                this._4func = f;
             };
 
             return waterfall;
@@ -1552,7 +1619,7 @@
                     console.log('打开我想要的页面出现错误');
                 }
             });
-        }
+        };
 
         loadPageNumData(pageName, 1, function () {
             for (let i = 2; i < GM_getValue(pageName + "_pageNum") + 1; i++) {
@@ -2143,6 +2210,22 @@
             }
             thirdparty.nong.searchMagnetRun();
 
+            // 瀑布流脚本
+            thirdparty.waterfallScrollInit();
+        }
+
+        if ((/(OneJAV)/g).test(document.title)){ //todo 190404
+            GM_addStyle([
+                '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
+                '.column.is-5 {width: auto;max-width: 82%;}',
+                '.column {flex-basis: inherit;flex-grow: inherit;}',
+                '.container {max-width: 100%;width: 100%;}',
+                '.image {width: 800px;}',
+            ].join(''));
+            // 插入自己创建的div
+            $('div.container nav.pagination.is-centered').before("<div id='card' ></div>");
+            // 将所有番号内容移到新建的div里
+            $('div#card').append($('div.container div.card.mb-3'));
             // 瀑布流脚本
             thirdparty.waterfallScrollInit();
         }
