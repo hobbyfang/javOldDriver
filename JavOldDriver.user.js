@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.2.0
+// @version      2.2.1
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -21,7 +21,7 @@
 // @include     http*://tellme.pw/avsox
 // @include     http*://tellme.pw/avmoo
 // @include     http*://115.com/*
-// @include     http*://*onejav.com/*
+// @include     http*://onejav.com/*
 
 // @include     http*://*/vl_update*
 // @include     http*://*/vl_newrelease*
@@ -916,7 +916,41 @@
                         }
                     });
                 },
-
+                "www.btdig.com": function (kw, cb) {
+                    GM_xmlhttpRequest({
+                        method: "GET",
+                        url: "https://" + GM_getValue('search_index') + "/search?q=" + kw,
+                        onload: function (result) {
+                            thirdparty.nong.search_engines.full_url = result.finalUrl;
+                            let doc = Common.parsetext(result.responseText);
+                            let data = [];
+                            let t = doc.querySelectorAll("div.one_result");
+                            if (t) {
+                                for (let elem of t) {
+                                    data.push({
+                                        "title": elem.querySelector(".torrent_name a").textContent,
+                                        "maglink": elem.querySelector(".fa.fa-magnet a").href,
+                                        "size": elem.querySelector(".torrent_size").textContent,
+                                        "src": elem.querySelector(".torrent_name a").href,
+                                    });
+                                }
+                            }
+                            else {
+                                data.push({
+                                    "title": "没有找到磁链接",
+                                    "maglink": "",
+                                    "size": "0",
+                                    "src": result.finalUrl,
+                                });
+                            }
+                            cb(result.finalUrl, data);
+                        },
+                        onerror: function (e) {
+                            console.error(e);
+                            throw "search error";
+                        }
+                    });
+                },
                 // "btdb.to": function (kw, cb) {
                 //     GM_xmlhttpRequest({
                 //         method: 'GET',
@@ -989,6 +1023,7 @@
                     });
                 },
                 //btdiggs.cc
+                //www.btdig.com
                 "btdiggs.org": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
@@ -2093,11 +2128,13 @@
                 $('#avid').empty().attr("title","点击复制番号").attr("avid", AVID);
 
                 let a_avid = document.createElement('a');
-                $(a_avid).attr("href", "#").append(AVID + "<span style='color:red;'>(点击复制)</span>");
+                $(a_avid).attr("href", "#").append(AVID);
+
                 $(a_avid).click(function () {
                         GM_setClipboard($('#avid').attr("avid"));
                     });
                 $('#avid').append(a_avid);
+                $('#avid').after("<span style='color:red;'>(←点击复制)</span>");
 
                 window.onload = function () {
                     $('iframe').remove();
