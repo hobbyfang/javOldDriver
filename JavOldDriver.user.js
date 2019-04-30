@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.2.1
+// @version      2.2.2
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -64,6 +64,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.2.2 修复了已知问题。
 // v2.2.0 增加onejav网站内容排版的支持，热门Jav预览搜集更省时省力。更换两个磁链资源新地址。
 
 // v2.1.5 增加点击番号完成复制功能。
@@ -653,8 +654,10 @@
                     //过滤X评分以下的影片
                     //if(vid == 'javlikq7qu')debugger;
                     if ($(indexCd_id).context.URL.indexOf("?delete") > 0) {
-                        if ($(indexCd_id).context.URL.indexOf("delete8down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 8) {
-                            //debugger;
+                        if ($(indexCd_id).context.URL.indexOf("delete7down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 7) {
+                            $(indexCd_id).remove();
+                        }
+                        else if ($(indexCd_id).context.URL.indexOf("delete8down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 8) {
                             $(indexCd_id).remove();
                         }
                         else if ($(indexCd_id).context.URL.indexOf("delete9down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 9) {
@@ -1941,7 +1944,6 @@
                     $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
                     $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
                     $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
-                    //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
                     //todo
 
                 }
@@ -1951,7 +1953,8 @@
                         + "?delete9down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
                     $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
                         + "?delete8down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看8分以上&nbsp;&nbsp;</a>");
-                    //<a href="/cn/vl_bestrated.php?delete" style="color: red;">只显示最近发行的&nbsp;&nbsp;</a>
+                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                        + "?delete7down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看7分以上&nbsp;&nbsp;</a>");
                     //todo
                 }
 
@@ -2223,7 +2226,7 @@
                             }
                         });
                     }
-                });
+                },true);
 
 
                 thirdparty.busTypeSearch();
@@ -2258,6 +2261,7 @@
                 '.column {flex-basis: inherit;flex-grow: inherit;}',
                 '.container {max-width: 100%;width: 100%;}',
                 '.image {width: 800px;}',
+                '.has-text-grey-dark {max-width: 1000px;}',
             ].join(''));
             // 插入自己创建的div
             $('div.container nav.pagination.is-centered').before("<div id='card' ></div>");
