@@ -1,14 +1,13 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.2.2
+// @version      2.3.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
 // @author       Hobby
 
 // @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
-//               http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js
 // @require      https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js
 // @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.js
 // @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.store.sql.js
@@ -17,11 +16,12 @@
 
 // @include     http*://*javlibrary.com/*
 // @include     http*://*javlib.com/*
-// @include     http*://www.javbus.com/*
+// @include     http*://*javbus.com/*
 // @include     http*://tellme.pw/avsox
 // @include     http*://tellme.pw/avmoo
 // @include     http*://115.com/*
 // @include     http*://onejav.com/*
+// @include     http*://*jav321.com/video/*
 
 // @include     http*://*/vl_update*
 // @include     http*://*/vl_newrelease*
@@ -57,13 +57,14 @@
 // @connect      *
 // @copyright    hobby 2016-12-18
 
-// 大陆用户推荐Chrome(V41+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
+// 大陆用户推荐Chrome(V52+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 // 上车请使用chrome浏览器，其他浏览器的问题本人不支持发现和修复相关问题。
 
 // 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本,根据电脑性能情况不同,需消耗约2分钟以上(以1000个车牌量计算)缓存个人数据到本地浏览器中.
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
 // 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
 
+// v2.3.0 增加jav321网站内容排版的支持，增加查找已登录115网盘是否拥有当前番号显示。
 // v2.2.2 修复了已知问题。
 // v2.2.0 增加onejav网站内容排版的支持，热门Jav预览搜集更省时省力。更换两个磁链资源新地址。
 
@@ -234,7 +235,7 @@
                                 var bodyStr = XMLHttpRequest.responseText;
                                 var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
 
-                                var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.to\/thumbs\//);
+                                var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.*\/thumbs\//);
                                 //debugger;
                                 //如果找到内容大图
                                 if (img_start_idx > 0) {
@@ -270,6 +271,33 @@
                 }
             });//end  GM_xmlhttpRequest
         },
+
+        /**
+         * 查询115网盘是否拥有番号
+         * @param javId 番号
+         * @param callback 回调函数
+         */
+        search115Data: function (javId, callback) {
+            //异步请求搜索115番号
+            GM_xmlhttpRequest({
+                method: "GET",
+                //115查询
+                url: 'https://webapi.115.com/files/search?search_value=' + javId + '&format=json',
+                onload: function (result) {
+                    let obj = JSON.parse(result.responseText);
+                    if(obj.count > 0) {
+                        //isTrueFunc();
+                        callback(true);
+                    }
+                    else{
+                        callback(false);
+                    }
+                },
+                onerror: function (e) {
+                    console.log(e);
+                }
+            });//end  GM_xmlhttpRequest
+        },
     };
 
     //定义函数全局变量
@@ -291,7 +319,7 @@
         DBinit: function () {
 
             // 配置
-            persistence.store.websql.config(persistence, "MyMovie1021", 'database', 10 * 1024 * 1024);
+            persistence.store.websql.config(persistence, "MyMovie0615", 'database', 20 * 1024 * 1024);
 
             // 我的影片
             MyMovie = persistence.define('my_movie', {
@@ -1755,9 +1783,8 @@
         }
         persistence.flush(callback);
     }
-
+    // todo websql add
     function addMovie(index_cd) {
-        var index_cc = index_cd;
         GM_xmlhttpRequest({
             method: "GET",
             url: location.origin + "/cn/?v=" + index_cd,
@@ -1770,8 +1797,6 @@
                 let $doc = $(Common.parsetext(movie_info));
 
                 let movie = new MyMovie();
-                movie.index_cd = index_cc;
-                //debugger;
                 movie.index_cd = result.finalUrl.split("v=")[1];
                 movie.code = $('.header', $doc)[0].nextElementSibling.textContent;
                 movie.release_date = $('#video_date .text', $doc).text();
@@ -1867,7 +1892,7 @@
             if (document.title.search(/JAVLibrary/) > 0) {
 
                 if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre|vl_searchbycombo|mv_owned|mv_watched|mv_wanted|mv_visited)/g)
-                        .test(document.URL)) {
+                    .test(document.URL)) {
 
                     // 指定站点页面加入瀑布流控制按钮
                     $(".displaymode .right").append($(a3));
@@ -1978,11 +2003,11 @@
                     if (!isSync) {
                         // 立即下载数据
                         GM_setValue("mv_wanted_pageNum", 0);
-                        GM_setValue("mv_wanted_pageNum", 0);
-                        GM_setValue("mv_wanted_pageNum", 0);
+                        GM_setValue("mv_watched_pageNum", 0);
+                        GM_setValue("mv_owned_pageNum", 0);
 
                         //debugger;
-                        //start02
+                        //start02 todo websql
                         loadData("mv_wanted", function () {
                             loadData("mv_watched", function () {
                                 loadData("mv_owned", function () {
@@ -2002,8 +2027,8 @@
                                             let j2 = GM_getValue("mv_watched_myBrowseJsonAll");
                                             let j3 = GM_getValue("mv_owned_myBrowseJsonAll");
                                             let mv_owned_myBrowseJsonAll = j3.substring(0, j3.length - 1);
-                                            let myBrowseAll = j1 + j2 + mv_owned_myBrowseJsonAll;
-
+                                            // let myBrowseAll = j1 + j2 + mv_owned_myBrowseJsonAll;  // todo test
+                                            let myBrowseAll = j3.substring(0, j3.length - 1);
 
                                             var myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
                                             var myWantArray = JSON.parse("[" + j1.substring(0, j1.length - 1) + "]");
@@ -2028,17 +2053,17 @@
                                                 return new MyBrowse();
                                             }, function () {
                                                 //debugger;
-                                                addJsonsToDB(hasStepOne, myWantArray, function () {
-                                                    return new MyWant();
-                                                }, function () {
-                                                    //debugger;
-                                                    addJsonsToDB(hasStepOne, mySeenArray, function () {
-                                                        return new MySeen();
-                                                    }, function () {
-                                                        //debugger;
-                                                        addJsonsToDB(hasStepOne, myHaveArray, function () {
-                                                            return new MyHave();
-                                                        }, function () {
+                                                // addJsonsToDB(hasStepOne, myWantArray, function () {
+                                                //     return new MyWant();
+                                                // }, function () {
+                                                //     //debugger;
+                                                //     addJsonsToDB(hasStepOne, mySeenArray, function () {
+                                                //         return new MySeen();
+                                                //     }, function () {
+                                                //         //debugger;
+                                                //         addJsonsToDB(hasStepOne, myHaveArray, function () {
+                                                //             return new MyHave();
+                                                //         }, function () {
                                                             //debugger;
                                                             GM_setValue(location.host + "_stepOne", true);
                                                             let b = GM_getValue(location.host + "_stepTwo", false);
@@ -2070,6 +2095,7 @@
                                                                         persistence.flush(function () {
                                                                             GM_setValue(location.host + "_stepTwo", true);
                                                                             GM_setValue(location.host + "_doDataSyncStepAll", true);
+                                                                            GM_setValue(location.host + "_stepTwoTime:", (new Date() - startTime)); // todo test add
                                                                             console.log("time:" + (new Date() - startTime));
                                                                         });
                                                                         clearInterval(s4);
@@ -2084,9 +2110,9 @@
                                                                     }
                                                                 }, 150);
                                                             }
-                                                        });
-                                                    });
-                                                });
+                                                //         });
+                                                //     });
+                                                // });
                                             });
                                             clearInterval(s3);
                                         }
@@ -2094,8 +2120,6 @@
                                 });
                             });
                         });
-
-
                     }
 
 
@@ -2134,8 +2158,8 @@
                 $(a_avid).attr("href", "#").append(AVID);
 
                 $(a_avid).click(function () {
-                        GM_setClipboard($('#avid').attr("avid"));
-                    });
+                    GM_setClipboard($('#avid').attr("avid"));
+                });
                 $('#avid').append(a_avid);
                 $('#avid').after("<span style='color:red;'>(←点击复制)</span>");
 
@@ -2198,35 +2222,68 @@
                     });
                 }
 
-                //debugger;
-                console.log("番号输出:" + AVID);
-                //console.log("时间000000:"+ new Date().getTime());
-                Common.addAvImg(AVID, function ($img) {
-                    //https://www.javbus.com/CHN-141
-                    var divEle = $("div[class='col-md-3 info']")[0];
-                    $(divEle).attr("id", "video_info");
-                    if (divEle) {
-                        $(divEle.parentElement).append($img);
-                        $img.click(function () {
-                            $(this).toggleClass('min');
-                            if ($(this).attr("class")) {
-                                this.parentElement.parentElement.scrollIntoView();
-                            }
-                        });
+                //查找115是否有此番号
+                Common.search115Data(AVID,function (BOOLEAN_TYPE) {
+                    if(BOOLEAN_TYPE) {
+                        // GM_addStyle([
+                        //     '#video_jacket_info {background-color: rgba(249, 8, 187, 0.3);}',
+                        //     '.row.movie {background-color: rgba(254, 190, 0, 0.3);}',
+                        // ].join(''));
+
+                        let $imgObj;
+                        if (document.title.search(/JAVLibrary/) > 0) {
+                            //JAVLibrary
+                            $imgObj = $('#video_jacket_img');
+                        }
+                        else{
+                            //JavBus|AVMOO|AVSOX
+                            $imgObj = $('.bigImage img');
+                        }
+                        $imgObj.after(
+                            '<div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">'+
+                                    '<p style="color: white;font-size: 46px;text-align: right;margin: 0 0 0px;">115网盘已拥有此片</p>'+
+                                    '</div>'
+                        );
                     }
-                    // http://www.javlibrary.com/cn/?v=javlilzo4e
-                    divEle = $("div[id='video_favorite_edit']")[0];
-                    if (divEle) {
-                        $img.attr("style", "cursor: pointer;");
-                        $(divEle).after($img);
-                        $img.click(function () {
-                            $(this).toggleClass('min');
-                            if ($(this).attr("class")) {
-                                this.parentElement.parentElement.scrollIntoView();
-                            }
-                        });
-                    }
-                },true);
+
+                    //debugger;
+                    console.log("番号输出:" + AVID);
+                    //console.log("时间000000:"+ new Date().getTime());
+                    Common.addAvImg(AVID, function ($img) {
+                        //https://www.javbus.com/CHN-141
+                        var divEle = $("div[class='col-md-3 info']")[0];
+                        $(divEle).attr("id", "video_info");
+                        if (divEle) {
+                            $(divEle.parentElement).append($img);
+                            $img.click(function () {
+                                $(this).toggleClass('min');
+                                if ($(this).attr("class")) {
+                                    this.parentElement.parentElement.scrollIntoView();
+                                }
+                            });
+                        }
+                        // http://www.javlibrary.com/cn/?v=javlilzo4e
+                        divEle = $("div[id='video_title']")[0];  // todo 190604
+
+                        if (divEle) {
+                            $(divEle).after(
+                                '<div style="width: 100%;height: 100%;display: inline-block;">' +
+                                '<div id="hobby_div_left" style="float: left;width: 80%;"></div>' +
+                                '<div id="hobby_div_right" style="float: left;min-width: 20%;"></div>' +
+                                '</div>'
+                            );
+                            $('#hobby_div_left').append($('#video_jacket_info'));
+                            $('#hobby_div_left').append($('#video_favorite_edit'));
+                            $('#hobby_div_right').append($img);
+                            $img.click(function () {
+                                $(this).toggleClass('min');
+                                if ($(this).attr("class")) {
+                                    this.parentElement.parentElement.scrollIntoView();
+                                }
+                            });
+                        }
+                    },!BOOLEAN_TYPE);
+                });
 
 
                 thirdparty.busTypeSearch();
@@ -2269,6 +2326,76 @@
             $('div#card').append($('div.container div.card.mb-3'));
             // 瀑布流脚本
             thirdparty.waterfallScrollInit();
+        }
+
+        if ((/(jav321)*\/video\/*/g).test(document.URL)){ //todo 190531
+            GM_addStyle([
+                '.col-md-3 {width: 20%;padding-left: 2px; padding-right: 0px;}',
+                '.col-xs-12,.col-md-12 {padding-left: 2px; padding-right: 0px;}',
+                '.col-md-7 {width: 79%;padding-left: 2px;padding-right: 0px;}',
+                '.col-md-9 {width: 68%;}',
+                '.col-md-offset-1 {margin-left: auto;}',
+                '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
+            ].join(''));
+
+            // 调整div位置
+            $('div.col-md-7.col-md-offset-1.col-xs-12').before($('div.col-xs-12.col-md-12')[0].parentElement);
+
+            let meta = $('small')[0];
+            let arr = meta.textContent.split(" ");
+            let javID = arr[0];
+
+            //查找115是否有此番号
+            Common.search115Data(javID,function (BOOLEAN_TYPE) {
+                if(BOOLEAN_TYPE){
+                    GM_addStyle([
+                        '.col-md-9 {width: 68%; background-color: peachpuff;}',
+                    ].join(''));
+
+                    let $imgObj = $('div.col-xs-12.col-md-12 img.img-responsive');
+
+                    $imgObj.after(
+                        '<div style="position: absolute;width: 100%;height: 25%;background: rgba(0,0,0,0.5);top: 71%;left: 0;">'+
+                        '<p style="color: white;font-size: 40px;text-align: right;margin: 0 0 0px;">115网盘已拥有此片</p>'+
+                        '</div>'
+                    );
+                }
+            });
+
+            //插入预览图
+            Common.addAvImg(javID, function ($img) {
+                //https://www.jav321.com/video/300mium-391
+                var divEle = $("div.col-md-9")[0];
+                //$(divEle).attr("id", "video_info");
+                if (divEle) {
+                    $(divEle).after($img);
+                    $img.click(function () {
+                        $(this).toggleClass('min');
+                        if ($(this).attr("class")) {
+                            this.parentElement.parentElement.scrollIntoView();
+                        }
+                    });
+                }
+            },true);
+
+            // 修改jav321磁链列表头，增加两列
+            $('table.table.table-striped tbody tr:eq(0)').append('<th>操作</th><th>离线下载</th>');
+
+            //详情页磁链列表增加复制、115离线快捷键功能函数
+            let tr_array = $('table.table.table-striped tbody tr:gt(0)');
+
+            for (var i = 0; i < tr_array.length; i++) {
+                let trEle = tr_array[i];
+                //debugger;
+                let magnetUrl = $(trEle).find("td a")[0].href;
+                $(trEle).append("<td style='text-align:center;'><div><a class='nong-copy' href='" + magnetUrl + "'>复制</a></div></td>");
+                $(trEle).append("<td><div class='nong-offline'><a class='nong-offline-download' target='_blank' href='http://115.com/?tab=offline&amp;mode=wangpan'>115离线</a></div></td>");
+                //TODO
+                $(trEle).attr("maglink", magnetUrl);
+                $(trEle).find(".nong-copy")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
+                $(trEle).find(".nong-offline-download")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
+                //.addEventListener('click', this.handle_event, false);
+            }
         }
     }
 
