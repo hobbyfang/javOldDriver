@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      2.3.0
+// @version      3.0.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -9,9 +9,7 @@
 
 // @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js
-// @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.js
-// @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.store.sql.js
-// @require      https://cdn.jsdelivr.net/npm/persistencejs@0.3.0/lib/persistence.store.websql.js
+// @require      https://cdn.jsdelivr.net/npm/lovefield@2.1.12/dist/lovefield.min.js
 // @resource     icon http://geekdream.com/image/115helper_icon_001.jpg
 
 // @include     http*://*javlibrary.com/*
@@ -60,27 +58,23 @@
 // 大陆用户推荐Chrome(V52+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 // 上车请使用chrome浏览器，其他浏览器的问题本人不支持发现和修复相关问题。
 
-// 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本,根据电脑性能情况不同,需消耗约2分钟以上(以1000个车牌量计算)缓存个人数据到本地浏览器中.
-// 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中根据电脑性能不同情况,会有页面消耗CPU资源不同程度的较高占比.
-// 当然如果不登录javlibrary或同版本号已经同步过,则无此影响.后续版本更新中将计划优化此性能.
+// 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本,
+// 根据电脑性能及访问网速情况不同,需消耗约2分钟左右(以1000个车牌量计算)缓存个人数据到本地浏览器中.
+// 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
+// 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
+
+// v3.0.0 增加115在线播放的关联入口。同时本代码重新梳理及优化。
 
 // v2.3.0 增加jav321网站内容排版的支持，增加查找已登录115网盘是否拥有当前番号显示。
 // v2.2.2 修复了已知问题。
 // v2.2.0 增加onejav网站内容排版的支持，热门Jav预览搜集更省时省力。更换两个磁链资源新地址。
-
 // v2.1.5 增加点击番号完成复制功能。
 // v2.1.3 增加btdigg磁链资源站点。修复了已知问题。
-// v2.1.2 修改搜索磁链的资源站点问题。
 // v2.1.1 增加jav站点瀑布流控制按钮功能。
 // v2.1.0 增加javbus站内磁链列表的复制、115离线的快捷键功能。
 
-// v2.0.16 更新永久支持javlib新域名（能科学上网的司机们建议访问javlibrary原始域名，这样减少每次更换域名消耗同步数据时间）。jav字幕站点已失效，移除下载字幕功能。
-// v2.0.15 修复已知问题。更新javlib新域名支持。新域名首次运行会出现cpu占比较高，正常等待几分钟即可。
-// v2.0.14 修复缩略图域名失效问题。
-// v2.0.11 更新两个站点域名。
 // v2.0.7 增加一种情况Jav列表排序功能支持(仅javlib)。
 // v2.0.5 增加Jav列表“按评分排序”、“按时间排序”功能(仅javlib)，及更新Jav站点域名。
-// v2.0.4 2.0版本性能优化。
 // v2.0.0 增加自动同步个人数据缓存到本地,jav列表能识别个人已阅览过的内容(需登录javlibray),针对javlibrary的高评价栏目,增加过滤"不看我阅览过"功能。
 
 // v1.2.0 针对javlibrary的高评价栏目，增加过滤“只看当前月份”、“只看近两月份”功能。另默认此栏目近两月份的内容增加背景颜色区分。
@@ -94,19 +88,28 @@
 /* jshint -W097 */
 (function () {
     'use strict';
-    let jav_userID = GM_getValue('jav_user_id', 0); //115用户ID
+    //115用户ID
+    let jav_userID = GM_getValue('jav_user_id', 0);
     //icon图标
     let icon = GM_getResourceURL('icon');
-
     // 瀑布流状态：1：开启、0：关闭
     let waterfallScrollStatus = GM_getValue('scroll_status', 1);
+    // 当前网页域名
+    let domain = location.host;
+    // 数据库
+    let javDb;
+    // 表
+    let myMovie;
 
-    // 对Date的扩展，将 Date 转化为指定格式的String
-    // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
-    // 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
-    // 例子：
-    // (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423f
-    // (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
+    /**
+     * 对Date的扩展，将 Date 转化为指定格式的String
+     * 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
+     * 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
+     * 例子：(new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423f
+     * (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
+     * @param fmt 日期格式
+     * @returns {void | string} 格式化后的日期字符串
+     */
     Date.prototype.Format = function (fmt) { //author: meizz
         var o = {
             "M+": this.getMonth() + 1,                    //月份
@@ -124,6 +127,73 @@
                 fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
         return fmt;
     };
+
+    /**
+     * 多线程异步队列 依赖 jQuery 1.8+
+     * @n {Number} 正整数, 线程数量
+     */
+    function Queue (n) {
+        n = parseInt(n, 10);
+        return new Queue.prototype.init( (n && n > 0) ? n : 1 )
+    }
+
+    Queue.prototype = {
+        init: function (n) {
+            this.threads = [];
+            this.taskList = [];
+            while (n--) {
+                this.threads.push(new this.Thread)
+            }
+        },
+        /**
+         * @callback {Fucntion} promise对象done时的回调函数，它的返回值必须是一个promise对象
+         */
+        push: function (callback) {
+            if (typeof callback !== 'function') return;
+            var index = this.indexOfIdle();
+            if (index != -1) {
+                this.threads[index].idle(callback);
+                //try { console.log('Thread-' + (index+1) + ' accept the task!') } catch (e) {}
+            }
+            else {
+                this.taskList.push(callback);
+                for (var i = 0, l = this.threads.length; i < l; i++) {
+                    (function(thread, self, id){
+                        thread.idle(function(){
+                            if (self.taskList.length > 0) {
+                                //try { console.log('Thread-' + (id+1) + ' accept the task!') } catch (e) {}
+                                let promise = self.taskList.shift()();    // 正确的返回值应该是一个promise对象
+                                return promise.promise ? promise : $.Deferred().resolve().promise();
+                            } else {
+                                return $.Deferred().resolve().promise();
+                            }
+                        })
+                    })(this.threads[i], this, i);
+
+                }
+            }
+        },
+        indexOfIdle: function () {
+            var threads = this.threads,
+                thread = null,
+                index = -1;
+            for (var i = 0, l = threads.length; i < l; i++) {
+                thread = threads[i];
+                if (thread.promise.state() === 'resolved') {
+                    index = i;
+                    break;
+                }
+            }
+            return index;
+        },
+        Thread: function () {
+            this.promise = $.Deferred().resolve().promise();
+            this.idle = function (callback) {
+                this.promise = this.promise.then(callback)
+            }
+        }
+    };
+    Queue.prototype.init.prototype = Queue.prototype;
 
     /**
      * 公用类
@@ -200,76 +270,62 @@
          * @param {boolean} isZoom 是否放大,默认true
          */
         addAvImg: function (avid, func, isZoom) {
-
             //异步请求搜索blogjav.net的番号
-            GM_xmlhttpRequest({
-                method: "GET",
-                //大图地址
-                url: 'http://blogjav.net/?s=' + avid,
-                onload: function (result) {
-                    //console.log("时间111111:"+ new Date().getTime());
-                    var doc = Common.parsetext(result.responseText);
-                    //console.log("时间222222:"+ new Date().getTime());
-                    let a_array = $(doc).find(".more-link");
-                    let a = a_array[0];
-                    for (let i = 0; i < a_array.length; i++) {
-                        var fhd_idx = a_array[i].innerHTML.search(/FHD/);
-                        //debugger;
-                        if (fhd_idx > 0) {
-                            a = a_array[i];
-                            break;
-                        }
+            let promise1 = request('http://blogjav.net/?s=' + avid);//大图地址
+            promise1.then((result) => {
+                var doc = Common.parsetext(result.responseText);
+                let a_array = $(doc).find(".more-link");
+                let a = a_array[0];
+                for (let i = 0; i < a_array.length; i++) {
+                    var fhd_idx = a_array[i].innerHTML.search(/FHD/);
+                    //debugger;
+                    if (fhd_idx > 0) {
+                        a = a_array[i];
+                        break;
                     }
-
-                    if (a) {
-                        //异步请求调用内页详情的访问地址
-                        GM_xmlhttpRequest({
-                            method: "GET",
-                            //大图地址
-                            url: a.href,
-                            headers: {
-                                referrer: "http://pixhost.to/" //绕过防盗图的关键
-                            },
-                            onload: function (XMLHttpRequest) {
-                                //console.log("时间333333:"+ new Date().getTime());
-                                var bodyStr = XMLHttpRequest.responseText;
-                                var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
-
-                                var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.*\/thumbs\//);
-                                //debugger;
-                                //如果找到内容大图
-                                if (img_start_idx > 0) {
-                                    var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
-                                    var targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('https', 'http');
-
-                                    //如果找到全高清大图优先显示全高清的
-                                    console.log("图片地址:" + targetImgUrl);
-
-                                    //创建img元素,加载目标图片地址
-                                    //创建新img元素
-                                    let className = "";
-                                    if(isZoom != undefined && !isZoom){
-                                        className = "min";
-                                    }
-                                    var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)" class="' + className + '"></img>');
-                                    $img.attr("src", targetImgUrl);
-                                    $img.attr("style", "float: left;cursor: pointer;");
-
-                                    //将新img元素插入指定位置
-                                    func($img);
-                                    console.log("时间238:" + new Date().getTime());
-                                }
-                            },
-                            onerror: function (e) {
-                                console.log(e);
-                            }
-                        });//end  GM_xmlhttpRequest
-                    }
-                },
-                onerror: function (e) {
-                    console.log(e);
                 }
-            });//end  GM_xmlhttpRequest
+                if (a) {
+                    //异步请求调用内页详情的访问地址
+                    GM_xmlhttpRequest({
+                        method: "GET",
+                        //大图地址
+                        url: a.href,
+                        headers: {
+                            referrer: "http://pixhost.to/" //绕过防盗图的关键
+                        },
+                        onload: function (XMLHttpRequest) {
+                            var bodyStr = XMLHttpRequest.responseText;
+                            var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
+
+                            var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.*\/thumbs\//);
+                            //debugger;
+                            //如果找到内容大图
+                            if (img_start_idx > 0) {
+                                var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
+                                var targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('https', 'http');
+
+                                //如果找到全高清大图优先显示全高清的
+                                console.log("图片地址:" + targetImgUrl);
+                                //创建img元素,加载目标图片地址
+                                //创建新img元素
+                                let className = "";
+                                if(isZoom != undefined && !isZoom){
+                                    className = "min";
+                                }
+                                var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)" class="' + className + '"></img>');
+                                $img.attr("src", targetImgUrl);
+                                $img.attr("style", "float: left;cursor: pointer;");
+
+                                //将新img元素插入指定位置
+                                func($img);
+                            }
+                        },
+                        onerror: function (e) {
+                            console.log(e);
+                        }
+                    });//end  GM_xmlhttpRequest
+                }
+            });
         },
 
         /**
@@ -278,134 +334,76 @@
          * @param callback 回调函数
          */
         search115Data: function (javId, callback) {
-            //异步请求搜索115番号
-            GM_xmlhttpRequest({
-                method: "GET",
-                //115查询
-                url: 'https://webapi.115.com/files/search?search_value=' + javId + '&format=json',
-                onload: function (result) {
-                    let obj = JSON.parse(result.responseText);
-                    if(obj.count > 0) {
-                        //isTrueFunc();
-                        callback(true);
+            //异步请求搜索115番号 //115查询
+            let promise1 = request('https://webapi.115.com/files/search?search_value=' + javId + '&format=json');
+            promise1.then((result) => {
+                let resultJson = JSON.parse(result.responseText);
+                if(resultJson.count > 0) {
+                    let pickcode = '';
+                    for (let i = 0; i < resultJson.data.length; i++) {
+                        let row = resultJson.data[i];
+                        if(row.fid){
+                            pickcode = row.pc;
+                            break;
+                        }
                     }
-                    else{
-                        callback(false);
-                    }
-                },
-                onerror: function (e) {
-                    console.log(e);
+                    callback(true,"http://120.78.32.31/play.html?pickcode=" + pickcode);
                 }
-            });//end  GM_xmlhttpRequest
+                else{
+                    callback(false,null);
+                }
+            });
+        },
+        getSchemaBuilder: function() {
+            // 构造jav库
+            let ds = lf.schema.create('jav', 1);
+            // 创建MyMovie表
+            ds.createTable('MyMovie').
+            //addColumn('id', lf.Type.INTEGER).
+            //索引编码 如javlikqu54
+            addColumn('index_cd',lf.Type.STRING).
+            //识别编码 如CHN-141
+            addColumn('code', lf.Type.STRING).
+            //缩略图路径
+            addColumn('thumbnail_url', lf.Type.STRING).
+            //片名
+            addColumn('movie_name', lf.Type.STRING).
+            //演员
+            addColumn('actor', lf.Type.STRING).
+            //封面图路径
+            addColumn('cover_img_url', lf.Type.STRING).
+            //发布日期
+            addColumn('release_date', lf.Type.STRING).
+            //评分
+            addColumn('score', lf.Type.INTEGER).
+            //片长(分钟)
+            addColumn('duration', lf.Type.INTEGER).
+            //导演
+            addColumn('director', lf.Type.STRING).
+            //制作商
+            addColumn('maker', lf.Type.STRING).
+            //发行商
+            addColumn('publisher', lf.Type.STRING).
+            //加入时间
+            addColumn('add_time', lf.Type.STRING).
+            //是否已阅
+            addColumn('is_browse', lf.Type.BOOLEAN).
+            //是否想要
+            addColumn('is_want', lf.Type.BOOLEAN).
+            //是否看过
+            addColumn('is_seen', lf.Type.BOOLEAN).
+            //是否拥有
+            addColumn('is_have', lf.Type.BOOLEAN).
+            //定义主键
+            addPrimaryKey(['index_cd']).
+            //定义索引
+            addIndex('idxaddtime', ['add_time'], false, lf.Order.DESC);
+            return ds;
         },
     };
 
-    //定义函数全局变量
-    let MyMovie;
-    let MyBrowse;
-    let MyWant;
-    let MySeen;
-    let MyHave;
-
-    /**
-     * websql数据库类
-     * @type {{DBinit: DBinit}
-     */
-    let JavWebSql = {
-        /**
-         * 数据库初始化
-         * @constructor
-         */
-        DBinit: function () {
-
-            // 配置
-            persistence.store.websql.config(persistence, "MyMovie0615", 'database', 20 * 1024 * 1024);
-
-            // 我的影片
-            MyMovie = persistence.define('my_movie', {
-                //影片id
-                //movie_id: "INTEGER",
-                //索引编码 如javlikqu54
-                index_cd: "VARCHAR(20)",
-                //识别编码 如CHN-141
-                code: "VARCHAR(20)",
-                //缩略图路径
-                thumbnail_url: "VARCHAR(200)",
-                //片名
-                movie_name: "VARCHAR(300)",
-                //演员
-                actor: "VARCHAR(50)",
-                //封面图路径
-                cover_img_url: "VARCHAR(200)",
-                //发布日期
-                release_date: "DATETIME",
-                //评分
-                score: "INTEGER",
-                //片长(分钟)
-                duration: "INTEGER",
-                //导演
-                director: "VARCHAR(50)",
-                //制作商
-                maker: "VARCHAR(50)",
-                //发行商
-                publisher: "VARCHAR(50)",
-                //创建时间
-                add_time: "DATETIME"
-            });
-
-            // 我浏览过(网页)
-            MyBrowse = persistence.define('my_browse', {
-                //浏览id
-                //browse_id: "INTEGER",
-                //索引编码
-                index_cd: "TEXT",
-                //创建时间
-                add_time: "DATETIME"
-            });
-
-            // 我想要的
-            MyWant = persistence.define('my_want', {
-                //想要id
-                //want_id: "INTEGER",
-                //索引编码
-                index_cd: "TEXT",
-                //创建时间
-                add_time: "DATETIME"
-            });
-
-            // 我看过影片
-            MySeen = persistence.define('my_seen', {
-                //看过id
-                //seen_id: "INTEGER",
-                //索引编码
-                index_cd: "TEXT",
-                //创建时间
-                add_time: "DATETIME"
-            });
-
-            // 我已拥有
-            MyHave = persistence.define('my_have', {
-                //拥有id
-                //have_id: "INTEGER",
-                //索引编码
-                index_cd: "TEXT",
-                //创建时间
-                add_time: "DATETIME"
-            });
-
-            MyMovie.index(['index_cd', 'code'], {unique: true});
-            MyBrowse.index(['index_cd'], {unique: true});
-            MyWant.index(['index_cd'], {unique: true});
-            MySeen.index(['index_cd'], {unique: true});
-            MyHave.index(['index_cd'], {unique: true});
-            //MyBrowse.hasOne('movie',MyMovie,'myBrowse');
-
-            persistence.schemaSync();
-        },
-    };
-
-    let main = {
-        //av信息查询 类
+    let main = { // todo
+        //av信息查询类
         //avsox|avmoo
         jav: {
             type: 0,
@@ -414,10 +412,8 @@
                 return $('.header_hobby')[0].nextElementSibling.getAttribute("avid");
             },
             proc: function () {
-                //insert_after('#movie-share');
                 var divE = $("div[class='col-md-3 info']")[0];
                 $(divE).after(main.cur_tab);
-                //$(main.cur_tab).before($('#movie-share')[0]);
             }
         },
         javbus: {
@@ -429,9 +425,6 @@
             },
             proc: function () {
                 var divE = $("div[class='col-md-3 info']")[0];
-                //var p = document.createElement('p');
-                //p.className = 'hobby';
-                //divE.parentElement.appendChild(p);
                 $(divE).after(main.cur_tab);
             }
         },
@@ -442,8 +435,6 @@
                 return $('#video_id')[0].getElementsByClassName('text')[0].getAttribute("avid");
             },
             proc: function () {
-                //insert_after('#video_info');
-                //<td style="vertical-align: top;">
                 //去十八岁警告
                 setCookie("over18", 18);
                 $('.socialmedia').remove();
@@ -468,6 +459,36 @@
         },
     };
 
+    function request(url) {
+        return new Promise(resolve => {
+            //let time1 = new Date();
+            GM_xmlhttpRequest({
+                url,
+                method: 'GET',
+                headers:  {
+                    "Cache-Control": "no-cache"
+                },
+                timeout: 30000,
+                onload: response => { //console.log(url + " reqTime:" + (new Date() - time1));
+                    resolve(response);
+                },
+                onabort: (e) =>{
+                    console.log(url + " abort");
+                    resolve("wrong");
+                },
+                onerror: (e) =>{
+                    console.log(url + " error");
+                    console.log(e);
+                    resolve("wrong");
+                },
+                ontimeout: (e) =>{
+                    console.log(url + " timeout");
+                    resolve("wrong");
+                },
+            });
+        });
+    }
+
     // 挊
     let main_keys = Object.keys(main); //下面的不要出现
     main.cur_tab = null;
@@ -478,11 +499,9 @@
         constructor(d = false) {
             this.locked = d;
         }
-
         lock() {
             this.locked = true;
         }
-
         unlock() {
             this.locked = false;
         }
@@ -508,7 +527,8 @@
                 if (!p) return;
                 p = p.parentNode.parentNode;
                 p.querySelectorAll('a').forEach(e => {
-                    let i = document.createElement('input'), val = e.href.split('/');             //https://www.javbus.com/genre/4 --> get > 4
+                    let i = document.createElement('input'), val = e.href.split('/');
+                    //https://www.javbus.com/genre/4 --> get > 4
                     val = val[val.length - 1];
                     i.setAttribute('type', 'checkbox');
                     i.setAttribute('name', 'gr_sel');
@@ -548,11 +568,6 @@
             }
 
             if (location.host.indexOf('115.com') >= 0) {
-                /*if(location.href.indexOf('#115helper') < 0)
-                {
-                    console.log("jav老司机:115.com, 不初始化.");
-                    return false;
-                }*/
                 console.log('jav老司机:115.com,尝试获取userid.');
                 jav_userID = GM_getValue('jav_user_id', 0);
                 //debugger;
@@ -575,7 +590,6 @@
         },
         // 瀑布流脚本
         waterfallScrollInit: function () {
-
             var w = new thirdparty.waterfall({});
             // javbus.com、avmo.pw、avso.pw
             var $pages = $('div#waterfall div.item');
@@ -599,7 +613,6 @@
                     });
                 }
             }
-
             // javlibrary
             var $pages2 = $('div.videos div.video');
             if ($pages2.length) {
@@ -614,7 +627,6 @@
                     pagi: '.page_selector',
                 });
             }
-
             // onejav
             var $pages3 = $('div.container div.card.mb-3');
             if ($pages3.length) {
@@ -679,8 +691,7 @@
                     }
                 }
                 function filerScore(indexCd_id, pingfengString) {
-                    //过滤X评分以下的影片
-                    //if(vid == 'javlikq7qu')debugger;
+                    //过滤X评分以下的影片  //if(vid == 'javlikq7qu')debugger;
                     if ($(indexCd_id).context.URL.indexOf("?delete") > 0) {
                         if ($(indexCd_id).context.URL.indexOf("delete7down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 7) {
                             $(indexCd_id).remove();
@@ -701,6 +712,24 @@
                         //debugger;
                     }
                 }
+
+                function extCode(indexCd_id, dateString, pingfengString) {
+                    $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + dateString
+                        + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
+                    $(indexCd_id).children("a").attr("release_date", dateString);
+                    let s = 0;
+                    let r = Math.random() / 100;
+                    if (pingfengString.replace(/[\\(\\)]/g, "") != '') {
+                        s = r + parseFloat(pingfengString.replace(/[\\(\\)]/g, ""));
+                    } else {
+                        s = 0 + r;
+                    }
+                    $(indexCd_id).children("a").attr("score", s);
+                    setbgcolor(indexCd_id, dateString);
+                    filerMonth(indexCd_id, dateString);
+                    filerScore(indexCd_id, pingfengString);
+                }
+
                 if (document.title.search(/JAVLibrary/) > 0 && elems) {
                     for (let i = 0; i < elems.length; i++) {
                         let _vid = $(elems[i]).attr("id").replace('vid_', '');//vid_javlikd42y
@@ -712,93 +741,41 @@
                                 $("#vid_" + _vid).css("background-color", "peachpuff");
                             }
                         });
-
-                        // 查找影片是否存在我浏览过的表中
-                        MyBrowse.findBy(persistence, null, 'index_cd', _vid, function (findObj) {
-                            //debugger;
-                            if (findObj) {//存在
-                                //debugger;
-                                let indexCd_id = "#vid_" + findObj.index_cd;
+                        let indexCd_id;
+                        let dateString;
+                        let pingfengString;
+                        // 查找影片是否存在我浏览过的MyMovie表中
+                        let prom =javDb.select().from(myMovie).
+                                        where(lf.op.and(myMovie.is_browse.eq(true),myMovie.index_cd.eq(_vid))).exec();
+                        prom.then( results =>{
+                            //let promise1 = Promise.resolve();
+                            //return new Promise(resolve => {
+                            if(results.length != 0 ){//存在
+                                indexCd_id = "#vid_" + results[0].index_cd;
                                 if ($(indexCd_id).context.URL.indexOf("bestrated.php?filterMyBrowse") > 0) {
                                     $(indexCd_id).remove();
                                 }
-                                else {
-                                    // 查找影片是否存在我的影片资料表中
-                                    MyMovie.findBy(persistence, null, 'index_cd', findObj.index_cd, function (findObj) {
-                                        if (findObj) {//存在
-                                            let indexCd_id = "#vid_" + findObj.index_cd;
-                                            $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
-                                            $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + findObj.release_date + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + findObj.score + "</div>");
-                                            $(indexCd_id).children("a").attr("release_date", findObj.release_date);
-
-                                            let r = Math.random() / 100;
-                                            let s = 0;
-                                            if (findObj.score.replace(/[\\(\\)]/g, "") != '') {
-                                                s = r + parseFloat(findObj.score.replace(/[\\(\\)]/g, ""));
-                                            }
-                                            else {
-                                                s = 0 + r;
-                                            }
-                                            $(indexCd_id).children("a").attr("score", s);
-
-                                            setbgcolor(indexCd_id, findObj.release_date);
-                                            filerMonth(indexCd_id, findObj.release_date);
-                                            filerScore(indexCd_id, findObj.score);
-                                        }
-                                        else {//不存在
-                                            // 加入影片资料到表中
-                                            //debugger;
-                                            addMovie(_vid);
-                                            persistence.flush();
-                                        }
-                                    });
+                                else{
+                                    $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
+                                    extCode(indexCd_id, results[0].release_date, results[0].score);
                                 }
                             }
                             else {//不存在
-                                //console.log(`vid = ${_vid}`);
-                                //debugger;
-                                //异步请求调用内页详情的访问地址
-                                //debugger;
-                                GM_xmlhttpRequest({
-                                    method: "GET",
-                                    //内页地址
-                                    url: location.origin + "/cn/?v=" + _vid,
-                                    onload: function (result) {
-                                        let vid = result.finalUrl.split("=")[1];//例如：http://www.j12lib.com/cn/?v=javlikd42a
-                                        let bodyStr = result.responseText;
-                                        let date_idx = bodyStr.search(/"video_date" class="item"/);//<span class="score">(9.70)</span>
-                                        let yixieBody = bodyStr.substring(date_idx, bodyStr.search(/"video_genres"/));
-                                        let dateString = yixieBody.substring(yixieBody.indexOf('video_date') + 92, yixieBody.indexOf('video_date') + 102);
-                                        let pingfengString = "";
-                                        if (yixieBody.indexOf('score">') > 0) {
-                                            pingfengString = yixieBody.substring(yixieBody.indexOf('score">') + 7, yixieBody.indexOf('score">') + 14).replace('</span>', '').replace('<', '');
-                                        }
-                                        let indexCd_id = "#vid_" + vid;
-                                        $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + dateString + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
-
-                                        $(indexCd_id).children("a").attr("release_date", dateString);
-
-                                        let r = Math.random() / 100;
-                                        let s = 0;
-                                        if (pingfengString.replace(/[\\(\\)]/g, "") != '') {
-                                            s = r + parseFloat(pingfengString.replace(/[\\(\\)]/g, ""));
-                                        }
-                                        else {
-                                            s = 0 + r;
-                                        }
-                                        $(indexCd_id).children("a").attr("score", s);
-
-                                        setbgcolor(indexCd_id, dateString);
-                                        filerMonth(indexCd_id, dateString);
-                                        filerScore(indexCd_id, pingfengString);
-                                    },
-                                    onerror: function (e) {
-                                        console.log(e);
-                                    }
-                                });//end  GM_xmlhttpRequest
+                                let promise1 = request(location.origin + "/ja/?v=" + _vid);
+                                promise1.then((result) => {
+                                    indexCd_id = "#vid_" + result.finalUrl.split("=")[1];//例如：http://www.j12lib.com/cn/?v=javlikd42a
+                                    let doc = result.responseText;
+                                    let movie_info = doc.substring(doc.search(/<table id="video_jacket_info">/),
+                                        doc.search(/<div id="video_favorite_edit" class="">/));
+                                    // 阻止构造Document对象时加载src内容
+                                    movie_info = movie_info.replace("src", "hobbysrc");
+                                    let $doc = $(Common.parsetext(movie_info));
+                                    dateString = $('#video_date .text', $doc).text();
+                                    pingfengString = $('#video_review .text .score', $doc).text();
+                                    extCode(indexCd_id, dateString, pingfengString);
+                                });
                             }
                         });
-
                     }
                 }
             });
@@ -822,63 +799,32 @@
                     enable: true,
                 },
             },
-            // 挊
-            search_engines: {
-                switch_engine: function (i) {
-                    // var index = GM_getValue("search_index",0);
-                    GM_setValue('search_index', i);
-                    return i;
-                },
-                cur_engine: function (kw, cb) {
-                    var z = thirdparty.nong.resource_sites[GM_getValue('search_index', "btsow.pw")];
-                    //debugger;
-                    if (!z) {
-                        //alert("search engine not found");
-                        debugger;
-                        GM_setValue('search_index', Object.keys(thirdparty.nong.resource_sites)[0]);
-                        z = thirdparty.nong.resource_sites[GM_getValue('search_index')];
-                    }
-                    //debugger;
-                    return z(kw, cb);
-                },
-                parse_error: function (a) {
-                    alert("调用搜索引擎错误，可能需要更新，请向作者反馈。i=" + a);
-                },
-                full_url: '',
-
-            },
             resource_sites:{
                 //search_name_string:["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"],
                 "btsow.pw": function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: 'GET',
-                        url: "https://" + GM_getValue('search_index') + "/search/" + kw,
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            var doc = Common.parsetext(result.responseText);
-                            if (!doc) {
-                                thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
-                            }
-                            var data = [];
-                            var t = doc.getElementsByClassName('data-list')[0];
-                            if (t) {
-                                var a = t.getElementsByTagName('a');
-                                for (var i = 0; i < a.length; i++) {
-                                    if (!a[i].className.match('btn')) {
-                                        data.push({
-                                            'title': a[i].title,
-                                            'maglink': 'magnet:?xt=urn:btih:' + a[i].outerHTML.replace(/.*hash\//, '').replace(/" .*\n.*\n.*\n.*/, ''),
-                                            'size': a[i].nextElementSibling.textContent,
-                                            'src': a[i].href,
-                                        });
-                                    }
+                    let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
+                    promise.then((result) => {
+                        thirdparty.nong.search_engines.full_url = result.finalUrl;
+                        var doc = Common.parsetext(result.responseText);
+                        if (!doc) {
+                            thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
+                        }
+                        var data = [];
+                        var t = doc.getElementsByClassName('data-list')[0];
+                        if (t) {
+                            var a = t.getElementsByTagName('a');
+                            for (var i = 0; i < a.length; i++) {
+                                if (!a[i].className.match('btn')) {
+                                    data.push({
+                                        'title': a[i].title,
+                                        'maglink': 'magnet:?xt=urn:btih:' + a[i].outerHTML.replace(/.*hash\//, '').replace(/" .*\n.*\n.*\n.*/, ''),
+                                        'size': a[i].nextElementSibling.textContent,
+                                        'src': a[i].href,
+                                    });
                                 }
                             }
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.log(e);
                         }
+                        cb(result.finalUrl, data);
                     });
                 },
                 "www.btlibrary.info": function (kw, cb) {
@@ -891,7 +837,6 @@
                             withCredentials:true
                         },
                         onload: function (result) {
-                            console.log(result);
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
                             let data = [];
@@ -915,71 +860,57 @@
                     });
                 },
                 "sukebei.nyaa.si": function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: "GET",
-                        url: "https://" + GM_getValue('search_index') + "/?f=0&c=0_0&q=" + kw,
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            let doc = Common.parsetext(result.responseText);
-                            if (!doc) {
-                                thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
-                            }
-                            let data = [];
-                            let t = doc.querySelectorAll("tr.default,tr.success");
-                            if (t.length !== 0) {
-                                for (let elem of t) {
-                                    //debugger;
-                                    data.push({
-                                        "title": elem.querySelector("td:nth-child(2)>a:nth-child(1)").title,
-                                        "maglink": elem.querySelector("td:nth-child(3)>a:nth-last-child(1)").href,
-                                        //"torrent_url": "https://nyaa.si" + elem.querySelector("td:nth-child(3)>a:nth-child(1)").href,
-                                        "size": elem.querySelector("td:nth-child(4)").textContent,
-                                        "src": "https://sukebei.nyaa.si" + elem.querySelector("td:nth-child(2)>a:nth-child(1)").getAttribute('href'),
-                                    });
-                                }
-                            }
-
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.error(e);
-                            throw "search error";
+                    let promise = request("https://" + GM_getValue('search_index') + "/?f=0&c=0_0&q=" + kw);
+                    promise.then((result) => {
+                        thirdparty.nong.search_engines.full_url = result.finalUrl;
+                        let doc = Common.parsetext(result.responseText);
+                        if (!doc) {
+                            thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
                         }
+                        let data = [];
+                        let t = doc.querySelectorAll("tr.default,tr.success");
+                        if (t.length !== 0) {
+                            for (let elem of t) {
+                                //debugger;
+                                data.push({
+                                    "title": elem.querySelector("td:nth-child(2)>a:nth-child(1)").title,
+                                    "maglink": elem.querySelector("td:nth-child(3)>a:nth-last-child(1)").href,
+                                    //"torrent_url": "https://nyaa.si" + elem.querySelector("td:nth-child(3)>a:nth-child(1)").href,
+                                    "size": elem.querySelector("td:nth-child(4)").textContent,
+                                    "src": "https://sukebei.nyaa.si"
+                                        + elem.querySelector("td:nth-child(2)>a:nth-child(1)").getAttribute('href'),
+                                });
+                            }
+                        }
+                        cb(result.finalUrl, data);
                     });
                 },
                 "www.btdig.com": function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: "GET",
-                        url: "https://" + GM_getValue('search_index') + "/search?q=" + kw,
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            let doc = Common.parsetext(result.responseText);
-                            let data = [];
-                            let t = doc.querySelectorAll("div.one_result");
-                            if (t) {
-                                for (let elem of t) {
-                                    data.push({
-                                        "title": elem.querySelector(".torrent_name a").textContent,
-                                        "maglink": elem.querySelector(".fa.fa-magnet a").href,
-                                        "size": elem.querySelector(".torrent_size").textContent,
-                                        "src": elem.querySelector(".torrent_name a").href,
-                                    });
-                                }
-                            }
-                            else {
+                    let promise = request("https://" + GM_getValue('search_index') + "/search?q=" + kw);
+                    promise.then((result) => {
+                        thirdparty.nong.search_engines.full_url = result.finalUrl;
+                        let doc = Common.parsetext(result.responseText);
+                        let data = [];
+                        let t = doc.querySelectorAll("div.one_result");
+                        if (t) {
+                            for (let elem of t) {
                                 data.push({
-                                    "title": "没有找到磁链接",
-                                    "maglink": "",
-                                    "size": "0",
-                                    "src": result.finalUrl,
+                                    "title": elem.querySelector(".torrent_name a").textContent,
+                                    "maglink": elem.querySelector(".fa.fa-magnet a").href,
+                                    "size": elem.querySelector(".torrent_size").textContent,
+                                    "src": elem.querySelector(".torrent_name a").href,
                                 });
                             }
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.error(e);
-                            throw "search error";
                         }
+                        else {
+                            data.push({
+                                "title": "没有找到磁链接",
+                                "maglink": "",
+                                "size": "0",
+                                "src": result.finalUrl,
+                            });
+                        }
+                        cb(result.finalUrl, data);
                     });
                 },
                 // "btdb.to": function (kw, cb) {
@@ -1011,7 +942,7 @@
                 //     });
                 // },
 
-                "btkitty.pet": function (kw, cb) {
+                "btkittyba.ws": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
                         url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
@@ -1022,18 +953,13 @@
                             Origin: "http://"+ GM_getValue('search_index')
                         },
                         onload: function (result) {
-                            console.log("642:" + result.finalUrl);
-                            console.log(result);
-                            //debugger;
                             let hostString = GM_getValue('search_index');
-
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
                             let data = [];
                             let t = doc.getElementsByClassName("list-con");
                             if (t) {
                                 for (let elem of t) {
-                                    //debugger;
                                     data.push({
                                         "title": elem.querySelector("dt a").textContent,
                                         "maglink": elem.querySelector(".option span:nth-child(2) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
@@ -1044,7 +970,6 @@
                                     });
                                 }
                             }
-
                             cb(result.finalUrl, data); // todo 181224
                         },
                         onerror: function (e) {
@@ -1054,8 +979,7 @@
                     });
                 },
                 //btdiggs.cc
-                //www.btdig.com
-                "btdiggs.org": function (kw, cb) {
+                "btdiggcn.xyz": function (kw, cb) {
                     GM_xmlhttpRequest({
                         method: "POST",
                         url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
@@ -1065,10 +989,7 @@
                             withCredentials:true
                         },
                         onload: function (result) {
-                            console.log(result);
-                            //console.log(result.responseHeaders);
-                            let hostString = "btdiggs.xyz";
-
+                            let hostString = "btdiggcn.xyz";
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
                             let data = [];
@@ -1095,41 +1016,57 @@
                     });
                 },
                 "www.torrentkitty.tv": function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: "GET",
-                        url: "https://" + GM_getValue('search_index') + "/search/" + kw,
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            let doc = Common.parsetext(result.responseText);
-                            let data = [];
-                            let t = doc.querySelectorAll("#archiveResult tr");
-                            if (t) {
-                                t = Array.slice(t, 1, t.length);
-                                for (let elem of t) {
-                                    data.push({
-                                        "title": elem.querySelector(".name").textContent,
-                                        "maglink": elem.querySelector(".action>a:nth-child(2)").href,
-                                        "size": elem.querySelector(".size").textContent,
-                                        "src": "https://www.torrentkitty.tv" + elem.querySelector(".action>a:nth-child(1)").getAttribute('href'),
-                                    });
-                                }
-                            }
-                            else {
+                    let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
+                    promise.then((result) => {
+                        thirdparty.nong.search_engines.full_url = result.finalUrl;
+                        let doc = Common.parsetext(result.responseText);
+                        let data = [];
+                        let t = doc.querySelectorAll("#archiveResult tr");
+                        if (t) {
+                            t = Array.slice(t, 1, t.length);
+                            for (let elem of t) {
                                 data.push({
-                                    "title": "没有找到磁链接",
-                                    "maglink": "",
-                                    "size": "0",
-                                    "src": result.finalUrl,
+                                    "title": elem.querySelector(".name").textContent,
+                                    "maglink": elem.querySelector(".action>a:nth-child(2)").href,
+                                    "size": elem.querySelector(".size").textContent,
+                                    "src": "https://www.torrentkitty.tv" + elem.querySelector(".action>a:nth-child(1)").getAttribute('href'),
                                 });
                             }
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.error(e);
-                            throw "search error";
                         }
+                        else {
+                            data.push({
+                                "title": "没有找到磁链接",
+                                "maglink": "",
+                                "size": "0",
+                                "src": result.finalUrl,
+                            });
+                        }
+                        cb(result.finalUrl, data);
                     });
                 },
+
+            },
+            // 挊
+            search_engines: {
+                switch_engine: function (i) {
+                    // var index = GM_getValue("search_index",0);
+                    GM_setValue('search_index', i);
+                    return i;
+                },
+                cur_engine: function (kw, cb) {
+                    let ops = Object.keys(thirdparty.nong.resource_sites);
+                    let z = thirdparty.nong.resource_sites[GM_getValue('search_index', ops[0])];
+                    if (!z) {
+                        //alert("search engine not found");
+                        GM_setValue('search_index', Object.keys(thirdparty.nong.resource_sites)[0]);
+                        z = thirdparty.nong.resource_sites[GM_getValue('search_index')];
+                    }
+                    return z(kw, cb);
+                },
+                parse_error: function (a) {
+                    alert("调用搜索引擎错误，可能需要更新，请向作者反馈。i=" + a);
+                },
+                full_url: '',
 
             },
             // 挊
@@ -1139,12 +1076,7 @@
                         var a = document.createElement('tr');
                         a.className = 'jav-nong-row';
                         a.id = 'jav-nong-head';
-                        var list = [
-                            '标题',
-                            '大小',
-                            '操作',
-                            '离线下载'
-                        ];
+                        var list = ['标题','大小','操作','离线下载'];
                         for (var i = 0; i < list.length; i++) {
                             var b = this.head.cloneNode(true);
                             if (i === 0) {
@@ -1179,20 +1111,16 @@
                         a.setAttribute('maglink', data.maglink);
                         //debugger;
                         // 暂时针对cnbtkitty.pw站点生效。
-                        if(data.maglink.indexOf("#magnetlink")>-1)
-                        {//todo 222
+                        if(data.maglink.indexOf("#magnetlink")>-1){
                             a.setAttribute('id', data.id);
-                            GM_xmlhttpRequest({
-                                method: "GET",
-                                url: data.maglink + "?hobbyId=" + data.id,// 传递修改hobbyId，用于修改时定位。
-                                onload: function (result) {
-                                    //定位磁链编码开始下标位置
-                                    let indexNum = result.responseText.indexOf('#website#infohash#');
-                                    if (indexNum >= 0) {
-                                        let magnetlink = result.responseText.substring(indexNum + 18, indexNum + 58);
-                                        let hobbyId = result.finalUrl.substring(result.finalUrl.indexOf('?hobbyId=') + 9, result.finalUrl.length);
-                                        $("#" + hobbyId).attr("maglink", "magnet:?xt=urn:btih:" + magnetlink);
-                                    }
+                            let promise1 = request(data.maglink + "?hobbyId=" + data.id);// 传递修改hobbyId，用于修改时定位。
+                            promise1.then((result) => {
+                                //定位磁链编码开始下标位置
+                                let indexNum = result.responseText.indexOf('#website#infohash#');
+                                if (indexNum >= 0) {
+                                    let magnetlink = result.responseText.substring(indexNum + 18, indexNum + 58);
+                                    let hobbyId = result.finalUrl.substring(result.finalUrl.indexOf('?hobbyId=') + 9, result.finalUrl.length);
+                                    $("#" + hobbyId).attr("maglink", "magnet:?xt=urn:btih:" + magnetlink);
                                 }
                             });
                         }
@@ -1316,9 +1244,6 @@
                             tab.appendChild(thirdparty.nong.magnet_table.template.create_row(data[i]));
                         }
                     }
-                    // else if(type =='mini'){
-                    // }
-
                     this.reg_event();
                 },
                 full: function (src, data) {
@@ -1333,7 +1258,6 @@
                 },
                 handle_event: function (event) {
                     var maglink = event.target.parentElement.parentElement.getAttribute('maglink') || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
-                    // todo 333
                     if (event.target.className == 'nong-copy') {
                         event.target.innerHTML = '成功';
                         GM_setClipboard(maglink);
@@ -1343,61 +1267,59 @@
                         event.preventDefault(); //阻止跳转
                     }
                     else if (event.target.className == 'nong-offline-download') {
-
+                        maglink = maglink.substr(0,60);
                         GM_setValue('magnet', maglink);
-
-                        var token_url = 'http://115.com/?ct=offline&ac=space&_='; //获取115 token接口
-                        GM_xmlhttpRequest({
-                            method: 'GET',
-                            url: token_url + new Date().getTime(),
-                            onload: function (responseDetails) {
-                                if (responseDetails.responseText.indexOf('html') >= 0) {
-                                    //未登录处理
-                                    Common.notifiy("115还没有登录",
-                                        '请先登录115账户后,再离线下载！',
-                                        icon,
-                                        'http://115.com/?mode=login'
-                                    );
-                                    return false;
-                                }
-                                var sign115 = JSON.parse(responseDetails.response).sign;
-                                var time115 = JSON.parse(responseDetails.response).time;
-                                console.log("uid=" + jav_userID + " sign:" + sign115 + " time:" + time115);
-                                console.log("rsp:" + responseDetails.response);
-                                GM_xmlhttpRequest({
-                                    method: 'POST',
-                                    url: 'http://115.com/web/lixian/?ct=lixian&ac=add_task_url', //添加115离线任务接口
-                                    headers: {
-                                        "Content-Type": "application/x-www-form-urlencoded"
-                                    },
-                                    data: "url=" + encodeURIComponent(maglink) + "&uid=" + jav_userID + "&sign=" + sign115 + "&time=" + time115, //uid=1034119 ,hobby的
-                                    onload: function (responseDetails) {
-                                        var lxRs = JSON.parse(responseDetails.responseText); //离线结果
-                                        if (lxRs.state) {
-                                            //离线任务添加成功
-                                            Common.notifiy("115老司机自动开车",
-                                                '离线任务添加成功',
-                                                icon,
-                                                'http://115.com/?tab=offline&mode=wangpan'
-                                            );
-                                        }
-                                        else {
-                                            //离线任务添加失败
-                                            if (lxRs.errcode == '911') {
-                                                lxRs.error_msg = '你的帐号使用异常，需要在线手工重新验证即可正常使用。';
-                                            }
-                                            Common.notifiy("失败了",
-                                                '请重新打开115,' + lxRs.error_msg,
-                                                icon,
-                                                'http://115.com/?tab=offline&mode=wangpan'
-                                            );
-                                        }
-                                        console.log("sign:" + sign115 + " time:" + time115);
-                                        console.log("磁链:" + maglink + " 下载结果:" + lxRs.state + " 原因:" + lxRs.error_msg);
-                                        console.log("rsp:" + responseDetails.response);
-                                    }
-                                });
+                        //获取115 token接口
+                        let promise = request('http://115.com/?ct=offline&ac=space&_='+ new Date().getTime());
+                        promise.then((responseDetails) => {
+                            if (responseDetails.responseText.indexOf('html') >= 0) {
+                                //未登录处理
+                                Common.notifiy("115还没有登录",
+                                    '请先登录115账户后,再离线下载！',
+                                    icon,
+                                    'http://115.com/?mode=login'
+                                );
+                                return false;
                             }
+                            var sign115 = JSON.parse(responseDetails.response).sign;
+                            var time115 = JSON.parse(responseDetails.response).time;
+                            console.log("uid=" + jav_userID + " sign:" + sign115 + " time:" + time115);
+                            console.log("rsp:" + responseDetails.response);
+                            GM_xmlhttpRequest({
+                                method: 'POST',
+                                url: 'http://115.com/web/lixian/?ct=lixian&ac=add_task_url', //添加115离线任务接口
+                                headers: {
+                                    "Content-Type": "application/x-www-form-urlencoded"
+                                },
+                                data: "url=" + encodeURIComponent(maglink) + "&uid=" + jav_userID + "&sign=" + sign115
+                                    + "&time=" + time115,
+                                onload: function (responseDetails) {
+                                    var lxRs = JSON.parse(responseDetails.responseText); //离线结果
+                                    if (lxRs.state) {
+                                        //离线任务添加成功
+                                        Common.notifiy("115老司机自动开车",
+                                            '离线任务添加成功',
+                                            icon,
+                                            'http://115.com/?tab=offline&mode=wangpan'
+                                        );
+                                    }
+                                    else {
+                                        //离线任务添加失败
+                                        if (lxRs.errcode == '911') {
+                                            lxRs.error_msg = '你的帐号使用异常，需要在线手工重新验证即可正常使用。';
+                                        }
+                                        Common.notifiy("失败了",
+                                            '请重新打开115,' + lxRs.error_msg,
+                                            icon,
+                                            'http://115.com/?tab=offline&mode=wangpan'
+                                        );
+                                    }
+                                    console.log("sign:" + sign115 + " time:" + time115);
+                                    console.log("磁链:" + maglink + " 下载结果:" + lxRs.state + " 原因:" + lxRs.error_msg);
+                                    console.log("rsp:" + responseDetails.response);
+                                }
+                            });
+
                         });
                         event.preventDefault(); //阻止跳转
                     }
@@ -1413,9 +1335,6 @@
                             a[u].addEventListener('click', this.handle_event, false);
                         }
                     }
-                    // var b = document.querySelectorAll('#nong-search-select')[0];
-                    // b.addEventListener('change', this.handle_event, false);
-
                 },
             },
             // 挊
@@ -1423,11 +1342,10 @@
                 for (var i = 0; i < main_keys.length; i++) {
                     var v = main[main_keys[i]];
 
-                    //for javlibrary
-                    if ($("#adultwarningprompt")[0] !== null) {
-                        //$("#adultwarningprompt input")[0].click();
-                    }
-
+                    // //for javlibrary
+                    // if ($("#adultwarningprompt")[0] !== null) {
+                    //     //$("#adultwarningprompt input")[0].click();
+                    // }
                     if (v.re.test(location.href)) {
                         if (v.type === 0) {
                             try {
@@ -1446,7 +1364,6 @@
                                     '#jav-nong-head a {margin-right: 5px;}',
                                     '.nong-offline-download{color: rgb(0, 180, 30) !important; margin-right: 4px !important;}',
                                     '.nong-offline-download:hover{color:red !important;}',
-
                                 ].join(''));
                                 main.cur_tab = thirdparty.nong.magnet_table.full();
                                 console.log('h1026 挊的番号：', main.cur_vid);
@@ -1456,25 +1373,24 @@
                                 let t = $('#jav-nong-head')[0].firstChild;
                                 t.firstChild.addEventListener('change', function (e) {
                                     //debugger;
-                                    console.log("a1033:" + e.target.value);
+                                    console.log("url: http://" + e.target.value);
                                     GM_setValue('search_index', e.target.value);
                                     let s = $('#nong-table-new')[0];
                                     s.parentElement.removeChild(s);
                                     thirdparty.nong.searchMagnetRun();
                                 });
 
-                                //debugger;
-
+                                if (GM_getValue('search_index', null) === null) {
+                                    GM_setValue('search_index', Object.keys(thirdparty.nong.resource_sites)[0]);
+                                }
                                 thirdparty.nong.search_engines.cur_engine(main.cur_vid, function (src, data) {
-
                                     if (data.length === 0) {
-                                        //debugger;
-                                        console.log("111:" + src);
-                                        $('#nong-table-new')[0].querySelectorAll('#notice')[0].textContent = 'No search result';   //todo 181224
+                                        let url = thirdparty.nong.search_engines.full_url;
+                                        $('#nong-table-new #notice').text('No search result! ');   //todo 181224
+                                        $('#nong-table-new #notice').append('<a href="'+url
+                                            +'" target="_blank" style="color: red;">&nbsp;Go</a>');   //todo 190630
                                     }
                                     else {
-                                        //debugger;
-                                        console.log("222:" + src);
                                         thirdparty.nong.magnet_table.updata_table(src, data, 'full');
                                         /*display search url*/
                                         var y = $('#jav-nong-head th')[1].firstChild;
@@ -1511,7 +1427,6 @@
                 };
                 this._3func = function (elems) {
                 };
-
                 if ($(this.selector.item).length) {
                     // 开启关闭瀑布流判断
                     if(waterfallScrollStatus > 0) {
@@ -1520,7 +1435,6 @@
                     }
                     this.appendElems(this._1func);
                 }
-
             }
 
             waterfall.prototype.getBaseURI = function () {
@@ -1595,7 +1509,6 @@
             };
             // 瀑布流脚本
             waterfall.prototype.end = function () {
-                console.info('The End');
                 document.removeEventListener('scroll', this.scroll.bind(this));
                 document.removeEventListener('wheel', this.wheel.bind(this));
                 let $end = $(`<h1>The End</h1>`);
@@ -1604,13 +1517,11 @@
             waterfall.prototype.reachBottom = function (elem, limit) {
                 return (elem.getBoundingClientRect().top - $(window).height()) < limit;
             };
-
             waterfall.prototype.scroll = function () {
                 if (this.reachBottom(this.anchor, 500) && this.appendElems(this._2func)) {
                     this.end();
                 }
             };
-
             waterfall.prototype.wheel = function () {
                 if (this.reachBottom(this.anchor, 1000) && this.appendElems(this._2func)) {
                     this.end();
@@ -1628,122 +1539,100 @@
             waterfall.prototype.setFourthCallback = function (f) {
                 this._4func = f;
             };
-
             return waterfall;
         })(),
     };
 
-    function loadData(pageName, func) {
-        var loadPageNumData = function (pageName, PageNum, func) {
-            console.log("打开链接url:" + location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + PageNum);
-            // 浏览器对同一域名进行请求的最大并发连接数:chrome为6
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + PageNum,
-                onload: function (result) {
-                    let doc = result.responseText;
-                    let docArr = doc.split("的影片: ");
-                    //debugger;
-                    let totalNum = parseInt(docArr[1].substring(0, docArr[1].search(/<\/div/)));
-                    //设置初始化总页数
-                    GM_setValue(pageName + "_pageNum", parseInt((totalNum + 19) / 20));
-
-                    //GM_setValue(pageName + "_next", true);
-
-                    let tableText = doc.substring(doc.search(/<table class="videotextlist">/), doc.search(/<table style="width: 95%; margin: 10px auto;">/));
-                    //<table class="videotextlist">  //<table style="width: 95%; margin: 10px auto;">
-                    let $movList = $(Common.parsetext(tableText)).find("tr");
-
-                    let indexArrStr = "0";
-                    let timeArrStr = "0";
-                    var myBrowseJson = "";
-
-                    for (let i = 1; i < $movList.length; i++) {
-                        let movie = $movList.get(i);
-                        let $aEle = $($(movie).children("td.title").find("a").get(0));
-                        // 索引编码
-                        let index_cd = $aEle.attr("href").split("=")[1];
-
-                        // 创建时间
-                        let add_time = $($(movie).children("td").get(2)).text();
-
-                        indexArrStr = indexArrStr + index_cd + ',';
-                        timeArrStr = timeArrStr + add_time + "|";
-                        myBrowseJson = myBrowseJson + '{"index_cd":"' + index_cd + '","add_time":"' + add_time + '"},';
-                    }
-
-                    // debugger;
-                    GM_setValue(pageName + "_myBrowseJson" + result.finalUrl.split("page=")[1], myBrowseJson);
-                    //GM_setValue(pageName + "_indexArr" + result.finalUrl.split("page=")[1], indexArrStr);
-                    //GM_setValue(pageName + "_timeArr" + result.finalUrl.split("page=")[1], timeArrStr);
-
-                    if (PageNum === 1) {
-                        func();
-                    }
-                },
-                onerror: function (e) {
-                    console.log('打开我想要的页面出现错误');
-                }
-            });
-        };
-
-        loadPageNumData(pageName, 1, function () {
+    /**
+     * 加载数据  todo 改进
+     * @param pageName 访问网页名
+     */
+    function loadData(pageName , queue) {
+        Common.toString();// 无此步骤Common作用域失效,暂时未知原因
+        let todo = async ()=>{    // todo 190628
+            await loadPageNumData(pageName, 1);
             for (let i = 2; i < GM_getValue(pageName + "_pageNum") + 1; i++) {
-                // 每读取6页数据暂停一些时间
-                let j = parseInt(i / 6);
-                console.log("j=" + j);
-
-                setTimeout(function () {
-                    loadPageNumData(pageName, i, function () {
+                queue.push(()=>{
+                    let defer = $.Deferred();
+                    loadPageNumData(pageName, i).then(() => {
+                        defer.resolve();
                     });
-                }, j * 500);
-
-
-                if (i == GM_getValue(pageName + "_pageNum")) {
-                    setTimeout(function () {
-                        console.log("parseInt(i / 6):" + parseInt(i / 6));
-                        func();
-                    }, parseInt(i / 6) * 500);
-                }
-
+                    return defer.promise();
+                });
             }
-        });
+        };
+        return todo();
     }
 
+    function loadPageNumData(pageName, PageNum) {
+        let url = location.origin + "/cn/" + pageName + ".php?&sort=added&page=" + PageNum;// console.log("打开链接url:" + url);
+        let commonClass = Common;// 无此步骤Common作用域失效,暂时未知原因
+        let promise1 = request(url);
+        promise1.then((result) => {
+            return new Promise(resolve => {
+                if($.type(result) !== "function" && result === "wrong"){
+                    return resolve();
+                }
+                let doc = result.responseText;
+                //设置初始化总页数
+                if(PageNum == 1){
+                    let docArr = doc.split("的影片: ");
+                    let totalNum = parseInt(docArr[1].substring(0, docArr[1].search(/<\/div/)));
+                    GM_setValue(pageName + "_pageNum", parseInt((totalNum + 19) / 20));
+                }
+                let tableText = doc.substring(doc.search(/<table class="videotextlist">/), doc.search(/<table style="width: 95%; margin: 10px auto;">/));
+                //<table class="videotextlist">  //<table style="width: 95%; margin: 10px auto;">
+                let $movList = $(commonClass.parsetext(tableText)).find("tr");
+                let indexArrStr = "0";
+                let timeArrStr = "0";
+                let myBrowseJson = "";
+                for (let i = 1; i < $movList.length; i++) {
+                    let movie = $movList.get(i);
+                    let $aEle = $($(movie).children("td.title").find("a").get(0));
+                    // 索引编码
+                    let index_cd = $aEle.attr("href").split("=")[1];
+                    // 创建时间
+                    let add_time = $($(movie).children("td").get(2)).text();
+                    indexArrStr = indexArrStr + index_cd + ',';
+                    timeArrStr = timeArrStr + add_time + "|";
+                    myBrowseJson = myBrowseJson + '{"index_cd":"' + index_cd + '","add_time":"' + add_time + '"},';
+                }
+
+                // 保存当前页的json格式数据
+                GM_setValue(pageName + "_myBrowseJson" + result.finalUrl.split("page=")[1], myBrowseJson);
+                console.log("处理完url:" + location.origin + "/ja/" + pageName + ".php?&sort=added&page=" + PageNum);
+                resolve();
+            });
+        });
+        return promise1;
+    }
     /**
-     *
-     * @param pageName
+     * 合并json数据
+     * @param pageName 访问网页名
      */
     function mergeJson(pageName) {
-        // 循环执行,每次延迟执行
-        var s1 = setInterval(function () {
-            var p = GM_getValue(pageName + "_pageNum");
-            if (p > 0) {
-                var i = 1;
-                GM_setValue(pageName + "_myBrowseJsonAll", "");
-                var s2 = setInterval(function () {
+        // 读取访问指定网页的页数量
+        var p = GM_getValue(pageName + "_pageNum");
+        if (p > 0) {
+            GM_setValue(pageName + "_myBrowseJsonAll", "");
+            // 循环合并Json,以同步方式保存.
+            let loopMerge = async () => {
+                for (let i = 1; i < p; i++) {
                     let tempJson = GM_getValue(pageName + "_myBrowseJson" + i);
-                    //console.log("i = " + i )
                     if (tempJson && tempJson !== "") {
-                        GM_setValue(pageName + "_myBrowseJsonAll", GM_getValue(pageName + "_myBrowseJsonAll") + tempJson);
-                        if (i < p) {
-                            i++;
-                        }
-                        else {
-                            //停止s2循环
-                            //console.log(pageName + "Json:" + GM_getValue(pageName + "_myBrowseJsonAll"));
-                            console.log(pageName + "doNum:" + (GM_getValue("doNum") + 1));
-                            GM_setValue("doNum", GM_getValue("doNum") + 1);
-                            clearInterval(s2);
-                        }
+                        await new Promise(resolve => {
+                            GM_setValue(pageName + "_myBrowseJsonAll", GM_getValue(pageName + "_myBrowseJsonAll") + tempJson);
+                            resolve();
+                        })
                     }
-                }, 50);
-                //停止s1循环
-                clearInterval(s1);
-            }
-        }, 100);
+                }
+            };
+            return loopMerge().then(()=>{
+                console.log("doNum:" + (GM_getValue("doNum") + 1) + "  --" +pageName);
+                GM_setValue("doNum", GM_getValue("doNum") + 1);
+            });
+        }
     }
-
     /**
      * JSON数组去重
      * @param: [array] json Array
@@ -1768,64 +1657,55 @@
         return result;
     }
 
-    function addJsonsToDB(hasDo, jsons, func, callback) {
-        if (!hasDo) {
-            for (let i = 0; i < jsons.length; i++) {
-                let jsonObj = jsons[i];
-                let abc = func();
-                abc.index_cd = jsonObj.index_cd;
-                abc.add_time = jsonObj.add_time;
-                persistence.add(abc);
-                //persistence.flush(); 出现my_browse插入不了数据的情况，然后注释了。
-                //debugger;
-            }
-            //debugger;
-        }
-        persistence.flush(callback);
-    }
-    // todo websql add
+    /**
+     * 添加movie信息到myMovie表中
+     * @param index_cd 索引编码(网页)
+     */
     function addMovie(index_cd) {
-        GM_xmlhttpRequest({
-            method: "GET",
-            url: location.origin + "/cn/?v=" + index_cd,
-            onload: function (result) {
-                let doc = result.responseText;
-
-                let movie_name = doc.substring(doc.search(/<title>/) + 7, doc.search(/ - JAVLibrary<\/title>/));
-                let movie_info = doc.substring(doc.search(/<table id="video_jacket_info">/), doc.search(/<div id="video_favorite_edit" class="">/));
-                movie_info = movie_info.replace("src", "hobbysrc");
-                let $doc = $(Common.parsetext(movie_info));
-
-                let movie = new MyMovie();
-                movie.index_cd = result.finalUrl.split("v=")[1];
-                movie.code = $('.header', $doc)[0].nextElementSibling.textContent;
-                movie.release_date = $('#video_date .text', $doc).text();
-                movie.duration = $('#video_length .text', $doc).text();
-                movie.director = $('#video_director .text', $doc).text();
-                movie.maker = $('#video_maker .text', $doc).text();
-                movie.score = $('#video_review .text .score', $doc).text();
-                movie.actor = $('#video_cast .text', $doc).text();
-                movie.cover_img_url = $('#video_jacket_img', $doc).attr("hobbysrc").replace("//", "");
-                movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
-                movie.movie_name = movie_name;
-                movie.publisher = $('#video_label .text a', $doc).text();
-                movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-
-                let myBrowseJsonArray = JSON.parse(GM_getValue("myBrowseAll"));
-                let jsonObj = myBrowseJsonArray.filter((p) => {
-                    return p.index_cd == result.finalUrl.split("v=")[1];
-                });
-                //debugger;
-                movie.add_time = jsonObj[0].add_time;
-                persistence.add(movie);
-                //persistence.flush();
-                GM_setValue("addMovieNum", GM_getValue("addMovieNum") + 1);
-                console.log("addmovieNum:" + (GM_getValue("addMovieNum") + 1));
-            },
-            onerror: function (e) {
-                console.log('出现错误');
+        let url = location.origin + "/ja/?v=" + index_cd;
+        let commonClass = Common;// 无此步骤Common作用域失效,暂时未知原因
+        let promise1 = request(url);
+        promise1.then((result) => {
+            if($.type(result) !== "function" && result === "wrong"){
+                return Promise.resolve();
             }
+            let doc = result.responseText;
+            let movie_name = doc.substring(doc.search(/<title>/) + 7, doc.search(/ - JAVLibrary<\/title>/));
+            let movie_info = doc.substring(doc.search(/<table id="video_jacket_info">/), doc.search(/<div class="socialmedia">/));
+            movie_info = movie_info.replace("src", "hobbysrc");
+            let $doc = $(commonClass.parsetext(movie_info));
+            let movie = {};
+            //console.log($doc); // todo
+            movie.index_cd = result.finalUrl.split("v=")[1];
+            movie.code = $('.header', $doc)[0].nextElementSibling.textContent;
+            movie.release_date = $('#video_date .text', $doc).text();
+            movie.duration = $('#video_length .text', $doc).text();
+            movie.director = $('#video_director .text', $doc).text();
+            movie.maker = $('#video_maker .text', $doc).text();
+            movie.score = $('#video_review .text .score', $doc).text();
+            movie.actor = $('#video_cast .text', $doc).text();
+            movie.cover_img_url = $('#video_jacket_img', $doc).attr("hobbysrc").replace("//", "");
+            movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+            movie.movie_name = movie_name;
+            movie.publisher = $('#video_label .text a', $doc).text();
+            movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+            movie.is_browse = true;
+            movie.is_want = ($('#subscribed .smallbutton.hidden', $doc).length > 0) ? true : false;
+            movie.is_seen = ($('#watched .smallbutton.hidden', $doc).length > 0) ? true : false;
+            movie.is_have = ($('#owned .smallbutton.hidden', $doc).length > 0) ? true : false;
+
+            let myBrowseJsonArray = JSON.parse(GM_getValue("myBrowseAllData"));
+            let jsonObj = myBrowseJsonArray.filter((p) => {
+                return p.index_cd == result.finalUrl.split("v=")[1];
+            });
+            movie.add_time = jsonObj[0].add_time;
+            let row = myMovie.createRow(movie);
+            javDb.insertOrReplace().into(myMovie).values([row]).exec();
+            return Promise.resolve();
+        }).catch((e)=>{
+            console.log(e);//debugger;
         });
+        return promise1;
     }
 
     /**
@@ -1834,14 +1714,13 @@
     function javbusUs() {
         $('#magnet-table tbody tr td[colspan="4"]').attr("colspan","5");
         let tr_array = $('#magnet-table tr[height="35px"]');
-
         for (var i = 0; i < tr_array.length; i++) {
             let trEle = tr_array[i];
             //debugger;
             let magnetUrl = $(trEle).find("td a")[0].href;
             $(trEle).append("<td style='text-align:center;'><div><a class='nong-copy' href='" + magnetUrl + "'>复制</a></div></td>");
-            $(trEle).append("<td><div class='nong-offline'><a class='nong-offline-download' target='_blank' href='http://115.com/?tab=offline&amp;mode=wangpan'>115离线</a></div></td>");
-            //TODO
+            $(trEle).append("<td><div class='nong-offline'><a class='nong-offline-download' target='_blank' "
+                + "href='http://115.com/?tab=offline&amp;mode=wangpan'>115离线</a></div></td>");
             $(trEle).attr("maglink", magnetUrl);
             $(trEle).find(".nong-copy")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
             $(trEle).find(".nong-offline-download")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
@@ -1849,27 +1728,115 @@
         }
     }
 
+    function saveData() {
+        GM_setValue("doNum", 0);//console.log("saveData");
+        let  pm1 = mergeJson("mv_wanted");
+        let  pm2 = mergeJson("mv_watched");
+        let  pm3 = mergeJson("mv_owned");
 
+        Promise.all([pm1,pm2,pm3]).then(()=>{
+            console.log("mergeJson处理完毕");
+            if (GM_getValue("doNum") === 3) {
+                let j1 = GM_getValue("mv_wanted_myBrowseJsonAll");
+                let j2 = GM_getValue("mv_watched_myBrowseJsonAll");
+                let j3 = GM_getValue("mv_owned_myBrowseJsonAll");
+                //let myBrowseAll = j3.substring(0, j3.length - 1);
+                let myBrowseAll = j1 + j2 + j3.substring(0, j3.length - 1);
+                let myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
+
+                myBrowseArray = uniqueArray(myBrowseArray, "index_cd", function (item, resultObj) {
+                    if (item["add_time"] < resultObj["add_time"]) {
+                        resultObj["add_time"] = item["add_time"];
+                    }
+                });
+                GM_setValue("myBrowseAllData", JSON.stringify(myBrowseArray));
+                GM_setValue("myBrowseAllNum", myBrowseArray.length);//console.log(JSON.stringify(myBrowseArray));
+
+                let startTime = new Date();//console.log("startTime: " + startTime);
+                let b = GM_getValue(domain + "_stepTwo_V2", false);
+                if (!b) {
+                    GM_setValue(domain + "_addMovieNum", 0);
+                    // 创建请求队列  //浏览器对同一域名进行请求的最大并发连接数:chrome为6
+                    let queue2 = new Queue(7);
+                    // 循环数组,将请求数据数组全部添加到并发处理队列中,然后并发执行指定数量的多线程.
+                    for (let i = 0; i < myBrowseArray.length; i++) {
+                        let jsonObj = myBrowseArray[i];
+                        queue2.push(function(){
+                            let defer = $.Deferred();
+                            javDb.select().from(myMovie).where(myMovie.index_cd.eq(jsonObj.index_cd)).exec()
+                                .then((results)=>{
+                                    let log = ()=>{
+                                        console.log(domain + "_addmovieNum:" + (GM_getValue(domain + "_addMovieNum") + 1));
+                                        GM_setValue(domain + "_addMovieNum", (GM_getValue(domain + "_addMovieNum") + 1));
+                                    };
+                                    if (results.length == 0){
+                                        return addMovie(jsonObj.index_cd).then(()=>{
+                                            log();
+                                            defer.resolve();
+                                            return Promise.resolve();
+                                        });
+                                    }
+                                    else {
+                                        log();
+                                        defer.resolve();
+                                        return Promise.resolve();
+                                    }
+                                });
+                            return defer.promise();
+                        });
+                    }
+                    var s4 = setInterval(function () {
+                        if(GM_getValue(domain + "_addMovieNum",0) == myBrowseArray.length){
+                            console.log(domain + "_stepTwoTime:" + (new Date() - startTime));
+                            //alert(domain + "_stepTwoTime:" + (new Date() - startTime));
+                            //GM_setValue(domain + "_stepTwo_V2", true);  // todo 需使用
+                            GM_setValue(domain + "_doDataSyncStepAll_V2", true); // todo 需使用
+                            clearInterval(s4);
+                        }
+                    }, 500);
+                }
+            }
+        });
+    }
 
     function mainRun() {
+        /**
+         * 针对页面的番号信息增加功能及样式修改. javlib和javbus共同使用
+         * @returns {string} 番号
+         */
+        function getAvidAndChgPage() {
+            let AVID = $('.header')[0].nextElementSibling.textContent;
+            // 实现点击番号复制到系统剪贴板 todo 181221v1
+            $('.header')[0].nextElementSibling.id = "avid";
+            $('#avid').empty().attr("title", "点击复制番号").attr("avid", AVID);
+            let a_avid = document.createElement('a');
+            $(a_avid).attr("href", "#").append(AVID);
+            $(a_avid).click(function () {
+                GM_setClipboard($('#avid').attr("avid"));
+            });
+            $('#avid').append(a_avid);
+            $('#avid').after("<span style='color:red;'>(←点击复制)</span>");
+            $($('.header')[0]).attr("class", "header_hobby");
+            return AVID;
+        }
+        let a3;// 瀑布流ui按钮
         if (location.host.indexOf('115.com') >= 0) {
             thirdparty.login115Run();
         }
 
         if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
-
             GM_addStyle([
                 '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
                 '.container {width: 100%;float: left;}',
                 '.col-md-3 {float: left;max-width: 260px;}',
                 '.col-md-9 {width: inherit;}',
-                '.footer {padding: 20px 0;background: #1d1a18;float: left;}',
+                '.footer {padding: 20px 0;background: #1d1a18;float: left;}',// javbus
                 '#nong-table-new {margin: initial !important;important;color: #666 !important;font-size: 13px;text-align: center;background-color: #F2F2F2;float: left;}',
-                '.header_hobby {font-weight: bold;text-align: right;width: 75px;}',
+                '.header_hobby {font-weight: bold;text-align: right;width: 75px;}',// javbus
             ].join(''));
 
             // 瀑布流ui按钮
-            let a3 = document.createElement('a');
+            a3 = document.createElement('a');
             (waterfallScrollStatus > 0) ? $(a3).append('&nbsp;&nbsp;关闭瀑布流') : $(a3).append('&nbsp;&nbsp;开启瀑布流');
             $(a3).css({
                 "color": "blue",
@@ -1888,14 +1855,36 @@
                 window.location.reload();
             });
 
+            //获取所有番号影片链接的a元素
+            var a_array = $("div[class='item'] a");
+            for (var index = 0; index < a_array.length; index++) {
+                var aEle = a_array[index];
+                $(aEle).attr("target", "_blank");
+            }
+        }
 
-            if (document.title.search(/JAVLibrary/) > 0) {
-
+        if ((/(JAVLibrary)/g).test(document.title)) {
+            //数据库初始化  start01
+            var pm_mater = Common.getSchemaBuilder().connect({
+                storeType: lf.schema.DataStoreType.INDEXED_DB
+            }).then(function(database) {
+                javDb = database;
+                myMovie = javDb.getSchema().table('MyMovie');
+                //javDb.delete().from(myMovie).exec();// 清空MyMovie表数据.
+                return javDb.select().from(myMovie).where(myMovie.is_browse.eq(true)).exec();
+            }).then(function(results) {
+                console.log("已经保存已阅影片数量:"+results.length);
+                // results.forEach(function(row) {
+                //     console.log(row['index_cd'],'|',row['code'],'|', row['add_time'],'|',row['movie_name']);
+                // });
                 if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre|vl_searchbycombo|mv_owned|mv_watched|mv_wanted|mv_visited)/g)
                     .test(document.URL)) {
 
                     // 指定站点页面加入瀑布流控制按钮
                     $(".displaymode .right").append($(a3));
+
+                    // 瀑布流脚本
+                    thirdparty.waterfallScrollInit();
 
                     let a1 = document.createElement('a');
                     let a2 = document.createElement('a');
@@ -1922,10 +1911,8 @@
                                 return 1;
                             }
                         });
-
                         // 删除Dom列表数据关系，重新添加排序数据
                         div_array.detach().appendTo("#waterfall");
-
                     });
 
                     $(a2).append('&nbsp;&nbsp;按时间排序');
@@ -1936,9 +1923,7 @@
                     $(a2).attr("href", "#");
                     $(a2).click(function () {
                         let div_array = $("div.videos div.video");
-                        //debugger;
                         div_array.sort(function (a, b) {
-                            //debugger;
                             let a_time = new Date($(a).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
                             let b_time = new Date($(b).children("a").attr("release_date").replace(/-/g, "\/")).getTime();
                             let a_score = parseFloat($(a).children("a").attr("score"));
@@ -1956,315 +1941,148 @@
 
                         // 删除Dom列表数据关系，重新添加排序数据
                         div_array.detach().appendTo("#waterfall");
-
                     });
-
                     $(".left select").after($(a2));
                     $(".left select").after($(a1));
                 }
+            });
+            //JavWebSql.DBinit();
+            if ($('a[href="myaccount.php"]').length) {
+                // 已经登录
+                // 从未同步过,同步云数据到本地数据库
+                let isSync = GM_getValue(domain + "_doDataSyncStepAll_V2", false);
+                console.log(domain + "  是否同步过：" + isSync);
+                if (!isSync) {
+                    pm_mater.then(()=>{
+                        return new Promise( resolve => {
+                            var hasStepOne = GM_getValue(domain + "_stepOne_V2", false);
+                            let stepOneStartTime = new Date();
+                            console.log(domain + "  同步是否完成第一步：" + hasStepOne);
+                            if(!hasStepOne){
+                                // 立即下载数据
+                                GM_setValue("mv_wanted_pageNum", 0);
+                                GM_setValue("mv_watched_pageNum", 0);
+                                GM_setValue("mv_owned_pageNum", 0);
 
-
-                if (document.URL.indexOf("bestrated") > 0) {
-                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
-                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
-                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
-                    $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
-                    //todo
-
-                }
-                else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0 || document.URL.indexOf("vl_genre") > 0) {
-                    //debugger;
-                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
-                        + "?delete9down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
-                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
-                        + "?delete8down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看8分以上&nbsp;&nbsp;</a>");
-                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
-                        + "?delete7down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看7分以上&nbsp;&nbsp;</a>");
-                    //todo
-                }
-
-                //重置数据库
-                // persistence.reset();
-                // persistence.schemaSync();
-
-                //debugger;
-                //数据库初始化  start01
-                JavWebSql.DBinit();
-                persistence.flush();
-                //end01 cpu忽略
-
-                //a href="myaccount.php"
-                if ($('a[href="myaccount.php"]').length) {
-                    // 已经登录
-                    // 从未同步过,同步云数据到本地数据库
-                    let isSync = GM_getValue(location.host + "_doDataSyncStepAll", false);
-
-                    console.log(location.href + "是否从未同步过：" + !isSync);
-                    if (!isSync) {
-                        // 立即下载数据
-                        GM_setValue("mv_wanted_pageNum", 0);
-                        GM_setValue("mv_watched_pageNum", 0);
-                        GM_setValue("mv_owned_pageNum", 0);
-
-                        //debugger;
-                        //start02 todo websql
-                        loadData("mv_wanted", function () {
-                            loadData("mv_watched", function () {
-                                loadData("mv_owned", function () {
-                                    //end02 cpu最高20
-                                    //debugger;
-                                    //start03
-                                    GM_setValue("doNum", 0);
-                                    mergeJson("mv_wanted");
-                                    mergeJson("mv_watched");
-                                    mergeJson("mv_owned");
-                                    //end03 cpu忽略
-                                    //debugger;
-                                    var s3 = setInterval(function () {
-                                        let n = GM_getValue("doNum");
-                                        if (n === 3) {
-                                            let j1 = GM_getValue("mv_wanted_myBrowseJsonAll");
-                                            let j2 = GM_getValue("mv_watched_myBrowseJsonAll");
-                                            let j3 = GM_getValue("mv_owned_myBrowseJsonAll");
-                                            let mv_owned_myBrowseJsonAll = j3.substring(0, j3.length - 1);
-                                            // let myBrowseAll = j1 + j2 + mv_owned_myBrowseJsonAll;  // todo test
-                                            let myBrowseAll = j3.substring(0, j3.length - 1);
-
-                                            var myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
-                                            var myWantArray = JSON.parse("[" + j1.substring(0, j1.length - 1) + "]");
-                                            var mySeenArray = JSON.parse("[" + j2.substring(0, j2.length - 1) + "]");
-                                            var myHaveArray = JSON.parse("[" + mv_owned_myBrowseJsonAll + "]");
-
-
-                                            //debugger;
-                                            myBrowseArray = uniqueArray(myBrowseArray, "index_cd", function (item, resultObj) {
-                                                if (item["add_time"] < resultObj["add_time"]) {
-                                                    resultObj["add_time"] = item["add_time"];
+                                //start02 todo lovefieldDB
+                                // 创建请求队列  //浏览器对同一域名进行请求的最大并发连接数:chrome为6
+                                let queue = new Queue(7);
+                                // 读取想要的影片
+                                loadData("mv_wanted",queue);
+                                // 读取看过的影片
+                                loadData("mv_watched",queue);
+                                // 读取拥有的影片
+                                loadData("mv_owned",queue);
+                                // 延迟1秒运行定时循环函数
+                                setTimeout(()=>{
+                                    // 定时循环函数,当队列执行完成时结束
+                                    var s4 = setInterval(function () {
+                                        //console.log("queue.taskList.length : " + queue.taskList.length);
+                                        if(queue.taskList.length == 0){
+                                            let end_num = 0;
+                                            for (let i = 0, l = queue.threads.length; i < l; i++){
+                                                if (queue.threads[i].promise.state() === 'resolved') {
+                                                    end_num++;
                                                 }
-                                            });
-
-                                            GM_setValue("myBrowseAll", JSON.stringify(myBrowseArray));
-                                            //console.log(myBrowseArray);
-
-                                            var hasStepOne = GM_getValue(location.host + "_stepOne", false);
-                                            var startTime = new Date();
-                                            //debugger;
-                                            addJsonsToDB(hasStepOne, myBrowseArray, function () {
-                                                return new MyBrowse();
-                                            }, function () {
-                                                //debugger;
-                                                // addJsonsToDB(hasStepOne, myWantArray, function () {
-                                                //     return new MyWant();
-                                                // }, function () {
-                                                //     //debugger;
-                                                //     addJsonsToDB(hasStepOne, mySeenArray, function () {
-                                                //         return new MySeen();
-                                                //     }, function () {
-                                                //         //debugger;
-                                                //         addJsonsToDB(hasStepOne, myHaveArray, function () {
-                                                //             return new MyHave();
-                                                //         }, function () {
-                                                            //debugger;
-                                                            GM_setValue(location.host + "_stepOne", true);
-                                                            let b = GM_getValue(location.host + "_stepTwo", false);
-                                                            if (!b) {
-                                                                GM_setValue("addMovieNum", 0);
-                                                                for (let i = 0; i < myBrowseArray.length; i++) {
-                                                                    //console.log("aaaa:" + (GM_getValue("stepTwoNum", 1) == 1) + "  bbbb:" + (i >= GM_getValue("stepTwoNum", 1)));
-                                                                    if ((GM_getValue(location.host + "_stepTwoNum", 1) == 1) || (i >= GM_getValue(location.host + "_stepTwoNum", 1))) {
-                                                                        //debugger;
-                                                                        let jsonObj = myBrowseArray[i];
-                                                                        addMovie(jsonObj.index_cd);
-                                                                    }
-                                                                    else {
-                                                                        GM_setValue("addMovieNum", i + 1);
-                                                                    }
-                                                                }
-
-                                                                // persistence.flush(function () {
-                                                                //     GM_setValue("stepTwoNum", GM_getValue("addMovieNum", 0));
-                                                                // });
-
-                                                                //console.log("time:" + (new Date() - startTime));
-
-                                                                var s4 = setInterval(function () {
-                                                                    let num = GM_getValue("addMovieNum", 0);
-                                                                    let stepTwoNum = GM_getValue(location.host + "_stepTwoNum", 1);
-                                                                    //console.log("i = " + num)
-                                                                    if (num === myBrowseArray.length) {
-                                                                        persistence.flush(function () {
-                                                                            GM_setValue(location.host + "_stepTwo", true);
-                                                                            GM_setValue(location.host + "_doDataSyncStepAll", true);
-                                                                            GM_setValue(location.host + "_stepTwoTime:", (new Date() - startTime)); // todo test add
-                                                                            console.log("time:" + (new Date() - startTime));
-                                                                        });
-                                                                        clearInterval(s4);
-                                                                    }
-                                                                    //console.log("1111:" + (num > stepTwoNum) + "  22222:" + ((num <= 50) || (num % stepTwoNum >= 50)));
-                                                                    //debugger;
-                                                                    // 没超过50个数据，持久化一次
-                                                                    if (num >= stepTwoNum && ((num - stepTwoNum) >= 600)) {
-                                                                        persistence.flush(function () {
-                                                                            GM_setValue(location.host + "_stepTwoNum", num);
-                                                                        })
-                                                                    }
-                                                                }, 150);
-                                                            }
-                                                //         });
-                                                //     });
-                                                // });
-                                            });
-                                            clearInterval(s3);
+                                            }
+                                            if(end_num == queue.threads.length){
+                                                GM_setValue(domain + "_stepOne_V2", true);  // todo 需打开
+                                                console.log(domain + "_stepOneTime:" + (new Date() - stepOneStartTime));
+                                                //alert(location.host + "_stepOneTime:" + (new Date() - stepOneStartTime));
+                                                clearInterval(s4);
+                                                resolve();
+                                            }
                                         }
-                                    }, 300)
-                                });
-                            });
+                                    }, 300);
+                                },1000);
+                            }
+                            else{
+                                resolve();
+                            }
                         });
-                    }
-
-
-                    // 增加同步数据到本地的触发按钮
+                    }).then(()=>{
+                            saveData();
+                        }
+                    );
                 }
+                // 增加同步数据到本地的触发按钮
             }
 
-            if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
-                // 指定站点页面加入瀑布流控制按钮
-                let li_elem = document.createElement('li');
-                $(li_elem).append($(a3));
-                // JavBus
-                $(".visible-md-block").closest(".dropdown").after($(li_elem));
-                // AVMOO|AVSOX
-                $(".active").closest(".navbar-nav").append($(li_elem));
+            if (document.URL.indexOf("bestrated") > 0) {
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
+                //todo
+            }
+            else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0
+                || document.URL.indexOf("vl_genre") > 0 || document.URL.indexOf("vl_mostwanted") > 0) {
+                $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                    + "?delete9down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                    + "?delete8down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看8分以上&nbsp;&nbsp;</a>");
+                $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                    + "?delete7down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看7分以上&nbsp;&nbsp;</a>");
             }
 
-            //获取所有番号影片链接的a元素
-            var a_array = $("div[class='item'] a");
-            for (var index = 0; index < a_array.length; index++) {
-                var aEle = a_array[index];
-                $(aEle).attr("target", "_blank");
-            }
-
-
-            //var AVID = "";
-            //获取番号影片详情页的番号  例如：https://www.javbus.com/AVVR-323 || http://www.javlibrary.com/cn/?v=javli7j724
+            //获取番号影片详情页的番号  例如：http://www.javlibrary.com/cn/?v=javli7j724
             if ($('.header').length && $('meta[name="keywords"]').length) {
-                let AVID = $('.header')[0].nextElementSibling.textContent;
-
-                // 实现点击番号复制到系统剪贴板 todo 181221v1
-                $('.header')[0].nextElementSibling.id = "avid";
-                $('#avid').empty().attr("title","点击复制番号").attr("avid", AVID);
-
-                let a_avid = document.createElement('a');
-                $(a_avid).attr("href", "#").append(AVID);
-
-                $(a_avid).click(function () {
-                    GM_setClipboard($('#avid').attr("avid"));
-                });
-                $('#avid').append(a_avid);
-                $('#avid').after("<span style='color:red;'>(←点击复制)</span>");
-
+                let AVID = getAvidAndChgPage();
                 window.onload = function () {
                     $('iframe').remove();
+
                 };
 
-                $($('.header')[0]).attr("class", "header_hobby");
-
-
                 // 只支持javlibray处理已阅影片
-                if (document.title.search(/JAVLibrary/) > 0) {
-                    let movie = new MyMovie();
-
-                    let vid = location.search.split("=")[1];
-
-                    movie.index_cd = vid;
-                    movie.code = AVID;
-                    movie.release_date = $('#video_date .text').text();
-                    movie.duration = $('#video_length .text').text();
-                    movie.director = $('#video_director .text').text();
-                    movie.maker = $('#video_maker .text').text();
-                    movie.score = $('#video_review .text .score').text();
-                    movie.actor = $('#video_cast .text').text();
-                    movie.cover_img_url = $('#video_jacket_img').attr("src");
-                    movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
-                    movie.movie_name = $('#video_title a').text();
-                    movie.publisher = $('#video_label .text a').text();
-                    movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-
+                let movie = {};
+                movie.index_cd = location.search.split("=")[1];
+                movie.code = AVID;
+                movie.release_date = $('#video_date .text').text();
+                movie.duration = $('#video_length .text').text();
+                movie.director = $('#video_director .text').text();
+                movie.maker = $('#video_maker .text').text();
+                movie.score = $('#video_review .text .score').text();
+                movie.actor = $('#video_cast .text').text();
+                movie.cover_img_url = $('#video_jacket_img').attr("src").replace("//", "");
+                movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+                movie.movie_name = $('#video_title a').text();
+                movie.publisher = $('#video_label .text a').text();
+                movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+                movie.is_browse = true;
+                movie.is_want = ($('#subscribed .smallbutton.hidden').length > 0) ? true : false;
+                movie.is_seen = ($('#watched .smallbutton.hidden').length > 0) ? true : false;
+                movie.is_have = ($('#owned .smallbutton.hidden').length > 0) ? true : false;
+                pm_mater.then(()=>{
                     //查找是否存在此番号数据
-                    MyMovie.findBy(persistence, null, 'code', AVID, function (findObj) {
-                        let my_borwse = new MyBrowse();
-                        if (!findObj) {//不存在
-                            persistence.add(movie);
-
-                            my_borwse.index_cd = movie.index_cd;
-                            my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-                            persistence.add(my_borwse);
-                            persistence.flush();
-                        }
-                        else {//存在
-                            movie.movie_id = findObj.movie_id;
-                            movie.add_time = findObj.add_time;
-                            persistence.remove(findObj);
-                            persistence.add(movie);
-
-                            MyBrowse.findBy(persistence, null, 'index_cd', movie.index_cd, function (findObj) {
-                                my_borwse.index_cd = movie.index_cd;
-                                my_borwse.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-                                if (findObj) {//存在
-                                    persistence.remove(findObj);
-                                }
-                                persistence.add(my_borwse);
-                                persistence.flush();
-                            });
-
-                        }
-
-                    });
-                }
+                    return javDb.select().from(myMovie).
+                    where(myMovie.index_cd.eq(movie.index_cd)).exec()
+                        .then((results)=>{
+                            if(results.length > 0){
+                                movie.add_time = results[0].add_time;
+                            }
+                            let row = myMovie.createRow(movie);
+                            javDb.insertOrReplace().into(myMovie).values([row]).exec();
+                        });
+                });
 
                 //查找115是否有此番号
-                Common.search115Data(AVID,function (BOOLEAN_TYPE) {
+                Common.search115Data(AVID,function (BOOLEAN_TYPE , playUrl) {
                     if(BOOLEAN_TYPE) {
-                        // GM_addStyle([
-                        //     '#video_jacket_info {background-color: rgba(249, 8, 187, 0.3);}',
-                        //     '.row.movie {background-color: rgba(254, 190, 0, 0.3);}',
-                        // ].join(''));
-
-                        let $imgObj;
-                        if (document.title.search(/JAVLibrary/) > 0) {
-                            //JAVLibrary
-                            $imgObj = $('#video_jacket_img');
-                        }
-                        else{
-                            //JavBus|AVMOO|AVSOX
-                            $imgObj = $('.bigImage img');
-                        }
+                        let $imgObj = $('#video_jacket_img');
                         $imgObj.after(
-                            '<div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">'+
-                                    '<p style="color: white;font-size: 46px;text-align: right;margin: 0 0 0px;">115网盘已拥有此片</p>'+
-                                    '</div>'
+                            '<div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">'
+                            + '<p style="color: white;font-size: 46px;text-align: left;margin: 0 0 0px;display: inline-block;">115网盘已拥有此片</p>'
+                            + '<a target="_blank" href="'+ playUrl + '">'
+                            + '<p style="color: white;font-size: 46px;text-align: right;width: 50%;margin: 0 0 0px;display: inline-block;">115在线播放 ►</p></a>'
+                            + '</div>'
+                            //<a target="_blank" href="http://120.78.32.31/play.html?pickcode=dpf7dxp6k3enrxytj">
+                            // <p >115在线播放 ►</p></a>
                         );
                     }
-
-                    //debugger;
                     console.log("番号输出:" + AVID);
-                    //console.log("时间000000:"+ new Date().getTime());
                     Common.addAvImg(AVID, function ($img) {
-                        //https://www.javbus.com/CHN-141
-                        var divEle = $("div[class='col-md-3 info']")[0];
-                        $(divEle).attr("id", "video_info");
-                        if (divEle) {
-                            $(divEle.parentElement).append($img);
-                            $img.click(function () {
-                                $(this).toggleClass('min');
-                                if ($(this).attr("class")) {
-                                    this.parentElement.parentElement.scrollIntoView();
-                                }
-                            });
-                        }
                         // http://www.javlibrary.com/cn/?v=javlilzo4e
-                        divEle = $("div[id='video_title']")[0];  // todo 190604
-
+                        let divEle = $("div[id='video_title']")[0];  // todo 190604
                         if (divEle) {
                             $(divEle).after(
                                 '<div style="width: 100%;height: 100%;display: inline-block;">' +
@@ -2285,6 +2103,55 @@
                     },!BOOLEAN_TYPE);
                 });
 
+                // 挊
+                thirdparty.nong.searchMagnetRun();
+            }//番号影片详情页处理end
+        }
+
+        if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
+            // 指定站点页面加入瀑布流控制按钮
+            let li_elem = document.createElement('li');
+            $(li_elem).append($(a3));
+            // JavBus
+            $(".visible-md-block").closest(".dropdown").after($(li_elem));
+            // AVMOO|AVSOX
+            $(".active").closest(".navbar-nav").append($(li_elem));
+
+            // 瀑布流脚本
+            thirdparty.waterfallScrollInit();
+
+            //获取番号影片详情页的番号  例如：https://www.javbus.com/AVVR-323
+            if ($('.header').length && $('meta[name="keywords"]').length) {
+                let AVID = getAvidAndChgPage();
+
+                //查找115是否有此番号
+                Common.search115Data(AVID,function (BOOLEAN_TYPE , playUrl) {
+                    if(BOOLEAN_TYPE) {
+                        let $imgObj = $('.bigImage');
+                        $imgObj.after(
+                            '<div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">'
+                            + '<p style="color: white;font-size: 46px;text-align: left;margin: 0 0 0px;display: inline-block;">115网盘已拥有此片</p>'
+                            + '<a target="_blank" href="'+ playUrl + '">'
+                            + '<p style="color: white;font-size: 46px;text-align: right;width: 50%;margin: 0 0 0px;display: inline-block;">115在线播放 ►</p></a>'
+                            + '</div>'
+                        );
+                    }
+                    console.log("番号输出:" + AVID);
+                    Common.addAvImg(AVID, function ($img) {
+                        //https://www.javbus.com/CHN-141
+                        let divEle = $("div[class='col-md-3 info']")[0];
+                        $(divEle).attr("id", "video_info");
+                        if (divEle) {
+                            $(divEle.parentElement).append($img);
+                            $img.click(function () {
+                                $(this).toggleClass('min');
+                                if ($(this).attr("class")) {
+                                    this.parentElement.parentElement.scrollIntoView();
+                                }
+                            });
+                        }
+                    },!BOOLEAN_TYPE);
+                });
 
                 thirdparty.busTypeSearch();
                 // 修改javbus磁链列表头，增加两列
@@ -2297,18 +2164,10 @@
                     $('#magnet-table').off();
                     javbusUs();
                 });
+
+                // 挊
+                thirdparty.nong.searchMagnetRun();
             }
-
-
-
-            // 挊
-            if (GM_getValue('search_index', null) === null) {
-                GM_setValue('search_index', 0);
-            }
-            thirdparty.nong.searchMagnetRun();
-
-            // 瀑布流脚本
-            thirdparty.waterfallScrollInit();
         }
 
         if ((/(OneJAV)/g).test(document.title)){ //todo 190404
@@ -2330,14 +2189,17 @@
 
         if ((/(jav321)*\/video\/*/g).test(document.URL)){ //todo 190531
             GM_addStyle([
-                '.col-md-3 {width: 20%;padding-left: 2px; padding-right: 0px;}',
+                '.col-md-3 {width: 20%;padding-left: 18px; padding-right: 2px;}',
                 '.col-xs-12,.col-md-12 {padding-left: 2px; padding-right: 0px;}',
                 '.col-md-7 {width: 79%;padding-left: 2px;padding-right: 0px;}',
-                '.col-md-9 {width: 68%;}',
+                '.col-md-9 {width: max-content;}',
                 '.col-md-offset-1 {margin-left: auto;}',
                 '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
+                '.hobby {display: inline-block;float: left;}',
+                '.hobby_mov {width: 75%;}',
             ].join(''));
-
+            $(".col-md-7.col-md-offset-1.col-xs-12 .row .col-md-3 .img-responsive:eq(0)").offsetParent().attr("class","hobby");
+            $("#video_overlay_sample").offsetParent().attr("class","hobby_mov");
             // 调整div位置
             $('div.col-md-7.col-md-offset-1.col-xs-12').before($('div.col-xs-12.col-md-12')[0].parentElement);
 
@@ -2346,44 +2208,39 @@
             let javID = arr[0];
 
             //查找115是否有此番号
-            Common.search115Data(javID,function (BOOLEAN_TYPE) {
+            Common.search115Data(javID,function (BOOLEAN_TYPE , playUrl) {
                 if(BOOLEAN_TYPE){
-                    GM_addStyle([
-                        '.col-md-9 {width: 68%; background-color: peachpuff;}',
-                    ].join(''));
-
                     let $imgObj = $('div.col-xs-12.col-md-12 img.img-responsive');
-
                     $imgObj.after(
-                        '<div style="position: absolute;width: 100%;height: 25%;background: rgba(0,0,0,0.5);top: 71%;left: 0;">'+
-                        '<p style="color: white;font-size: 40px;text-align: right;margin: 0 0 0px;">115网盘已拥有此片</p>'+
-                        '</div>'
+                        '<div style="position: absolute;width: 100%;height: 22%;background: rgba(0,0,0,0.5);top: 78%;left: 0;">'
+                        + '<a target="_blank" href="'+ playUrl + '">'
+                        + '<p style="color: white;font-size: 40px;text-align: right;margin: 0 0 0px;display: inline-block;width: 100%;">115在线播放 ►</p></a>'
+                        + '</div>'
                     );
                 }
-            });
 
-            //插入预览图
-            Common.addAvImg(javID, function ($img) {
-                //https://www.jav321.com/video/300mium-391
-                var divEle = $("div.col-md-9")[0];
-                //$(divEle).attr("id", "video_info");
-                if (divEle) {
-                    $(divEle).after($img);
-                    $img.click(function () {
-                        $(this).toggleClass('min');
-                        if ($(this).attr("class")) {
-                            this.parentElement.parentElement.scrollIntoView();
-                        }
-                    });
-                }
-            },true);
+                //插入预览图
+                Common.addAvImg(javID, function ($img) {
+                    //https://www.jav321.com/video/300mium-391
+                    var divEle = $("div.col-md-9")[0];
+                    //$(divEle).attr("id", "video_info");
+                    if (divEle) {
+                        $(divEle).after($img);
+                        $img.click(function () {
+                            $(this).toggleClass('min');
+                            if ($(this).attr("class")) {
+                                this.parentElement.parentElement.scrollIntoView();
+                            }
+                        });
+                    }
+                },!BOOLEAN_TYPE);
+            });
 
             // 修改jav321磁链列表头，增加两列
             $('table.table.table-striped tbody tr:eq(0)').append('<th>操作</th><th>离线下载</th>');
 
             //详情页磁链列表增加复制、115离线快捷键功能函数
             let tr_array = $('table.table.table-striped tbody tr:gt(0)');
-
             for (var i = 0; i < tr_array.length; i++) {
                 let trEle = tr_array[i];
                 //debugger;
@@ -2398,6 +2255,5 @@
             }
         }
     }
-
     mainRun();
 })();
