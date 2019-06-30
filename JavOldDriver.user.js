@@ -342,7 +342,7 @@
                     let pickcode = '';
                     for (let i = 0; i < resultJson.data.length; i++) {
                         let row = resultJson.data[i];
-                        if(row.fid){
+                        if(row.iv){//iv vdi ico
                             pickcode = row.pc;
                             break;
                         }
