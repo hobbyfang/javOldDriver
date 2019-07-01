@@ -8,7 +8,6 @@
 // @author       Hobby
 
 // @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
-// @require      https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js
 // @require      https://cdn.jsdelivr.net/npm/lovefield@2.1.12/dist/lovefield.min.js
 // @resource     icon http://geekdream.com/image/115helper_icon_001.jpg
 
@@ -201,14 +200,24 @@
      */
     let Common = {
         /**
-         * html文本转换为Document对象
+         * 设置cookie
+         * @param cname  名字
+         * @param cvalue 值
+         */
+        setCookie: function(cname, cvalue) {
+            let d = new Date();
+            d.setTime(d.getTime() + (30*24*60*60*1000));
+            let expires = "expires="+ d.toUTCString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        },
+        /**
+         * html文本转换为Document对象 https://jsperf.com/domparser-vs-createelement-innerhtml/3
          * @param {String} text
          * @returns {Document}
          */
         parsetext: function (text) {
-            var doc = null;
             try {
-                doc = document.implementation.createHTMLDocument('');
+                let doc = document.implementation.createHTMLDocument('');
                 doc.documentElement.innerHTML = text;
                 return doc;
             }
@@ -342,16 +351,14 @@
                     let pickcode = '';
                     for (let i = 0; i < resultJson.data.length; i++) {
                         let row = resultJson.data[i];
-                        if(row.iv){//iv vdi ico
+                        if(row.vdi){//iv vdi ico
                             pickcode = row.pc;
-                            break;
+                            callback(true,"http://120.78.32.31/play.html?pickcode=" + pickcode);
+                            return;
                         }
                     }
-                    callback(true,"http://120.78.32.31/play.html?pickcode=" + pickcode);
                 }
-                else{
-                    callback(false,null);
-                }
+                callback(false,null);
             });
         },
         getSchemaBuilder: function() {
@@ -436,7 +443,7 @@
             },
             proc: function () {
                 //去十八岁警告
-                setCookie("over18", 18);
+                Common.setCookie("over18", 18);
                 $('.socialmedia').remove();
                 GM_addStyle([
                     '#video_info{text-align: left;font: 14px Arial;min-width: 230px;max-width: 230px;padding: 0px 0px 0px 0px;}',
