@@ -11,36 +11,36 @@
 // @require      https://cdn.jsdelivr.net/npm/lovefield@2.1.12/dist/lovefield.min.js
 // @resource     icon http://geekdream.com/image/115helper_icon_001.jpg
 
-// @include     http*://*javlibrary.com/*
-// @include     http*://*javlib.com/*
-// @include     http*://*javbus.com/*
-// @include     http*://tellme.pw/avsox
-// @include     http*://tellme.pw/avmoo
-// @include     http*://115.com/*
-// @include     http*://onejav.com/*
-// @include     http*://*jav321.com/video/*
+// @include     *://*javlibrary.com/*
+// @include     *://*javlib.com/*
+// @include     *://*javbus.com/*
+// @include     *://tellme.pw/avsox
+// @include     *://tellme.pw/avmoo
+// @include     *://115.com/*
+// @include     *://onejav.com/*
+// @include     *://*jav321.com/video/*
 
-// @include     http*://*/vl_update*
-// @include     http*://*/vl_newrelease*
-// @include     http*://*/vl_newentries*
-// @include     http*://*/vl_mostwanted*
-// @include     http*://*/vl_bestrated*
-// @include     http*://*/vl_genre*
-// @include     http*://*/vl_star*
-// @include     http*://*/?v=jav*
-// @include     http*://*/mv_owned*
-// @include     http*://*/mv_watched*
-// @include     http*://*/mv_wanted*
-// @include     http*://*/mv_visited*
+// @include     *://*/vl_update*
+// @include     *://*/vl_newrelease*
+// @include     *://*/vl_newentries*
+// @include     *://*/vl_mostwanted*
+// @include     *://*/vl_bestrated*
+// @include     *://*/vl_genre*
+// @include     *://*/vl_star*
+// @include     *://*/?v=jav*
+// @include     *://*/mv_owned*
+// @include     *://*/mv_watched*
+// @include     *://*/mv_wanted*
+// @include     *://*/mv_visited*
 
-// @include     http*://www.*bus*/*
-// @include     http*://www.*dmm*/*
+// @include     *://www.*bus*/*
+// @include     *://www.*dmm*/*
 
-// @include     http*://*/movie/*
-// @include     http*://*/cn*
-// @include     http*://*/tw*
-// @include     http*://*/ja*
-// @include     http*://*/en*
+// @include     *://*/movie/*
+// @include     *://*/cn*
+// @include     *://*/tw*
+// @include     *://*/ja*
+// @include     *://*/en*
 
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -87,9 +87,9 @@
 /* jshint -W097 */
 (function () {
     'use strict';
-    //115用户ID
+    // 115用户ID
     let jav_userID = GM_getValue('jav_user_id', 0);
-    //icon图标
+    // icon图标
     let icon = GM_getResourceURL('icon');
     // 瀑布流状态：1：开启、0：关闭
     let waterfallScrollStatus = GM_getValue('scroll_status', 1);
@@ -344,7 +344,7 @@
          */
         search115Data: function (javId, callback) {
             //异步请求搜索115番号 //115查询
-            let promise1 = request('https://webapi.115.com/files/search?search_value=' + javId + '&format=json');
+            let promise1 = request(`https://webapi.115.com/files/search?search_value=${javId}&format=json`);
             promise1.then((result) => {
                 let resultJson = JSON.parse(result.responseText);
                 if(resultJson.count > 0) {
@@ -353,7 +353,7 @@
                         let row = resultJson.data[i];
                         if(row.vdi){//iv vdi ico
                             pickcode = row.pc;
-                            callback(true,"http://120.78.32.31/play.html?pickcode=" + pickcode);
+                            callback(true,`http://120.78.32.31/play.html?pickcode=${pickcode}`);
                             return;
                         }
                     }
@@ -445,15 +445,15 @@
                 //去十八岁警告
                 Common.setCookie("over18", 18);
                 $('.socialmedia').remove();
-                GM_addStyle([
-                    '#video_info{text-align: left;font: 14px Arial;min-width: 230px;max-width: 230px;padding: 0px 0px 0px 0px;}',
-                    '#video_jacket_info {width: 100%;overflow: hidden;}',//table-layout: fixed;
-                    '#coverimg {vertical-align: top;overflow: hidden;max-width: 50%;}',
-                    '#javtext {vertical-align: top;width: 230px;}',
-                    '#video_info td.header {width: 75px;}',
-                    '#video_info td.icon {width: 0px;}',
-                    '#content {padding-top: 0px;}',
-                ].join(''));
+                GM_addStyle(`
+                    #video_info {text-align: left;font: 14px Arial;min-width: 230px;max-width: 230px;padding: 0px 0px 0px 0px;}
+                    #video_jacket_info {width: 100%;overflow: hidden;} //table-layout: fixed;
+                    #coverimg {vertical-align: top;overflow: hidden;max-width: 50%;}
+                    #javtext {vertical-align: top;width: 230px;}
+                    #video_info td.header {width: 75px;}
+                    #video_info td.icon {width: 0px;}
+                    #content {padding-top: 0px;}
+                `);
 
                 var tdE = $("td[style='vertical-align: top;']")[0];
                 tdE.id = "coverimg";
@@ -553,46 +553,48 @@
         },
         // 登录115执行脚本，自动离线下载准备步骤
         login115Run: function () {
-            jav_userID = GM_getValue('jav_user_id', 0); //115用户ID缓存
-            //获取115ID
-            if (jav_userID === 0) {
-                if (location.host.indexOf('115.com') >= 0) {
-                    if (typeof (window.wrappedJSObject.user_id) != 'undefined') {
-                        jav_userID = window.wrappedJSObject.user_id;
-                        GM_setValue('jav_user_id', jav_userID);
-                        alert('115登陆成功！');
-                        return;
-                    }
-                } else {
-                    //alert('请先登录115账户！');
-                    Common.notifiy("115还没有登录",
-                        '请先登录115账户后,再离线下载！',
-                        icon,
-                        'http://115.com/?mode=login'
-                    );
-                    GM_setValue('jav_user_id', 0);
-                }
-            }
-
             if (location.host.indexOf('115.com') >= 0) {
-                console.log('jav老司机:115.com,尝试获取userid.');
-                jav_userID = GM_getValue('jav_user_id', 0);
-                //debugger;
-                if (jav_userID !== 0) {
-                    console.log("jav老司机: 115账号:" + jav_userID + ",无需初始化.");
+                jav_userID = GM_getValue('jav_user_id', 0); //115用户ID缓存
+                //获取115ID
+                if (jav_userID === 0) {
+                    if (location.host.indexOf('115.com') >= 0) {
+                        if (typeof (window.wrappedJSObject.user_id) != 'undefined') {
+                            jav_userID = window.wrappedJSObject.user_id;
+                            GM_setValue('jav_user_id', jav_userID);
+                            alert('115登陆成功！');
+                            return;
+                        }
+                    } else {
+                        //alert('请先登录115账户！');
+                        Common.notifiy("115还没有登录",
+                            '请先登录115账户后,再离线下载！',
+                            icon,
+                            'http://115.com/?mode=login'
+                        );
+                        GM_setValue('jav_user_id', 0);
+                    }
+                }
+
+                if (location.host.indexOf('115.com') >= 0) {
+                    console.log('jav老司机:115.com,尝试获取userid.');
+                    jav_userID = GM_getValue('jav_user_id', 0);
+                    //debugger;
+                    if (jav_userID !== 0) {
+                        console.log("jav老司机: 115账号:" + jav_userID + ",无需初始化.");
+                        return false;
+                    }
+                    jav_userID = $.cookie("OOFL");
+                    console.log("jav老司机: 115账号:" + jav_userID);
+                    if (!jav_userID) {
+                        console.log("jav老司机: 尚未登录115账号");
+                        return false;
+                    } else {
+                        console.log("jav老司机: 初始化成功");
+                        Common.notifiy('老司机自动开车', '登陆初始化成功,赶紧上车把!', icon, "");
+                        GM_setValue('jav_user_id', jav_userID);
+                    }
                     return false;
                 }
-                jav_userID = $.cookie("OOFL");
-                console.log("jav老司机: 115账号:" + jav_userID);
-                if (!jav_userID) {
-                    console.log("jav老司机: 尚未登录115账号");
-                    return false;
-                } else {
-                    console.log("jav老司机: 初始化成功");
-                    Common.notifiy('老司机自动开车', '登陆初始化成功,赶紧上车把!', icon, "");
-                    GM_setValue('jav_user_id', jav_userID);
-                }
-                return false;
             }
         },
         // 瀑布流脚本
@@ -623,9 +625,9 @@
             // javlibrary
             var $pages2 = $('div.videos div.video');
             if ($pages2.length) {
-                GM_addStyle([
-                    '.videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}',
-                ].join(''));
+                GM_addStyle(`
+                    .videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}
+                `);
                 $pages2[0].parentElement.id = "waterfall";
                 w = new thirdparty.waterfall({
                     next: 'a[class="page next"]',
@@ -645,7 +647,6 @@
                     pagi: '.pagination.is-centered',
                 });
             }
-            //<a class="pagination-next button is-primary" href="?page=2">Next</a>
             w.setFourthCallback(function (elems) { // todo 20190404
                 if (document.title.search(/OneJAV/) > 0 && elems) {
                     // 增加对应所有番号的Javlib的跳转链接,
@@ -789,12 +790,12 @@
 
             if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) {
                 // javbus.com、avmo.pw、avso.pw 样式
-                GM_addStyle([
-                    '#waterfall {height: initial !important;width: initial !important;display: flex;flex-direction: row;flex-wrap: wrap;}',
-                    '#waterfall .item.item {position: relative !important;top: initial !important;left: initial !important;float: none;flex: 20%;}',
-                    '#waterfall .movie-box,#waterfall .avatar-box {width: initial !important;display: flex;}',
-                    '#waterfall .movie-box .photo-frame {overflow: visible;}',
-                ].join(''));
+                GM_addStyle(`
+                    #waterfall {height: initial !important;width: initial !important;display: flex;flex-direction: row;flex-wrap: wrap;}
+                    #waterfall .item.item {position: relative !important;top: initial !important;left: initial !important;float: none;flex: 20%;}
+                    #waterfall .movie-box,#waterfall .avatar-box {width: initial !important;display: flex;}
+                    #waterfall .movie-box .photo-frame {overflow: visible;}
+                `);
             }
         },
         // 挊
@@ -1264,7 +1265,8 @@
                     return tab;
                 },
                 handle_event: function (event) {
-                    var maglink = event.target.parentElement.parentElement.getAttribute('maglink') || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
+                    var maglink = event.target.parentElement.parentElement.getAttribute('maglink')
+                        || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
                     if (event.target.className == 'nong-copy') {
                         event.target.innerHTML = '成功';
                         GM_setClipboard(maglink);
@@ -1362,16 +1364,16 @@
                                 main.cur_vid = '';
                             }
                             if (main.cur_vid) {
-                                GM_addStyle([
-                                    '#nong-table-new{margin:10px auto;color:#666 !important;font-size:13px;text-align:center;background-color: #F2F2F2;}',
-                                    '#nong-table-new th,#nong-table-new td{text-align: center;height:30px;background-color: #FFF;padding:0 1em 0;border: 1px solid #EFEFEF;}',
-                                    '.jav-nong-row{text-align: center;height:30px;background-color: #FFF;padding:0 1em 0;border: 1px solid #EFEFEF;}',
-                                    '.nong-copy{color:#08c !important;}',
-                                    '.nong-offline{text-align: center;}',
-                                    '#jav-nong-head a {margin-right: 5px;}',
-                                    '.nong-offline-download{color: rgb(0, 180, 30) !important; margin-right: 4px !important;}',
-                                    '.nong-offline-download:hover{color:red !important;}',
-                                ].join(''));
+                                GM_addStyle(`
+                                    #nong-table-new{margin:10px auto;color:#666 !important;font-size:13px;text-align:center;background-color: #F2F2F2;}
+                                    #nong-table-new th,#nong-table-new td{text-align: center;height:30px;background-color: #FFF;padding:0 1em 0;border: 1px solid #EFEFEF;}
+                                    .jav-nong-row{text-align: center;height:30px;background-color: #FFF;padding:0 1em 0;border: 1px solid #EFEFEF;}
+                                    .nong-copy{color:#08c !important;}
+                                    .nong-offline{text-align: center;}
+                                    #jav-nong-head a {margin-right: 5px;}
+                                    .nong-offline-download{color: rgb(0, 180, 30) !important; margin-right: 4px !important;}
+                                    .nong-offline-download:hover{color:red !important;}
+                                `);
                                 main.cur_tab = thirdparty.nong.magnet_table.full();
                                 console.log('h1026 挊的番号：', main.cur_vid);
                                 v.proc();
@@ -1805,82 +1807,61 @@
             }
         });
     }
+    /**
+     * 针对页面的番号信息增加功能及样式修改. javlib和javbus共同使用
+     * @returns {string} 番号
+     */
+    function getAvidAndChgPage() {
+        let AVID = $('.header')[0].nextElementSibling.textContent;
+        // 实现点击番号复制到系统剪贴板 todo 181221v1
+        $('.header')[0].nextElementSibling.id = "avid";
+        $('#avid').empty().attr("title", "点击复制番号").attr("avid", AVID);
+        let a_avid = document.createElement('a');
+        $(a_avid).attr("href", "#").append(AVID);
+        $(a_avid).click(function () {
+            GM_setClipboard($('#avid').attr("avid"));
+        });
+        $('#avid').append(a_avid);
+        $('#avid').after("<span style='color:red;'>(←点击复制)</span>");
+        $($('.header')[0]).attr("class", "header_hobby");
+        return AVID;
+    }
 
-    function mainRun() {
-        /**
-         * 针对页面的番号信息增加功能及样式修改. javlib和javbus共同使用
-         * @returns {string} 番号
-         */
-        function getAvidAndChgPage() {
-            let AVID = $('.header')[0].nextElementSibling.textContent;
-            // 实现点击番号复制到系统剪贴板 todo 181221v1
-            $('.header')[0].nextElementSibling.id = "avid";
-            $('#avid').empty().attr("title", "点击复制番号").attr("avid", AVID);
-            let a_avid = document.createElement('a');
-            $(a_avid).attr("href", "#").append(AVID);
-            $(a_avid).click(function () {
-                GM_setClipboard($('#avid').attr("avid"));
-            });
-            $('#avid').append(a_avid);
-            $('#avid').after("<span style='color:red;'>(←点击复制)</span>");
-            $($('.header')[0]).attr("class", "header_hobby");
-            return AVID;
-        }
-        let a3;// 瀑布流ui按钮
-        if (location.host.indexOf('115.com') >= 0) {
-            thirdparty.login115Run();
-        }
-
-        if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
-            GM_addStyle([
-                '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
-                '.container {width: 100%;float: left;}',
-                '.col-md-3 {float: left;max-width: 260px;}',
-                '.col-md-9 {width: inherit;}',
-                '.footer {padding: 20px 0;background: #1d1a18;float: left;}',// javbus
-                '#nong-table-new {margin: initial !important;important;color: #666 !important;font-size: 13px;text-align: center;background-color: #F2F2F2;float: left;}',
-                '.header_hobby {font-weight: bold;text-align: right;width: 75px;}',// javbus
-            ].join(''));
-
-            // 瀑布流ui按钮
-            a3 = document.createElement('a');
-            (waterfallScrollStatus > 0) ? $(a3).append('&nbsp;&nbsp;关闭瀑布流') : $(a3).append('&nbsp;&nbsp;开启瀑布流');
-            $(a3).css({
-                "color": "blue",
-                "font": "bold 12px monospace"
-            });
-            $(a3).attr("href", "#");
-            $(a3).click(function () {
-                if ((/关闭/g).test($(this).html())) {
-                    //$(this).html('&nbsp;&nbsp;开启瀑布流');
-                    GM_setValue('scroll_status', 0);
-                }
-                else {
-                    //$(this).html('&nbsp;&nbsp;关闭瀑布流');
-                    GM_setValue('scroll_status', 1);
-                }
-                window.location.reload();
-            });
-
-            //获取所有番号影片链接的a元素
-            var a_array = $("div[class='item'] a");
-            for (var index = 0; index < a_array.length; index++) {
-                var aEle = a_array[index];
-                $(aEle).attr("target", "_blank");
+    function waterfallButton() {
+        // 瀑布流ui按钮
+        let a3 = document.createElement('a');
+        (waterfallScrollStatus > 0) ? $(a3).append('&nbsp;&nbsp;关闭瀑布流') : $(a3).append('&nbsp;&nbsp;开启瀑布流');
+        $(a3).css({
+            "color": "blue",
+            "font": "bold 12px monospace"
+        });
+        $(a3).attr("href", "#");
+        $(a3).click(function () {
+            if ((/关闭/g).test($(this).html())) {
+                //$(this).html('&nbsp;&nbsp;开启瀑布流');
+                GM_setValue('scroll_status', 0);
+            } else {
+                //$(this).html('&nbsp;&nbsp;关闭瀑布流');
+                GM_setValue('scroll_status', 1);
             }
-        }
+            window.location.reload();
+        });
+        return a3;
+    }
 
+    function javlibaryScript() {
+        let a3 = waterfallButton();
         if ((/(JAVLibrary)/g).test(document.title)) {
             //数据库初始化  start01
             var pm_mater = Common.getSchemaBuilder().connect({
                 storeType: lf.schema.DataStoreType.INDEXED_DB
-            }).then(function(database) {
+            }).then(function (database) {
                 javDb = database;
                 myMovie = javDb.getSchema().table('MyMovie');
                 //javDb.delete().from(myMovie).exec();// 清空MyMovie表数据.
                 return javDb.select().from(myMovie).where(myMovie.is_browse.eq(true)).exec();
-            }).then(function(results) {
-                console.log("已经保存已阅影片数量:"+results.length);
+            }).then(function (results) {
+                console.log("已经保存已阅影片数量:" + results.length);
                 // results.forEach(function(row) {
                 //     console.log(row['index_cd'],'|',row['code'],'|', row['add_time'],'|',row['movie_name']);
                 // });
@@ -1894,7 +1875,6 @@
                     thirdparty.waterfallScrollInit();
 
                     let a1 = document.createElement('a');
-                    let a2 = document.createElement('a');
 
                     $(a1).append('&nbsp;&nbsp;按评分排序');
                     $(a1).css({
@@ -1910,11 +1890,9 @@
                             let b_score = parseFloat($(b).children("a").attr("score"));
                             if (a_score > b_score) {
                                 return -1;
-                            }
-                            else if (a_score === b_score) {
+                            } else if (a_score === b_score) {
                                 return 0;
-                            }
-                            else {
+                            } else {
                                 return 1;
                             }
                         });
@@ -1922,12 +1900,8 @@
                         div_array.detach().appendTo("#waterfall");
                     });
 
-                    $(a2).append('&nbsp;&nbsp;按时间排序');
-                    $(a2).css({
-                        "color": "blue",
-                        "font": "bold 12px monospace"
-                    });
-                    $(a2).attr("href", "#");
+                    let a2 = $(a1).clone();
+                    $(a2).html('&nbsp;&nbsp;按时间排序');
                     $(a2).click(function () {
                         let div_array = $("div.videos div.video");
                         div_array.sort(function (a, b) {
@@ -1937,11 +1911,9 @@
                             let b_score = parseFloat($(b).children("a").attr("score"));
                             if (a_time > b_time) {
                                 return -1;
-                            }
-                            else if (a_time === b_time) {
+                            } else if (a_time === b_time) {
                                 return (a_score > b_score) ? -1 : 1;
-                            }
-                            else {
+                            } else {
                                 return 1;
                             }
                         });
@@ -1960,12 +1932,12 @@
                 let isSync = GM_getValue(domain + "_doDataSyncStepAll_V2", false);
                 console.log(domain + "  是否同步过：" + isSync);
                 if (!isSync) {
-                    pm_mater.then(()=>{
-                        return new Promise( resolve => {
+                    pm_mater.then(() => {
+                        return new Promise(resolve => {
                             var hasStepOne = GM_getValue(domain + "_stepOne_V2", false);
                             let stepOneStartTime = new Date();
                             console.log(domain + "  同步是否完成第一步：" + hasStepOne);
-                            if(!hasStepOne){
+                            if (!hasStepOne) {
                                 // 立即下载数据
                                 GM_setValue("mv_wanted_pageNum", 0);
                                 GM_setValue("mv_watched_pageNum", 0);
@@ -1975,24 +1947,24 @@
                                 // 创建请求队列  //浏览器对同一域名进行请求的最大并发连接数:chrome为6
                                 let queue = new Queue(7);
                                 // 读取想要的影片
-                                loadData("mv_wanted",queue);
+                                loadData("mv_wanted", queue);
                                 // 读取看过的影片
-                                loadData("mv_watched",queue);
+                                loadData("mv_watched", queue);
                                 // 读取拥有的影片
-                                loadData("mv_owned",queue);
+                                loadData("mv_owned", queue);
                                 // 延迟1秒运行定时循环函数
-                                setTimeout(()=>{
+                                setTimeout(() => {
                                     // 定时循环函数,当队列执行完成时结束
                                     var s4 = setInterval(function () {
                                         //console.log("queue.taskList.length : " + queue.taskList.length);
-                                        if(queue.taskList.length == 0){
+                                        if (queue.taskList.length == 0) {
                                             let end_num = 0;
-                                            for (let i = 0, l = queue.threads.length; i < l; i++){
+                                            for (let i = 0, l = queue.threads.length; i < l; i++) {
                                                 if (queue.threads[i].promise.state() === 'resolved') {
                                                     end_num++;
                                                 }
                                             }
-                                            if(end_num == queue.threads.length){
+                                            if (end_num == queue.threads.length) {
                                                 GM_setValue(domain + "_stepOne_V2", true);  // todo 需打开
                                                 console.log(domain + "_stepOneTime:" + (new Date() - stepOneStartTime));
                                                 //alert(location.host + "_stepOneTime:" + (new Date() - stepOneStartTime));
@@ -2001,13 +1973,12 @@
                                             }
                                         }
                                     }, 300);
-                                },1000);
-                            }
-                            else{
+                                }, 1000);
+                            } else {
                                 resolve();
                             }
                         });
-                    }).then(()=>{
+                    }).then(() => {
                             saveData();
                         }
                     );
@@ -2021,8 +1992,7 @@
                 $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
                 $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
                 //todo
-            }
-            else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0
+            } else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0
                 || document.URL.indexOf("vl_genre") > 0 || document.URL.indexOf("vl_mostwanted") > 0) {
                 $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
                     + "?delete9down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
@@ -2059,12 +2029,11 @@
                 movie.is_want = ($('#subscribed .smallbutton.hidden').length > 0) ? true : false;
                 movie.is_seen = ($('#watched .smallbutton.hidden').length > 0) ? true : false;
                 movie.is_have = ($('#owned .smallbutton.hidden').length > 0) ? true : false;
-                pm_mater.then(()=>{
+                pm_mater.then(() => {
                     //查找是否存在此番号数据
-                    return javDb.select().from(myMovie).
-                    where(myMovie.index_cd.eq(movie.index_cd)).exec()
-                        .then((results)=>{
-                            if(results.length > 0){
+                    return javDb.select().from(myMovie).where(myMovie.index_cd.eq(movie.index_cd)).exec()
+                        .then((results) => {
+                            if (results.length > 0) {
                                 movie.add_time = results[0].add_time;
                             }
                             let row = myMovie.createRow(movie);
@@ -2073,18 +2042,16 @@
                 });
 
                 //查找115是否有此番号
-                Common.search115Data(AVID,function (BOOLEAN_TYPE , playUrl) {
-                    if(BOOLEAN_TYPE) {
+                Common.search115Data(AVID, function (BOOLEAN_TYPE, playUrl) {
+                    if (BOOLEAN_TYPE) {
                         let $imgObj = $('#video_jacket_img');
-                        $imgObj.after(
-                            '<div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">'
-                            + '<p style="color: white;font-size: 46px;text-align: left;margin: 0 0 0px;display: inline-block;">115网盘已拥有此片</p>'
-                            + '<a target="_blank" href="'+ playUrl + '">'
-                            + '<p style="color: white;font-size: 46px;text-align: right;width: 50%;margin: 0 0 0px;display: inline-block;">115在线播放 ►</p></a>'
-                            + '</div>'
-                            //<a target="_blank" href="http://120.78.32.31/play.html?pickcode=dpf7dxp6k3enrxytj">
-                            // <p >115在线播放 ►</p></a>
-                        );
+                        $imgObj.after(`
+                            <div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">
+                                <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: left;">115网盘已拥有此片</p>
+                                <a target="_blank" href="${playUrl}">
+                                <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: right;width: 50%;">115在线播放 ►</p></a>
+                            </div>
+                        `);
                     }
                     console.log("番号输出:" + AVID);
                     Common.addAvImg(AVID, function ($img) {
@@ -2107,15 +2074,18 @@
                                 }
                             });
                         }
-                    },!BOOLEAN_TYPE);
+                    }, !BOOLEAN_TYPE);
                 });
 
                 // 挊
                 thirdparty.nong.searchMagnetRun();
             }//番号影片详情页处理end
         }
+    }
 
-        if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
+    function javBusScript() {
+        let a3 = waterfallButton();
+        if ((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) {
             // 指定站点页面加入瀑布流控制按钮
             let li_elem = document.createElement('li');
             $(li_elem).append($(a3));
@@ -2132,16 +2102,16 @@
                 let AVID = getAvidAndChgPage();
 
                 //查找115是否有此番号
-                Common.search115Data(AVID,function (BOOLEAN_TYPE , playUrl) {
-                    if(BOOLEAN_TYPE) {
+                Common.search115Data(AVID, function (BOOLEAN_TYPE, playUrl) {
+                    if (BOOLEAN_TYPE) {
                         let $imgObj = $('.bigImage');
-                        $imgObj.after(
-                            '<div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">'
-                            + '<p style="color: white;font-size: 46px;text-align: left;margin: 0 0 0px;display: inline-block;">115网盘已拥有此片</p>'
-                            + '<a target="_blank" href="'+ playUrl + '">'
-                            + '<p style="color: white;font-size: 46px;text-align: right;width: 50%;margin: 0 0 0px;display: inline-block;">115在线播放 ►</p></a>'
-                            + '</div>'
-                        );
+                        $imgObj.after(`
+                            <div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">
+                                <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: left;">115网盘已拥有此片</p>
+                                <a target="_blank" href="${playUrl}">
+                                <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: right;width: 50%;">115在线播放 ►</p></a>
+                            </div>
+                        `);
                     }
                     console.log("番号输出:" + AVID);
                     Common.addAvImg(AVID, function ($img) {
@@ -2157,7 +2127,7 @@
                                 }
                             });
                         }
-                    },!BOOLEAN_TYPE);
+                    }, !BOOLEAN_TYPE);
                 });
 
                 thirdparty.busTypeSearch();
@@ -2166,7 +2136,7 @@
                 // 先执行一次，针对已经提前加载出磁链列表结果时有效
                 javbusUs();
                 // 针对为提前加载出磁链列表结果，通过dom元素是否改变事件来判断是否执行功能。
-                $('#magnet-table').on("DOMNodeInserted",function () {
+                $('#magnet-table').on("DOMNodeInserted", function () {
                     // 触发后关闭监听事件
                     $('#magnet-table').off();
                     javbusUs();
@@ -2176,16 +2146,18 @@
                 thirdparty.nong.searchMagnetRun();
             }
         }
+    }
 
-        if ((/(OneJAV)/g).test(document.title)){ //todo 190404
-            GM_addStyle([
-                '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
-                '.column.is-5 {width: auto;max-width: 82%;}',
-                '.column {flex-basis: inherit;flex-grow: inherit;}',
-                '.container {max-width: 100%;width: 100%;}',
-                '.image {width: 800px;}',
-                '.has-text-grey-dark {max-width: 1000px;}',
-            ].join(''));
+    function oneJavScript() {
+        if ((/(OneJAV)/g).test(document.title)) { //todo 190404
+            GM_addStyle(`
+                .min {width:66px;min-height: 233px;height:auto;cursor: pointer;} /*Common.addAvImg使用*/
+                .column.is-5 {width: auto;max-width: 82%;}
+                .column {flex-basis: inherit;flex-grow: inherit;}
+                .container {max-width: 100%;width: 100%;}
+                .image {width: 800px;}
+                .has-text-grey-dark {max-width: 1000px;}
+            `);
             // 插入自己创建的div
             $('div.container nav.pagination.is-centered').before("<div id='card' ></div>");
             // 将所有番号内容移到新建的div里
@@ -2193,20 +2165,23 @@
             // 瀑布流脚本
             thirdparty.waterfallScrollInit();
         }
+    }
 
-        if ((/(jav321)*\/video\/*/g).test(document.URL)){ //todo 190531
-            GM_addStyle([
-                '.col-md-3 {width: 20%;padding-left: 18px; padding-right: 2px;}',
-                '.col-xs-12,.col-md-12 {padding-left: 2px; padding-right: 0px;}',
-                '.col-md-7 {width: 79%;padding-left: 2px;padding-right: 0px;}',
-                '.col-md-9 {width: max-content;}',
-                '.col-md-offset-1 {margin-left: auto;}',
-                '.min {width:66px;min-height: 233px;height:auto;cursor: pointer;}',
-                '.hobby {display: inline-block;float: left;}',
-                '.hobby_mov {width: 75%;}',
-            ].join(''));
-            $(".col-md-7.col-md-offset-1.col-xs-12 .row .col-md-3 .img-responsive:eq(0)").offsetParent().attr("class","hobby");
-            $("#video_overlay_sample").offsetParent().attr("class","hobby_mov");
+    function jav321Script() {
+        if ((/(jav321)*\/video\/*/g).test(document.URL)) { //todo 190531
+            GM_addStyle(`
+                .min {width:66px;min-height: 233px;height:auto;cursor: pointer;} /*Common.addAvImg使用*/
+                .col-md-3 {width: 20%;padding-left: 18px; padding-right: 2px;}
+                .col-xs-12,.col-md-12 {padding-left: 2px; padding-right: 0px;}
+                .col-md-7 {width: 79%;padding-left: 2px;padding-right: 0px;}
+                .col-md-9 {width: max-content;}
+                .col-md-offset-1 {margin-left: auto;}
+                .hobby {display: inline-block;float: left;}
+                .hobby_mov {width: 75%;}
+                .hobby_p {color: white;font-size: 40px;margin: 0 0 0px;display: inline-block;text-align: right;width: 100%;}
+            `);
+            $(".col-md-7.col-md-offset-1.col-xs-12 .row .col-md-3 .img-responsive:eq(0)").offsetParent().attr("class", "hobby");
+            $("#video_overlay_sample").offsetParent().attr("class", "hobby_mov");
             // 调整div位置
             $('div.col-md-7.col-md-offset-1.col-xs-12').before($('div.col-xs-12.col-md-12')[0].parentElement);
 
@@ -2215,15 +2190,14 @@
             let javID = arr[0];
 
             //查找115是否有此番号
-            Common.search115Data(javID,function (BOOLEAN_TYPE , playUrl) {
-                if(BOOLEAN_TYPE){
+            Common.search115Data(javID, function (BOOLEAN_TYPE, playUrl) {
+                if (BOOLEAN_TYPE) {
                     let $imgObj = $('div.col-xs-12.col-md-12 img.img-responsive');
-                    $imgObj.after(
-                        '<div style="position: absolute;width: 100%;height: 22%;background: rgba(0,0,0,0.5);top: 78%;left: 0;">'
-                        + '<a target="_blank" href="'+ playUrl + '">'
-                        + '<p style="color: white;font-size: 40px;text-align: right;margin: 0 0 0px;display: inline-block;width: 100%;">115在线播放 ►</p></a>'
-                        + '</div>'
-                    );
+                    $imgObj.after(`
+                        <div style="position: absolute;width: 100%;height: 22%;background: rgba(0,0,0,0.5);top: 78%;left: 0;">
+                            <a target="_blank" href="${playUrl}"><p class="hobby_p">115在线播放 ►</p></a>
+                        </div>
+                    `);
                 }
 
                 //插入预览图
@@ -2240,7 +2214,7 @@
                             }
                         });
                     }
-                },!BOOLEAN_TYPE);
+                }, !BOOLEAN_TYPE);
             });
 
             // 修改jav321磁链列表头，增加两列
@@ -2252,15 +2226,46 @@
                 let trEle = tr_array[i];
                 //debugger;
                 let magnetUrl = $(trEle).find("td a")[0].href;
-                $(trEle).append("<td style='text-align:center;'><div><a class='nong-copy' href='" + magnetUrl + "'>复制</a></div></td>");
-                $(trEle).append("<td><div class='nong-offline'><a class='nong-offline-download' target='_blank' href='http://115.com/?tab=offline&amp;mode=wangpan'>115离线</a></div></td>");
-                //TODO
+                $(trEle).append(`
+                    <td style='text-align:center;'><div><a class='nong-copy' href='${magnetUrl}'>复制</a></div></td>
+                    <td><div class='nong-offline'>
+                    <a class='nong-offline-download' target='_blank' href='http://115.com/?tab=offline&amp;mode=wangpan'>115离线</a>
+                    </div></td>
+                `);
                 $(trEle).attr("maglink", magnetUrl);
                 $(trEle).find(".nong-copy")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
                 $(trEle).find(".nong-offline-download")[0].addEventListener('click', thirdparty.nong.magnet_table.handle_event, false);
                 //.addEventListener('click', this.handle_event, false);
             }
         }
+    }
+
+    function mainRun() {
+        if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
+            GM_addStyle(`
+                .min {width:66px;min-height: 233px;height:auto;cursor: pointer;} /*Common.addAvImg使用*/
+                .container {width: 100%;float: left;}
+                .col-md-3 {float: left;max-width: 260px;}
+                .col-md-9 {width: inherit;}
+                .footer {padding: 20px 0;background: #1d1a18;float: left;} /*javbus*/
+                #nong-table-new {margin: initial !important;important;color: #666 !important;font-size: 13px;text-align: center;background-color: #F2F2F2;float: left;}
+                .header_hobby {font-weight: bold;text-align: right;width: 75px;} /*javbus*/
+            `);
+
+            //获取所有番号影片链接的a元素
+            var a_array = $("div[class='item'] a");
+            for (var index = 0; index < a_array.length; index++) {
+                var aEle = a_array[index];
+                $(aEle).attr("target", "_blank");
+            }
+
+            javlibaryScript();
+            javBusScript();
+        }
+
+        oneJavScript();
+        jav321Script();
+        thirdparty.login115Run();
     }
     mainRun();
 })();
