@@ -811,7 +811,7 @@
             },
             resource_sites:{
                 //search_name_string:["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"],
-                "btsow.pw": function (kw, cb) {
+                "btspread.com": function (kw, cb) {
                     let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
