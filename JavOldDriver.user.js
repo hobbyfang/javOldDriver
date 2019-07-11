@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.0.1 修复了已知问题。
 // v3.0.0 增加115在线播放的关联入口。同时本代码重新梳理及优化。
 
 // v2.3.0 增加jav321网站内容排版的支持，增加查找已登录115网盘是否拥有当前番号显示。
@@ -344,7 +345,8 @@
          */
         search115Data: function (javId, callback) {
             //异步请求搜索115番号 //115查询
-            let promise1 = request(`https://webapi.115.com/files/search?search_value=${javId}&format=json`);
+            let javId2 = javId.replace(/(-)/g, "");
+            let promise1 = request(`https://webapi.115.com/files/search?search_value=${javId}%20${javId2}&format=json`);
             promise1.then((result) => {
                 let resultJson = JSON.parse(result.responseText);
                 if(resultJson.count > 0) {
@@ -460,7 +462,7 @@
                 $("td[style='vertical-align: top;']")[1].id = 'javtext';
                 $('#leftmenu').remove();
                 $('#rightcolumn').attr("style", "margin: 0px 0px 0px 0px;width: 100%;padding: initial;");
-                $(tdE.parentElement).append('<td id="hobby" style="vertical-align: top;width: 100%;"></td>');
+                $(tdE.parentElement).append('<td id="hobby" style="vertical-align: top;"></td>');
                 $('#hobby').append(main.cur_tab);
             }
         },
@@ -1033,6 +1035,8 @@
                         if (t) {
                             t = Array.slice(t, 1, t.length);
                             for (let elem of t) {
+                                if((/(No result)/g).test(elem.querySelector(".name").textContent))
+                                    break;
                                 data.push({
                                     "title": elem.querySelector(".name").textContent,
                                     "maglink": elem.querySelector(".action>a:nth-child(2)").href,
@@ -1830,7 +1834,7 @@
     function waterfallButton() {
         // 瀑布流ui按钮
         let a3 = document.createElement('a');
-        (waterfallScrollStatus > 0) ? $(a3).append('&nbsp;&nbsp;关闭瀑布流') : $(a3).append('&nbsp;&nbsp;开启瀑布流');
+        (waterfallScrollStatus > 0) ? $(a3).append('关闭瀑布流&nbsp;&nbsp;') : $(a3).append('开启瀑布流&nbsp;&nbsp;');
         $(a3).css({
             "color": "blue",
             "font": "bold 12px monospace"
@@ -1865,18 +1869,35 @@
                 // results.forEach(function(row) {
                 //     console.log(row['index_cd'],'|',row['code'],'|', row['add_time'],'|',row['movie_name']);
                 // });
-                if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star|vl_genre|vl_searchbycombo|mv_owned|mv_watched|mv_wanted|mv_visited)/g)
-                    .test(document.URL)) {
+                if (document.URL.indexOf("bestrated") > 0) {
+                    $(".left select").after("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' class='hobby-a'>&nbsp;&nbsp;只看近两月份</a>");
+                    $(".left select").after("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' class='hobby-a'>&nbsp;&nbsp;只看当前月份</a>");
+                    $(".left select").after("<a href='/cn/vl_bestrated.php?filterMyBrowse' class='hobby-a'>&nbsp;&nbsp;不看我阅览过(上个月)</a>");
+                    $(".left select").after("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' class='hobby-a'>&nbsp;&nbsp;不看我阅览过(全部)</a>");
+                    //todo
+                } else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0
+                    || document.URL.indexOf("vl_genre") > 0 || document.URL.indexOf("vl_mostwanted") > 0) {
+                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                        + "?delete9down" + document.location.search.replace('?', '&') + "' class='hobby-a'>只看9分以上&nbsp;&nbsp;</a>");
+                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                        + "?delete8down" + document.location.search.replace('?', '&') + "' class='hobby-a'>只看8分以上&nbsp;&nbsp;</a>");
+                    $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
+                        + "?delete7down" + document.location.search.replace('?', '&') + "' class='hobby-a'>只看7分以上&nbsp;&nbsp;</a>");
+                }
+
+                if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star)/g).test(document.URL) ||
+                    (/(vl_genre|vl_searchbycombo|mv_owned|mv_watched|mv_wanted|mv_visited)/g).test(document.URL)||
+                    (/(vl_label|vl_maker|vl_director|userwanted)/g).test(document.URL)) {
 
                     // 指定站点页面加入瀑布流控制按钮
-                    $(".displaymode .right").append($(a3));
+                    $(".displaymode .right").prepend($(a3));
 
                     // 瀑布流脚本
                     thirdparty.waterfallScrollInit();
 
                     let a1 = document.createElement('a');
 
-                    $(a1).append('&nbsp;&nbsp;按评分排序');
+                    $(a1).append('按评分排序&nbsp;&nbsp;');
                     $(a1).css({
                         "color": "blue",
                         "font": "bold 12px monospace"
@@ -1901,7 +1922,7 @@
                     });
 
                     let a2 = $(a1).clone();
-                    $(a2).html('&nbsp;&nbsp;按时间排序');
+                    $(a2).html('按时间排序&nbsp;&nbsp;');
                     $(a2).click(function () {
                         let div_array = $("div.videos div.video");
                         div_array.sort(function (a, b) {
@@ -1921,8 +1942,8 @@
                         // 删除Dom列表数据关系，重新添加排序数据
                         div_array.detach().appendTo("#waterfall");
                     });
-                    $(".left select").after($(a2));
-                    $(".left select").after($(a1));
+                    $(".displaymode .right").prepend($(a2));
+                    $(".displaymode .right").prepend($(a1));
                 }
             });
             //JavWebSql.DBinit();
@@ -1986,22 +2007,6 @@
                 // 增加同步数据到本地的触发按钮
             }
 
-            if (document.URL.indexOf("bestrated") > 0) {
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteTwoMonthAway' style='color: red;'>只看近两月份&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?deleteOneMonthAway' style='color: red;'>只看当前月份&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse' style='color: red;'>不看我阅览过(上个月)&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='/cn/vl_bestrated.php?filterMyBrowse&mode=2' style='color: red;'>不看我阅览过(全部)&nbsp;&nbsp;</a>");
-                //todo
-            } else if (document.URL.indexOf("vl_newrelease") > 0 || document.URL.indexOf("vl_update") > 0
-                || document.URL.indexOf("vl_genre") > 0 || document.URL.indexOf("vl_mostwanted") > 0) {
-                $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
-                    + "?delete9down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看9分以上&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
-                    + "?delete8down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看8分以上&nbsp;&nbsp;</a>");
-                $(".displaymode .right").prepend("<a href='" + document.location.origin + document.location.pathname
-                    + "?delete7down" + document.location.search.replace('?', '&') + "' style='color: red;'>只看7分以上&nbsp;&nbsp;</a>");
-            }
-
             //获取番号影片详情页的番号  例如：http://www.javlibrary.com/cn/?v=javli7j724
             if ($('.header').length && $('meta[name="keywords"]').length) {
                 let AVID = getAvidAndChgPage();
@@ -2060,8 +2065,8 @@
                         if (divEle) {
                             $(divEle).after(
                                 '<div style="width: 100%;height: 100%;display: inline-block;">' +
-                                '<div id="hobby_div_left" style="float: left;width: 80%;"></div>' +
-                                '<div id="hobby_div_right" style="float: left;min-width: 20%;"></div>' +
+                                '<div id="hobby_div_left" style="float: left;min-width: 80%;"></div>' +
+                                '<div id="hobby_div_right" style="float: left;min-width: 66px;"></div>' +
                                 '</div>'
                             );
                             $('#hobby_div_left').append($('#video_jacket_info'));
@@ -2247,6 +2252,7 @@
                 .container {width: 100%;float: left;}
                 .col-md-3 {float: left;max-width: 260px;}
                 .col-md-9 {width: inherit;}
+                .hobby-a {color: red; font: bold 12px monospace;}   /*javlib*/
                 .footer {padding: 20px 0;background: #1d1a18;float: left;} /*javbus*/
                 #nong-table-new {margin: initial !important;important;color: #666 !important;font-size: 13px;text-align: center;background-color: #F2F2F2;float: left;}
                 .header_hobby {font-weight: bold;text-align: right;width: 75px;} /*javbus*/
