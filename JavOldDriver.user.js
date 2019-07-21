@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.0.1
+// @version      3.0.2
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.0.2 修复了已知问题。
 // v3.0.1 修复了已知问题。
 // v3.0.0 增加115在线播放的关联入口。同时本代码重新梳理及优化。
 
@@ -324,7 +325,7 @@
                                 }
                                 var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)" class="' + className + '"></img>');
                                 $img.attr("src", targetImgUrl);
-                                $img.attr("style", "float: left;cursor: pointer;");
+                                $img.attr("style", "float: left;cursor: pointer;max-width: 100%;");
 
                                 //将新img元素插入指定位置
                                 func($img);
@@ -449,9 +450,9 @@
                 $('.socialmedia').remove();
                 GM_addStyle(`
                     #video_info {text-align: left;font: 14px Arial;min-width: 230px;max-width: 230px;padding: 0px 0px 0px 0px;}
-                    #video_jacket_info {width: 100%;overflow: hidden;} //table-layout: fixed;
+                    #video_jacket_info {overflow: hidden;} //table-layout: fixed;
                     #coverimg {vertical-align: top;overflow: hidden;max-width: 50%;}
-                    #javtext {vertical-align: top;width: 230px;}
+                    #javtext {vertical-align: top;width: 250px;}
                     #video_info td.header {width: 75px;}
                     #video_info td.icon {width: 0px;}
                     #content {padding-top: 0px;}
@@ -810,8 +811,7 @@
                 },
             },
             resource_sites:{
-                //search_name_string:["btso", "btdb", "nyaa.si", "torrentkitty", "btlibrary","btkitty","btdigg"],
-                "btspread.com": function (kw, cb) {
+                "btspread.com": function (kw, cb) { //btsow
                     let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -1887,7 +1887,7 @@
 
                 if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star)/g).test(document.URL) ||
                     (/(vl_genre|vl_searchbycombo|mv_owned|mv_watched|mv_wanted|mv_visited)/g).test(document.URL)||
-                    (/(vl_label|vl_maker|vl_director|userwanted)/g).test(document.URL)) {
+                    (/(vl_label|vl_maker|vl_director|userwanted|userowned)/g).test(document.URL)) {
 
                     // 指定站点页面加入瀑布流控制按钮
                     $(".displaymode .right").prepend($(a3));
@@ -2064,8 +2064,8 @@
                         let divEle = $("div[id='video_title']")[0];  // todo 190604
                         if (divEle) {
                             $(divEle).after(
-                                '<div style="width: 100%;height: 100%;display: inline-block;">' +
-                                '<div id="hobby_div_left" style="float: left;min-width: 80%;"></div>' +
+                                '<div style="width: 100%;height: 100%;display: inline-block;margin: 0px 0px 0px 0px;">' +
+                                '<div id="hobby_div_left" style="float: left;min-width: 60%;"></div>' +
                                 '<div id="hobby_div_right" style="float: left;min-width: 66px;"></div>' +
                                 '</div>'
                             );
