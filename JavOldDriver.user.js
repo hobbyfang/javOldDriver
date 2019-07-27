@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.0.2
+// @version      3.0.3
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.0.3 修复了已知问题。
 // v3.0.2 修复了已知问题。
 // v3.0.1 修复了已知问题。
 // v3.0.0 增加115在线播放的关联入口。同时本代码重新梳理及优化。
@@ -1887,7 +1888,7 @@
 
                 if ((/(bestrated|newrelease|newentries|vl_update|mostwanted|vl_star)/g).test(document.URL) ||
                     (/(vl_genre|vl_searchbycombo|mv_owned|mv_watched|mv_wanted|mv_visited)/g).test(document.URL)||
-                    (/(vl_label|vl_maker|vl_director|userwanted|userowned)/g).test(document.URL)) {
+                    (/(vl_label|vl_maker|vl_director|vl_searchbyid|userwanted|userowned)/g).test(document.URL)) {
 
                     // 指定站点页面加入瀑布流控制按钮
                     $(".displaymode .right").prepend($(a3));
