@@ -1817,7 +1817,9 @@
      * @returns {string} 番号
      */
     function getAvidAndChgPage() {
-        let AVID = $('.header')[0].nextElementSibling.textContent;
+        let AVID = $('.header')[0].nextElementSibling.textContent.split('-');
+        //处理重复番号
+		AVID = `${AVID[0]}-${AVID[1]}`;
         // 实现点击番号复制到系统剪贴板 todo 181221v1
         $('.header')[0].nextElementSibling.id = "avid";
         $('#avid').empty().attr("title", "点击复制番号").attr("avid", AVID);
