@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.0.3
+// @version      3.0.4
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.0.4 屏蔽了失效的磁链站点。
 // v3.0.3 修复了已知问题。
 // v3.0.2 修复了已知问题。
 // v3.0.1 修复了已知问题。
@@ -838,64 +839,38 @@
                         cb(result.finalUrl, data);
                     });
                 },
-                "www.btlibrary.info": function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: "POST",
-                        url: "https://"+ GM_getValue('search_index') +"/btlibrary/" + kw + "/1-2-2-1.html",
-                        data: "keyword=" + kw,
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                            withCredentials:true
-                        },
-                        onload: function (result) {
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            let doc = Common.parsetext(result.responseText);
-                            let data = [];
-                            let t = doc.querySelectorAll(".item");
-                            if (t) {
-                                for (let elem of t) {
-                                    data.push({
-                                        "title": elem.querySelector("dt>a").textContent,
-                                        "maglink": "magnet:?xt=urn:btih:" + elem.querySelector(".attr>span:nth-child(6)>a").href.match(/[0-9a-zA-Z]{40,}/g),
-                                        "size": elem.querySelector(".attr>span:nth-child(2)>b").textContent,
-                                        "src": elem.querySelector("dt>a").href,
-                                    });
-                                }
-                            }
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.error(e);
-                            throw "search error";
-                        }
-                    });
-                },
-                "sukebei.nyaa.si": function (kw, cb) {
-                    let promise = request("https://" + GM_getValue('search_index') + "/?f=0&c=0_0&q=" + kw);
-                    promise.then((result) => {
-                        thirdparty.nong.search_engines.full_url = result.finalUrl;
-                        let doc = Common.parsetext(result.responseText);
-                        if (!doc) {
-                            thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
-                        }
-                        let data = [];
-                        let t = doc.querySelectorAll("tr.default,tr.success");
-                        if (t.length !== 0) {
-                            for (let elem of t) {
-                                //debugger;
-                                data.push({
-                                    "title": elem.querySelector("td:nth-child(2)>a:nth-child(1)").title,
-                                    "maglink": elem.querySelector("td:nth-child(3)>a:nth-last-child(1)").href,
-                                    //"torrent_url": "https://nyaa.si" + elem.querySelector("td:nth-child(3)>a:nth-child(1)").href,
-                                    "size": elem.querySelector("td:nth-child(4)").textContent,
-                                    "src": "https://sukebei.nyaa.si"
-                                        + elem.querySelector("td:nth-child(2)>a:nth-child(1)").getAttribute('href'),
-                                });
-                            }
-                        }
-                        cb(result.finalUrl, data);
-                    });
-                },
+                // "www.btlibrary.info": function (kw, cb) {
+                //     GM_xmlhttpRequest({
+                //         method: "POST",
+                //         url: "https://"+ GM_getValue('search_index') +"/btlibrary/" + kw + "/1-2-2-1.html",
+                //         data: "keyword=" + kw,
+                //         headers: {
+                //             "Content-Type": "application/x-www-form-urlencoded",
+                //             withCredentials:true
+                //         },
+                //         onload: function (result) {
+                //             thirdparty.nong.search_engines.full_url = result.finalUrl;
+                //             let doc = Common.parsetext(result.responseText);
+                //             let data = [];
+                //             let t = doc.querySelectorAll(".item");
+                //             if (t) {
+                //                 for (let elem of t) {
+                //                     data.push({
+                //                         "title": elem.querySelector("dt>a").textContent,
+                //                         "maglink": "magnet:?xt=urn:btih:" + elem.querySelector(".attr>span:nth-child(6)>a").href.match(/[0-9a-zA-Z]{40,}/g),
+                //                         "size": elem.querySelector(".attr>span:nth-child(2)>b").textContent,
+                //                         "src": elem.querySelector("dt>a").href,
+                //                     });
+                //                 }
+                //             }
+                //             cb(result.finalUrl, data);
+                //         },
+                //         onerror: function (e) {
+                //             console.error(e);
+                //             throw "search error";
+                //         }
+                //     });
+                // },
                 "www.btdig.com": function (kw, cb) {
                     let promise = request("https://" + GM_getValue('search_index') + "/search?q=" + kw);
                     promise.then((result) => {
@@ -920,6 +895,32 @@
                                 "size": "0",
                                 "src": result.finalUrl,
                             });
+                        }
+                        cb(result.finalUrl, data);
+                    });
+                },
+                "sukebei.nyaa.si": function (kw, cb) {
+                    let promise = request("https://" + GM_getValue('search_index') + "/?f=0&c=0_0&q=" + kw);
+                    promise.then((result) => {
+                        thirdparty.nong.search_engines.full_url = result.finalUrl;
+                        let doc = Common.parsetext(result.responseText);
+                        if (!doc) {
+                            thirdparty.nong.search_engines.parse_error(GM_getValue('search_index'));
+                        }
+                        let data = [];
+                        let t = doc.querySelectorAll("tr.default,tr.success");
+                        if (t.length !== 0) {
+                            for (let elem of t) {
+                                //debugger;
+                                data.push({
+                                    "title": elem.querySelector("td:nth-child(2)>a:nth-child(1)").title,
+                                    "maglink": elem.querySelector("td:nth-child(3)>a:nth-last-child(1)").href,
+                                    //"torrent_url": "https://nyaa.si" + elem.querySelector("td:nth-child(3)>a:nth-child(1)").href,
+                                    "size": elem.querySelector("td:nth-child(4)").textContent,
+                                    "src": "https://sukebei.nyaa.si"
+                                        + elem.querySelector("td:nth-child(2)>a:nth-child(1)").getAttribute('href'),
+                                });
+                            }
                         }
                         cb(result.finalUrl, data);
                     });
@@ -952,80 +953,79 @@
                 //         }
                 //     });
                 // },
-
-                "btkittyba.ws": function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: "POST",
-                        url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
-                        data: "keyword=" + kw + "&hidden=true",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                            withCredentials:true,
-                            Origin: "http://"+ GM_getValue('search_index')
-                        },
-                        onload: function (result) {
-                            let hostString = GM_getValue('search_index');
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            let doc = Common.parsetext(result.responseText);
-                            let data = [];
-                            let t = doc.getElementsByClassName("list-con");
-                            if (t) {
-                                for (let elem of t) {
-                                    data.push({
-                                        "title": elem.querySelector("dt a").textContent,
-                                        "maglink": elem.querySelector(".option span:nth-child(2) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
-                                        //elem.querySelector("dd a").href todo 111
-                                        "size": elem.querySelector(".option span:nth-child(4) b").textContent,
-                                        "src": elem.querySelector("dt a").href.replace(location.host,hostString),
-                                        "id": elem.querySelector("dt a").href.replace("https","").replace("http","").replace("://"+ location.host +"/t/","").replace(".html",""),
-                                    });
-                                }
-                            }
-                            cb(result.finalUrl, data); // todo 181224
-                        },
-                        onerror: function (e) {
-                            console.error(e);
-                            throw "search error";
-                        }
-                    });
-                },
+                // "btkittyba.ws": function (kw, cb) {
+                //     GM_xmlhttpRequest({
+                //         method: "POST",
+                //         url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
+                //         data: "keyword=" + kw + "&hidden=true",
+                //         headers: {
+                //             "Content-Type": "application/x-www-form-urlencoded",
+                //             withCredentials:true,
+                //             Origin: "http://"+ GM_getValue('search_index')
+                //         },
+                //         onload: function (result) {
+                //             let hostString = GM_getValue('search_index');
+                //             thirdparty.nong.search_engines.full_url = result.finalUrl;
+                //             let doc = Common.parsetext(result.responseText);
+                //             let data = [];
+                //             let t = doc.getElementsByClassName("list-con");
+                //             if (t) {
+                //                 for (let elem of t) {
+                //                     data.push({
+                //                         "title": elem.querySelector("dt a").textContent,
+                //                         "maglink": elem.querySelector(".option span:nth-child(2) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
+                //                         //elem.querySelector("dd a").href todo 111
+                //                         "size": elem.querySelector(".option span:nth-child(4) b").textContent,
+                //                         "src": elem.querySelector("dt a").href.replace(location.host,hostString),
+                //                         "id": elem.querySelector("dt a").href.replace("https","").replace("http","").replace("://"+ location.host +"/t/","").replace(".html",""),
+                //                     });
+                //                 }
+                //             }
+                //             cb(result.finalUrl, data); // todo 181224
+                //         },
+                //         onerror: function (e) {
+                //             console.error(e);
+                //             throw "search error";
+                //         }
+                //     });
+                // },
                 //btdiggs.cc
-                "btdiggcn.xyz": function (kw, cb) {
-                    GM_xmlhttpRequest({
-                        method: "POST",
-                        url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
-                        data: "keyword=" + kw + "&hidden=true",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
-                            withCredentials:true
-                        },
-                        onload: function (result) {
-                            let hostString = "btdiggcn.xyz";
-                            thirdparty.nong.search_engines.full_url = result.finalUrl;
-                            let doc = Common.parsetext(result.responseText);
-                            let data = [];
-                            let t = doc.querySelectorAll(".list dl");
-                            if (t) {
-                                for (let elem of t) {
-                                    data.push({
-                                        "title": elem.querySelector("dt a").textContent,
-                                        "maglink": elem.querySelector(".attr span:nth-child(6) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
-                                        //elem.querySelector("dd a").href todo 111
-                                        "size": elem.querySelector(".attr span:nth-child(2) b").textContent,
-                                        "src": elem.querySelector("dt a").href.replace(location.host,hostString),
-                                        "id": elem.querySelector("dt a").href.replace("https","").replace("http","").replace("://"+ location.host +"/","").replace(".html",""),
-                                    });
-                                }
-                            }
-
-                            cb(result.finalUrl, data);
-                        },
-                        onerror: function (e) {
-                            console.error(e);
-                            throw "search error";
-                        }
-                    });
-                },
+                // "btdiggcn.xyz": function (kw, cb) {
+                //     GM_xmlhttpRequest({
+                //         method: "POST",
+                //         url: "http://"+ GM_getValue('search_index') +"/", //地址不对则无法搜索
+                //         data: "keyword=" + kw + "&hidden=true",
+                //         headers: {
+                //             "Content-Type": "application/x-www-form-urlencoded",
+                //             withCredentials:true
+                //         },
+                //         onload: function (result) {
+                //             let hostString = "btdiggcn.xyz";
+                //             thirdparty.nong.search_engines.full_url = result.finalUrl;
+                //             let doc = Common.parsetext(result.responseText);
+                //             let data = [];
+                //             let t = doc.querySelectorAll(".list dl");
+                //             if (t) {
+                //                 for (let elem of t) {
+                //                     data.push({
+                //                         "title": elem.querySelector("dt a").textContent,
+                //                         "maglink": elem.querySelector(".attr span:nth-child(6) a").href.replace(location.host,hostString),//.match(/[0-9a-zA-Z]{40,}/g)
+                //                         //elem.querySelector("dd a").href todo 111
+                //                         "size": elem.querySelector(".attr span:nth-child(2) b").textContent,
+                //                         "src": elem.querySelector("dt a").href.replace(location.host,hostString),
+                //                         "id": elem.querySelector("dt a").href.replace("https","").replace("http","").replace("://"+ location.host +"/","").replace(".html",""),
+                //                     });
+                //                 }
+                //             }
+                //
+                //             cb(result.finalUrl, data);
+                //         },
+                //         onerror: function (e) {
+                //             console.error(e);
+                //             throw "search error";
+                //         }
+                //     });
+                // },
                 "www.torrentkitty.tv": function (kw, cb) {
                     let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
