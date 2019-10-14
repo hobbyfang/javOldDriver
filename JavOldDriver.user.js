@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.0.4
+// @version      3.0.5
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.0.5 排版做了一些微调。
 // v3.0.4 屏蔽了失效的磁链站点。
 // v3.0.3 修复了已知问题。
 // v3.0.2 修复了已知问题。
@@ -451,7 +452,7 @@
                 Common.setCookie("over18", 18);
                 $('.socialmedia').remove();
                 GM_addStyle(`
-                    #video_info {text-align: left;font: 14px Arial;min-width: 230px;max-width: 230px;padding: 0px 0px 0px 0px;}
+                    #video_info {text-align: left;font: 14px Arial;min-width: 230px;max-width: 250px;padding: 0px 0px 0px 0px;}
                     #video_jacket_info {overflow: hidden;} //table-layout: fixed;
                     #coverimg {vertical-align: top;overflow: hidden;max-width: 50%;}
                     #javtext {vertical-align: top;width: 250px;}
@@ -721,13 +722,13 @@
                     // 如果是最近两个月份的影片标上背景色
                     if ($(indexCd_id).context.URL.indexOf("bestrated") > 0 && Common.isLastXMonth(dateString, 2)) {
                         //$(indexCd_id).css("background-color", "blanchedalmond");
-                        $('div[style="color: red;"]', $(indexCd_id)).css("background-color", "yellow");
+                        $('div[class="hobby_add"]', $(indexCd_id)).css("background-color", "#ffffc9");
                         //debugger;
                     }
                 }
 
                 function extCode(indexCd_id, dateString, pingfengString) {
-                    $(indexCd_id).children("a").append("<div class='id'style='color: red;'>" + dateString
+                    $(indexCd_id).children("a").append("<div class='hobby_add'style='color: red;font-size: 14px;'>" + dateString
                         + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
                     $(indexCd_id).children("a").attr("release_date", dateString);
                     let s = 0;
@@ -751,7 +752,7 @@
                             // 判断鼠标左键或中间才执行
                             if (event.button < 2) {
                                 // 设置点击后填充新的背景色peachpuff
-                                $("#vid_" + _vid).css("background-color", "peachpuff");
+                                $("#vid_" + _vid).css("background-color", "#ffe7d3");
                             }
                         });
                         let indexCd_id;
@@ -769,7 +770,7 @@
                                     $(indexCd_id).remove();
                                 }
                                 else{
-                                    $(indexCd_id).css("background-color", "peachpuff");//hotpink,khaki,indianred,peachpuff
+                                    $(indexCd_id).css("background-color", "#ffe7d3");//hotpink,khaki,indianred,peachpuff
                                     extCode(indexCd_id, results[0].release_date, results[0].score);
                                 }
                             }
@@ -2011,6 +2012,7 @@
             //获取番号影片详情页的番号  例如：http://www.javlibrary.com/cn/?v=javli7j724
             if ($('.header').length && $('meta[name="keywords"]').length) {
                 let AVID = getAvidAndChgPage();
+                $('#video_title h3').html($('#video_title a').html());
                 window.onload = function () {
                     $('iframe').remove();
 
@@ -2133,10 +2135,12 @@
                                 }
                             });
                         }
-                    }, !BOOLEAN_TYPE);
+                    }, false);//javbus 默认不放大
                 });
 
                 thirdparty.busTypeSearch();
+                // 加入javlibry的跳转链接
+                $('.col-md-3.info').append(`<a href="http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=${AVID}" style="color: rgb(204, 0, 0);">JavLibrary&nbsp;</a>`);
                 // 修改javbus磁链列表头，增加两列
                 $('#magnet-table tbody tr').append('<td style="text-align:center;white-space:nowrap">操作</td><td style="text-align:center;white-space:nowrap">离线下载</td>');
                 // 先执行一次，针对已经提前加载出磁链列表结果时有效
