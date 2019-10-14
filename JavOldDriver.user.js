@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.0.5
+// @version      3.1.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.1.0 优化javbus/avmoo/avsox瀑布流排版。
 // v3.0.5 排版做了一些微调。
 // v3.0.4 屏蔽了失效的磁链站点。
 // v3.0.3 修复了已知问题。
@@ -610,7 +611,7 @@
             var $pages = $('div#waterfall div.item');
             if ($pages.length) {
                 // javbus.com
-                if ($('a#next').length) {
+                if ($("footer:contains('JavBus')").length) {
                     w = new thirdparty.waterfall({
                         next: 'a#next',
                         item: 'div#waterfall div.item',
@@ -619,7 +620,7 @@
                     });
                 }
                 //avmo.pw、avso.pw
-                if ($('a[name="nextpage"]').length) {
+                if ((/(AVMOO|AVSOX)/g).test(document.title)) {
                     w = new thirdparty.waterfall({
                         next: 'a[name="nextpage"]',//nextpage
                         item: 'div#waterfall div.item',
@@ -653,38 +654,9 @@
                     pagi: '.pagination.is-centered',
                 });
             }
-            w.setFourthCallback(function (elems) { // todo 20190404
-                if (document.title.search(/OneJAV/) > 0 && elems) {
-                    // 增加对应所有番号的Javlib的跳转链接,
-                    for (let index = 0; index < elems.length; index++) {
-                        let aEle = $(elems[index]).find("h5.title.is-4.is-spaced a")[0];
-                        let avid = $(aEle).text().replace(/[ ]/g,"").replace(/[\r\n]/g,"")//去掉空格//去掉回车换行
-                        //修改样式
-                        $(aEle.parentElement.parentElement).attr("style","flex-direction: column;");
-                        // Javlib的跳转链接
-                        $(aEle.parentElement).append("<a style='color:red;' href='http://www.javlibrary.com/cn/vl_searchbyid.php?keyword="
-                            + Common.getAvCode(avid) +"&"+avid+ "' target='_blank' title='点击到Javlib看看'>&nbsp;&nbsp;Javlib</a>");
-                        // 番号预览大图
-                        Common.addAvImg(Common.getAvCode(avid), function ($img) {
-                            //debugger;
-                            let divEle = $(elems[index]).find("div.column.is-5")[0];
-                            if (divEle) {
-                                $(divEle).append($img);
-                                $img.click(function () {
-                                    //如果存在min就去除min,否则不存在则添加上min
-                                    $(this).toggleClass('min');
-                                    if ($(this).attr("class")) {
-                                        this.parentElement.parentElement.scrollIntoView();
-                                    }
-                                });
-                            }
-                        },false);
-                    }
-                }
-            });
 
             w.setSecondCallback(function (cont, elems) {
-                if (location.pathname.includes('/star/')) {
+                if (location.pathname.includes('/star/') && elems) {
                     cont.append(elems.slice(1));
                 } else {
                     cont.append(elems);
@@ -728,8 +700,8 @@
                 }
 
                 function extCode(indexCd_id, dateString, pingfengString) {
-                    $(indexCd_id).children("a").append("<div class='hobby_add'style='color: red;font-size: 14px;'>" + dateString
-                        + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + pingfengString + "</div>");
+                    $(indexCd_id).children("a").append(`<div class='hobby_add'style='color: red;font-size: 14px;'>
+                        ${dateString}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${pingfengString}</div>`);
                     $(indexCd_id).children("a").attr("release_date", dateString);
                     let s = 0;
                     let r = Math.random() / 100;
@@ -794,16 +766,199 @@
                 }
             });
 
+            w.setFourthCallback(function (elems) { // todo 20190404
+                if (document.title.search(/OneJAV/) > 0 && elems) {
+                    // 增加对应所有番号的Javlib的跳转链接,
+                    for (let index = 0; index < elems.length; index++) {
+                        let aEle = $(elems[index]).find("h5.title.is-4.is-spaced a")[0];
+                        let avid = $(aEle).text().replace(/[ ]/g,"").replace(/[\r\n]/g,"")//去掉空格//去掉回车换行
+                        //修改样式
+                        $(aEle.parentElement.parentElement).attr("style","flex-direction: column;");
+                        // Javlib的跳转链接
+                        $(aEle.parentElement).append("<a style='color:red;' href='http://www.javlibrary.com/cn/vl_searchbyid.php?keyword="
+                            + Common.getAvCode(avid) +"&"+avid+ "' target='_blank' title='点击到Javlib看看'>&nbsp;&nbsp;Javlib</a>");
+                        // 番号预览大图
+                        Common.addAvImg(Common.getAvCode(avid), function ($img) {
+                            //debugger;
+                            let divEle = $(elems[index]).find("div.column.is-5")[0];
+                            if (divEle) {
+                                $(divEle).append($img);
+                                $img.click(function () {
+                                    //如果存在min就去除min,否则不存在则添加上min
+                                    $(this).toggleClass('min');
+                                    if ($(this).attr("class")) {
+                                        this.parentElement.parentElement.scrollIntoView();
+                                    }
+                                });
+                            }
+                        },false);
+                    }
+                }
+                if(((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) && elems) {
+                    if(!location.pathname.includes('/actresses')){//排除actresses页面
+                        for (let i = 0; i < elems.length; i++) {
+                            $(elems[i]).css("height","385px");
+                            if($(elems[i]).find("div.avatar-box").length > 0) continue;
+                            let spanEle = $(elems[i]).find("div.photo-info span")[0];
+                            let t1 = $(spanEle).html().substr($(spanEle).html().indexOf("<br>") + 4);
+                            let t2 = $(spanEle).html().substr(0,$(spanEle).html().indexOf("<br>"));
+                            $(spanEle).html(t1 + "<br>" + t2);
+                        }
+                    }
+                }
+            });
+
             if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) {
                 // javbus.com、avmo.pw、avso.pw 样式
                 GM_addStyle(`
-                    #waterfall {height: initial !important;width: initial !important;display: flex;flex-direction: row;flex-wrap: wrap;}
-                    #waterfall .item.item {position: relative !important;top: initial !important;left: initial !important;float: none;flex: 20%;}
-                    #waterfall .movie-box,#waterfall .avatar-box {width: initial !important;display: flex;}
-                    #waterfall .movie-box .photo-frame {overflow: visible;}
+                    #waterfall {height: initial !important;width: initial !important;flex-direction: row;flex-wrap: wrap;margin: 5px 15px !important;}
+                    #waterfall .item {position: relative !important;top: initial !important;left: initial !important;}
+                    #waterfall .movie-box .photo-frame {position: relative;} #waterfall .movie-box .photo-info {height: 145px;}
+                    #waterfall .movie-box img {position: absolute; top: -200px; bottom: -200px; left: -200px; right: -200px; margin: auto;}
+                    #waterfall .movie-box {width: 167px;} #waterfall .avatar-box .photo-info p {margin: 0 0 2px;}
+                    #waterfall .avatar-box .photo-info {line-height: 15px; padding: 6px;height: 220px;}
+                    #waterfall .avatar-box .photo-frame {margin: 10px;text-align: center;}
+                    #waterfall .avatar-box.text-center {height: 195px;}//actresses页面
                 `);
             }
         },
+        // 瀑布流脚本
+        waterfall: (function () {
+            function waterfall(selectorcfg = {}) {
+                this.lock = new Lock();
+                this.baseURI = this.getBaseURI();
+                this.selector = {
+                    next: 'a.next',
+                    item: '',
+                    cont: '#waterfall', //container
+                    pagi: '.pagination',
+                };
+                Object.assign(this.selector, selectorcfg);
+                this.pagegen = this.fetchSync(location.href);
+                this.anchor = $(this.selector.pagi)[0];
+                this._count = 0;
+                this._1func = function (cont, elems) {
+                    cont.empty().append(elems);
+                };
+                this._2func = function (cont, elems) {
+                    cont.append(elems);
+                };
+                this._3func = function (elems) {
+                };
+                if ($(this.selector.item).length) {
+                    // 开启关闭瀑布流判断
+                    if(waterfallScrollStatus > 0) {
+                        document.addEventListener('scroll', this.scroll.bind(this));
+                        document.addEventListener('wheel', this.wheel.bind(this));
+                    }
+                    this.appendElems(this._1func);
+                }
+            }
+
+            waterfall.prototype.getBaseURI = function () {
+                let _ = location;
+                return `${_.protocol}//${_.hostname}${(_.port && `:${_.port}`)}`;
+            };
+            waterfall.prototype.getNextURL = function (href) {
+                let a = document.createElement('a');
+                a.href = href;
+                return `${this.baseURI}${a.pathname}${a.search}`;
+            };
+            // 瀑布流脚本
+            waterfall.prototype.fetchURL = function (url) {
+                console.log(`fetchUrl = ${url}`);
+                const fetchwithcookie = fetch(url, {credentials: 'same-origin'});
+                return fetchwithcookie.then(response => response.text())
+                    .then(html => new DOMParser().parseFromString(html, 'text/html'))
+                    .then(doc => {
+                        let $doc = $(doc);
+                        let href = $doc.find(this.selector.next).attr('href');
+                        let nextURL = href ? this.getNextURL(href) : undefined;
+                        let elems = $doc.find(this.selector.item);
+                        return {
+                            nextURL,
+                            elems
+                        };
+                    });
+            };
+            // 瀑布流脚本
+            waterfall.prototype.fetchSync = function* (urli) {
+                let url = urli;
+                do {
+                    yield new Promise((resolve, reject) => {
+                        if (this.lock.locked) {
+                            reject();
+                        }
+                        else {
+                            this.lock.lock();
+                            resolve();
+                        }
+                    }).then(() => {
+                        return this.fetchURL(url).then(info => {
+                            url = info.nextURL;
+                            return info.elems;
+                        })
+                            ;
+                    }).then(elems => {
+                        this.lock.unlock();
+                        return elems;
+                    }).catch((err) => {
+                            // Locked!
+                        }
+                    )
+                    ;
+                } while (url);
+            };
+            // 瀑布流脚本
+            waterfall.prototype.appendElems = function () {
+                let nextpage = this.pagegen.next();
+                if (!nextpage.done) {
+                    nextpage.value.then(elems => {
+                        const cb = (this._count === 0) ? this._1func : this._2func;
+                        cb($(this.selector.cont), elems);
+                        this._count += 1;
+                        // hobby mod script
+                        this._3func(elems);
+                        this._4func(elems);
+                    })
+                    ;
+                }
+                return nextpage.done;
+            };
+            // 瀑布流脚本
+            waterfall.prototype.end = function () {
+                document.removeEventListener('scroll', this.scroll.bind(this));
+                document.removeEventListener('wheel', this.wheel.bind(this));
+                let $end = $(`<h1>The End</h1>`);
+                $(this.anchor).replaceWith($end);
+            };
+            waterfall.prototype.reachBottom = function (elem, limit) {
+                return (elem.getBoundingClientRect().top - $(window).height()) < limit;
+            };
+            waterfall.prototype.scroll = function () {
+                if (this.reachBottom(this.anchor, 500) && this.appendElems(this._2func)) {
+                    this.end();
+                }
+            };
+            waterfall.prototype.wheel = function () {
+                if (this.reachBottom(this.anchor, 1000) && this.appendElems(this._2func)) {
+                    this.end();
+                }
+            };
+            waterfall.prototype.setFirstCallback = function (f) {
+                this._1func = f;
+            };
+            waterfall.prototype.setSecondCallback = function (f) {
+                this._2func = f;
+            };
+            waterfall.prototype.setThirdCallback = function (f) {
+                this._3func = f;
+            };
+            waterfall.prototype.setFourthCallback = function (f) {
+                this._4func = f;
+            };
+            return waterfall;
+        })(),
         // 挊
         nong: {
             offline_sites: {
@@ -1419,143 +1574,6 @@
                 }
             },
         },
-        // 瀑布流脚本
-        waterfall: (function () {
-            function waterfall(selectorcfg = {}) {
-                this.lock = new Lock();
-                this.baseURI = this.getBaseURI();
-                this.selector = {
-                    next: 'a.next',
-                    item: '',
-                    cont: '', //container
-                    pagi: '.pagination',
-                };
-                Object.assign(this.selector, selectorcfg);
-                this.pagegen = this.fetchSync(location.href);
-                this.anchor = $(this.selector.pagi)[0];
-                this._count = 0;
-                this._1func = function (cont, elems) {
-                    cont.empty().append(elems);
-                };
-                this._2func = function (cont, elems) {
-                    cont.append(elems);
-                };
-                this._3func = function (elems) {
-                };
-                if ($(this.selector.item).length) {
-                    // 开启关闭瀑布流判断
-                    if(waterfallScrollStatus > 0) {
-                        document.addEventListener('scroll', this.scroll.bind(this));
-                        document.addEventListener('wheel', this.wheel.bind(this));
-                    }
-                    this.appendElems(this._1func);
-                }
-            }
-
-            waterfall.prototype.getBaseURI = function () {
-                let _ = location;
-                return `${_.protocol}//${_.hostname}${(_.port && `:${_.port}`)}`;
-            };
-            waterfall.prototype.getNextURL = function (href) {
-                let a = document.createElement('a');
-                a.href = href;
-                return `${this.baseURI}${a.pathname}${a.search}`;
-            };
-            // 瀑布流脚本
-            waterfall.prototype.fetchURL = function (url) {
-                console.log(`fetchUrl = ${url}`);
-                const fetchwithcookie = fetch(url, {credentials: 'same-origin'});
-                return fetchwithcookie.then(response => response.text())
-                    .then(html => new DOMParser().parseFromString(html, 'text/html'))
-                    .then(doc => {
-                        let $doc = $(doc);
-                        let href = $doc.find(this.selector.next).attr('href');
-                        let nextURL = href ? this.getNextURL(href) : undefined;
-                        let elems = $doc.find(this.selector.item);
-                        return {
-                            nextURL,
-                            elems
-                        };
-                    });
-            };
-            // 瀑布流脚本
-            waterfall.prototype.fetchSync = function* (urli) {
-                let url = urli;
-                do {
-                    yield new Promise((resolve, reject) => {
-                        if (this.lock.locked) {
-                            reject();
-                        }
-                        else {
-                            this.lock.lock();
-                            resolve();
-                        }
-                    }).then(() => {
-                        return this.fetchURL(url).then(info => {
-                            url = info.nextURL;
-                            return info.elems;
-                        })
-                            ;
-                    }).then(elems => {
-                        this.lock.unlock();
-                        return elems;
-                    }).catch((err) => {
-                            // Locked!
-                        }
-                    )
-                    ;
-                } while (url);
-            };
-            // 瀑布流脚本
-            waterfall.prototype.appendElems = function () {
-                let nextpage = this.pagegen.next();
-                if (!nextpage.done) {
-                    nextpage.value.then(elems => {
-                        const cb = (this._count === 0) ? this._1func : this._2func;
-                        cb($(this.selector.cont), elems);
-                        this._count += 1;
-                        // hobby mod script
-                        this._3func(elems);
-                        this._4func(elems);
-                    })
-                    ;
-                }
-                return nextpage.done;
-            };
-            // 瀑布流脚本
-            waterfall.prototype.end = function () {
-                document.removeEventListener('scroll', this.scroll.bind(this));
-                document.removeEventListener('wheel', this.wheel.bind(this));
-                let $end = $(`<h1>The End</h1>`);
-                $(this.anchor).replaceWith($end);
-            };
-            waterfall.prototype.reachBottom = function (elem, limit) {
-                return (elem.getBoundingClientRect().top - $(window).height()) < limit;
-            };
-            waterfall.prototype.scroll = function () {
-                if (this.reachBottom(this.anchor, 500) && this.appendElems(this._2func)) {
-                    this.end();
-                }
-            };
-            waterfall.prototype.wheel = function () {
-                if (this.reachBottom(this.anchor, 1000) && this.appendElems(this._2func)) {
-                    this.end();
-                }
-            };
-            waterfall.prototype.setFirstCallback = function (f) {
-                this._1func = f;
-            };
-            waterfall.prototype.setSecondCallback = function (f) {
-                this._2func = f;
-            };
-            waterfall.prototype.setThirdCallback = function (f) {
-                this._3func = f;
-            };
-            waterfall.prototype.setFourthCallback = function (f) {
-                this._4func = f;
-            };
-            return waterfall;
-        })(),
     };
 
     /**
