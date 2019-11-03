@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.1.0
+// @version      3.1.1
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -54,7 +54,7 @@
 // @connect      *
 // @copyright    hobby 2016-12-18
 
-// 大陆用户推荐Chrome(V52+) + Tampermonkey（必须扩展） + ShadowsocksR/XX-Net(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
+// 大陆用户推荐Chrome(V52+) + Tampermonkey（必须扩展） + V2ray/ShadowsocksR(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 // 上车请使用chrome浏览器，其他浏览器的问题本人不支持发现和修复相关问题。
 
 // 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本,
@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.1.1 更新了磁链站点。
 // v3.1.0 优化javbus/avmoo/avsox瀑布流排版。
 // v3.0.5 排版做了一些微调。
 // v3.0.4 屏蔽了失效的磁链站点。
@@ -524,7 +525,7 @@
     // 第三方脚本调用
     var thirdparty = {
         // javbus详情页增加多类别联合查找功能
-        busTypeSearch : function () {
+        busTypeSearch : () => {
             let se = () => {
                 let curGenres = '', a = document.querySelectorAll('input[name="gr_sel"]:checked'), arr = [];
                 a.forEach(e => {
@@ -794,6 +795,7 @@
                         },false);
                     }
                 }
+
                 if(((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) && elems) {
                     if(!location.pathname.includes('/actresses')){//排除actresses页面
                         for (let i = 0; i < elems.length; i++) {
@@ -820,6 +822,11 @@
                     #waterfall .avatar-box .photo-frame {margin: 10px;text-align: center;}
                     #waterfall .avatar-box.text-center {height: 195px;}//actresses页面
                 `);
+
+                if($('#waterfall').length == 0 && location.pathname.search(/search/) > 0
+                    && location.pathname.search(/uncensored/) < 1){
+                    window.location.href = $('li[role="presentation"]:eq(1) a').attr("href");
+                }
             }
         },
         // 瀑布流脚本
@@ -969,7 +976,7 @@
                 },
             },
             resource_sites:{
-                "btspread.com": function (kw, cb) { //btsow
+                "btos.pw": function (kw, cb) { //btsow
                     let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -1430,6 +1437,7 @@
                         || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
                     if (event.target.className == 'nong-copy') {
                         event.target.innerHTML = '成功';
+                        maglink = maglink.substr(0,60);
                         GM_setClipboard(maglink);
                         setTimeout(function () {
                             event.target.innerHTML = '复制';
@@ -1557,8 +1565,8 @@
                                     if (data.length === 0) {
                                         let url = thirdparty.nong.search_engines.full_url;
                                         $('#nong-table-new #notice').text('No search result! ');   //todo 181224
-                                        $('#nong-table-new #notice').append('<a href="'+url
-                                            +'" target="_blank" style="color: red;">&nbsp;Go</a>');   //todo 190630
+                                        $('#nong-table-new #notice').append(
+                                            `<a href="${url}" target="_blank" style="color: red;">&nbsp;Go</a>`);   //todo 190630
                                     }
                                     else {
                                         thirdparty.nong.magnet_table.updata_table(src, data, 'full');
