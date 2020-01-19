@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.1.1
+// @version      3.1.2
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -62,6 +62,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.1.2 优化javbus/avmoo/avsox步兵瀑布流排版。
 // v3.1.1 更新了磁链站点。
 // v3.1.0 优化javbus/avmoo/avsox瀑布流排版。
 // v3.0.5 排版做了一些微调。
@@ -799,7 +800,7 @@
                 if(((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) && elems) {
                     if(!location.pathname.includes('/actresses')){//排除actresses页面
                         for (let i = 0; i < elems.length; i++) {
-                            $(elems[i]).css("height","385px");
+                            //$(elems[i]).css("height","385px");
                             if($(elems[i]).find("div.avatar-box").length > 0) continue;
                             let spanEle = $(elems[i]).find("div.photo-info span")[0];
                             let t1 = $(spanEle).html().substr($(spanEle).html().indexOf("<br>") + 4);
@@ -815,9 +816,8 @@
                 GM_addStyle(`
                     #waterfall {height: initial !important;width: initial !important;flex-direction: row;flex-wrap: wrap;margin: 5px 15px !important;}
                     #waterfall .item {position: relative !important;top: initial !important;left: initial !important;}
-                    #waterfall .movie-box .photo-frame {position: relative;} #waterfall .movie-box .photo-info {height: 145px;}
                     #waterfall .movie-box img {position: absolute; top: -200px; bottom: -200px; left: -200px; right: -200px; margin: auto;}
-                    #waterfall .movie-box {width: 167px;} #waterfall .avatar-box .photo-info p {margin: 0 0 2px;}
+                    #waterfall .movie-box .photo-frame {position: relative;} #waterfall .avatar-box .photo-info p {margin: 0 0 2px;}
                     #waterfall .avatar-box .photo-info {line-height: 15px; padding: 6px;height: 220px;}
                     #waterfall .avatar-box .photo-frame {margin: 10px;text-align: center;}
                     #waterfall .avatar-box.text-center {height: 195px;}//actresses页面
@@ -826,6 +826,13 @@
                 if($('#waterfall').length == 0 && location.pathname.search(/search/) > 0
                     && location.pathname.search(/uncensored/) < 1){
                     window.location.href = $('li[role="presentation"]:eq(1) a').attr("href");
+                }
+
+                if(location.pathname.includes('/uncensored') || (/(AVSOX)/g).test(document.title)){
+                    GM_addStyle(`#waterfall .movie-box {width: 354px;} #waterfall .movie-box .photo-info {height: 105px;}`);
+                }
+                else {
+                    GM_addStyle(`#waterfall .movie-box {width: 167px;} #waterfall .movie-box .photo-info {height: 145px;}`);
                 }
             }
         },
