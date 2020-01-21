@@ -612,12 +612,13 @@
             // javbus.com、avmo.pw、avso.pw
             var $pages = $('div#waterfall div.item');
             if ($pages.length) {
+                $pages[0].parentElement.parentElement.id = "waterfall_h";
                 // javbus.com
                 if ($("footer:contains('JavBus')").length) {
                     w = new thirdparty.waterfall({
                         next: 'a#next',
                         item: 'div#waterfall div.item',
-                        cont: '#waterfall',
+                        cont: '.masonry',
                         pagi: '.pagination-lg',
                     });
                 }
@@ -814,13 +815,13 @@
             if((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) {
                 // javbus.com、avmo.pw、avso.pw 样式
                 GM_addStyle(`
-                    #waterfall {height: initial !important;width: initial !important;flex-direction: row;flex-wrap: wrap;margin: 5px 15px !important;}
-                    #waterfall .item {position: relative !important;top: initial !important;left: initial !important;}
-                    #waterfall .movie-box img {position: absolute; top: -200px; bottom: -200px; left: -200px; right: -200px; margin: auto;}
-                    #waterfall .movie-box .photo-frame {position: relative;} #waterfall .avatar-box .photo-info p {margin: 0 0 2px;}
-                    #waterfall .avatar-box .photo-info {line-height: 15px; padding: 6px;height: 220px;}
-                    #waterfall .avatar-box .photo-frame {margin: 10px;text-align: center;}
-                    #waterfall .avatar-box.text-center {height: 195px;}//actresses页面
+                    #waterfall_h {height: initial !important;width: initial !important;flex-direction: row;flex-wrap: wrap;margin: 5px 15px !important;}
+                    #waterfall_h .item {position: relative !important;top: initial !important;left: initial !important;float: left;}
+                    #waterfall_h .movie-box img {position: absolute; top: -200px; bottom: -200px; left: -200px; right: -200px; margin: auto;}
+                    #waterfall_h .movie-box .photo-frame {position: relative;} #waterfall_h .avatar-box .photo-info p {margin: 0 0 2px;}
+                    #waterfall_h .avatar-box .photo-info {line-height: 15px; padding: 6px;height: 220px;}
+                    #waterfall_h .avatar-box .photo-frame {margin: 10px;text-align: center;}
+                    #waterfall_h .avatar-box.text-center {height: 195px;}//actresses页面
                 `);
 
                 if($('#waterfall').length == 0 && location.pathname.search(/search/) > 0
@@ -829,10 +830,10 @@
                 }
 
                 if(location.pathname.includes('/uncensored') || (/(AVSOX)/g).test(document.title)){
-                    GM_addStyle(`#waterfall .movie-box {width: 354px;} #waterfall .movie-box .photo-info {height: 105px;}`);
+                    GM_addStyle(`#waterfall_h .movie-box {width: 354px;} #waterfall_h .movie-box .photo-info {height: 105px;}`);
                 }
                 else {
-                    GM_addStyle(`#waterfall .movie-box {width: 167px;} #waterfall .movie-box .photo-info {height: 145px;}`);
+                    GM_addStyle(`#waterfall_h .movie-box {width: 167px;} #waterfall_h .movie-box .photo-info {height: 145px;}`);
                 }
             }
         },
