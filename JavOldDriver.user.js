@@ -137,12 +137,13 @@
         }
 
 
-        let dom = `<label class="tm-setting">javlib/javbus开启瀑布流<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>`;
-        dom += '<label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="' + GM_getValue('btsow_url') + '"></label>';
-        dom += '<label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="' + GM_getValue('btdig_url') + '"></label>';
-        dom += '<label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="' + GM_getValue('nyaa_url') + '"></label>';
-        dom += '<label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="' + GM_getValue('torrentkitty_url') + '"></label>';
-        dom = '<div>' + dom + '</div>';
+        let dom = `<div>
+               <label class="tm-setting">javlib/javbus开启瀑布流<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
+               <label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="${GM_getValue('btsow_url')}"></label>
+               <label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="${GM_getValue('btdig_url')}"></label>
+               <label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="${GM_getValue('nyaa_url')}"></label>
+               <label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="${ GM_getValue('torrentkitty_url')}"></label>
+            </div>`;
         let $dom = $(dom);
         Swal.fire({
             title: '脚本设置',
