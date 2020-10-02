@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.1.4
+// @version      3.1.7
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -9,6 +9,7 @@
 
 // @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/lovefield@2.1.12/dist/lovefield.min.js
+// @require      https://cdn.jsdelivr.net/npm/sweetalert2@9
 // @resource     icon http://geekdream.com/image/115helper_icon_001.jpg
 
 // @include     *://*javlibrary.com/*
@@ -50,6 +51,7 @@
 // @grant        GM_notification
 // @grant        GM_setClipboard
 // @grant        GM_getResourceURL
+// @grant        GM_registerMenuCommand
 
 // @connect      *
 // @copyright    hobby 2016-12-18
@@ -62,6 +64,9 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.1.7 增加脚本设置功能，支持磁链地址失效可自己更换。更新最新磁链地址。
+// v3.1.6 更换失效的磁链地址。另btdig，nayy，torrentkitty站点需科学上网，其中btdig还需手工验证非机器访问。
+// v3.1.5 增加过滤评分及排序时排除10分的番号，更换失效的磁链地址。
 // v3.1.4 更换失效的磁链地址。
 // v3.1.3 更换失效的磁链地址。
 // v3.1.2 优化javbus/avmoo/avsox步兵瀑布流排版。
@@ -97,6 +102,7 @@
 /* jshint -W097 */
 (function () {
     'use strict';
+
     // 115用户ID
     let jav_userID = GM_getValue('jav_user_id', 0);
     // icon图标
@@ -110,7 +116,56 @@
     // 表
     let myMovie;
 
-    /***
+    GM_registerMenuCommand('设置', () => {
+        let scroll_true = '';
+        if (GM_getValue('scroll_status', 1) !== 0){
+            GM_setValue('scroll_status', 1);
+            scroll_true = "checked";
+        }
+        // 磁链访问地址初始化
+        if (GM_getValue('btsow_url', undefined) === undefined) {
+            GM_setValue('btsow_url', 'btsow.online');
+        }
+        if (GM_getValue('btdig_url', undefined) === undefined) {
+            GM_setValue('btdig_url', 'www.btdig.com');
+        }
+        if (GM_getValue('nyaa_url', undefined) === undefined) {
+            GM_setValue('nyaa_url', 'sukebei.nyaa.si');
+        }
+        if (GM_getValue('torrentkitty_url', undefined) === undefined) {
+            GM_setValue('torrentkitty_url', 'www.torrentkitty.tv');
+        }
+
+
+        let dom = `<label class="tm-setting">javlib/javbus开启瀑布流<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>`;
+        dom += '<label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="' + GM_getValue('btsow_url') + '"></label>';
+        dom += '<label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="' + GM_getValue('btdig_url') + '"></label>';
+        dom += '<label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="' + GM_getValue('nyaa_url') + '"></label>';
+        dom += '<label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="' + GM_getValue('torrentkitty_url') + '"></label>';
+        dom = '<div>' + dom + '</div>';
+        let $dom = $(dom);
+        Swal.fire({
+            title: '脚本设置',
+            html: $dom[0],
+            confirmButtonText: '保存'
+        }).then((result) => {
+            if (result.value){
+                if($('#scroll_true')[0].checked){
+                    GM_setValue('scroll_status', 1);
+                }
+                else{
+                    GM_setValue('scroll_status', 0);
+                }
+                GM_setValue('btsow_url', $('#btsow_url').val());
+                GM_setValue('btdig_url', $('#btdig_url').val());
+                GM_setValue('nyaa_url', $('#nyaa_url').val());
+                GM_setValue('torrentkitty_url', $('#torrentkitty_url').val());
+                history.go(0);
+            }
+        })
+    });
+
+    /**
      * 对Date的扩展，将 Date 转化为指定格式的String
      * 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
      * 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
@@ -377,45 +432,45 @@
             let ds = lf.schema.create('jav', 1);
             // 创建MyMovie表
             ds.createTable('MyMovie').
-            //addColumn('id', lf.Type.INTEGER).
-            //索引编码 如javlikqu54
-            addColumn('index_cd',lf.Type.STRING).
-            //识别编码 如CHN-141
-            addColumn('code', lf.Type.STRING).
-            //缩略图路径
-            addColumn('thumbnail_url', lf.Type.STRING).
-            //片名
-            addColumn('movie_name', lf.Type.STRING).
-            //演员
-            addColumn('actor', lf.Type.STRING).
-            //封面图路径
-            addColumn('cover_img_url', lf.Type.STRING).
-            //发布日期
-            addColumn('release_date', lf.Type.STRING).
-            //评分
-            addColumn('score', lf.Type.INTEGER).
-            //片长(分钟)
-            addColumn('duration', lf.Type.INTEGER).
-            //导演
-            addColumn('director', lf.Type.STRING).
-            //制作商
-            addColumn('maker', lf.Type.STRING).
-            //发行商
-            addColumn('publisher', lf.Type.STRING).
-            //加入时间
-            addColumn('add_time', lf.Type.STRING).
-            //是否已阅
-            addColumn('is_browse', lf.Type.BOOLEAN).
-            //是否想要
-            addColumn('is_want', lf.Type.BOOLEAN).
-            //是否看过
-            addColumn('is_seen', lf.Type.BOOLEAN).
-            //是否拥有
-            addColumn('is_have', lf.Type.BOOLEAN).
-            //定义主键
-            addPrimaryKey(['index_cd']).
-            //定义索引
-            addIndex('idxaddtime', ['add_time'], false, lf.Order.DESC);
+                //addColumn('id', lf.Type.INTEGER).
+                //索引编码 如javlikqu54
+                addColumn('index_cd',lf.Type.STRING).
+                //识别编码 如CHN-141
+                addColumn('code', lf.Type.STRING).
+                //缩略图路径
+                addColumn('thumbnail_url', lf.Type.STRING).
+                //片名
+                addColumn('movie_name', lf.Type.STRING).
+                //演员
+                addColumn('actor', lf.Type.STRING).
+                //封面图路径
+                addColumn('cover_img_url', lf.Type.STRING).
+                //发布日期
+                addColumn('release_date', lf.Type.STRING).
+                //评分
+                addColumn('score', lf.Type.INTEGER).
+                //片长(分钟)
+                addColumn('duration', lf.Type.INTEGER).
+                //导演
+                addColumn('director', lf.Type.STRING).
+                //制作商
+                addColumn('maker', lf.Type.STRING).
+                //发行商
+                addColumn('publisher', lf.Type.STRING).
+                //加入时间
+                addColumn('add_time', lf.Type.STRING).
+                //是否已阅
+                addColumn('is_browse', lf.Type.BOOLEAN).
+                //是否想要
+                addColumn('is_want', lf.Type.BOOLEAN).
+                //是否看过
+                addColumn('is_seen', lf.Type.BOOLEAN).
+                //是否拥有
+                addColumn('is_have', lf.Type.BOOLEAN).
+                //定义主键
+                addPrimaryKey(['index_cd']).
+                //定义索引
+                addIndex('idxaddtime', ['add_time'], false, lf.Order.DESC);
             return ds;
         },
     };
@@ -681,16 +736,16 @@
                         }
                     }
                 }
-                function filerScore(indexCd_id, pingfengString) {
+                function filerScore(indexCd_id, score) {
                     //过滤X评分以下的影片  //if(vid == 'javlikq7qu')debugger;
                     if ($(indexCd_id).context.URL.indexOf("?delete") > 0) {
-                        if ($(indexCd_id).context.URL.indexOf("delete7down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 7) {
+                        if ($(indexCd_id).context.URL.indexOf("delete7down") > 0 && score <= 7.01) {
                             $(indexCd_id).remove();
                         }
-                        else if ($(indexCd_id).context.URL.indexOf("delete8down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 8) {
+                        else if ($(indexCd_id).context.URL.indexOf("delete8down") > 0 && score <= 8.01) {
                             $(indexCd_id).remove();
                         }
-                        else if ($(indexCd_id).context.URL.indexOf("delete9down") > 0 && Number(pingfengString.replace('(', '').replace(')', '')) <= 9) {
+                        else if ($(indexCd_id).context.URL.indexOf("delete9down") > 0 && score <= 9.01) {
                             $(indexCd_id).remove();
                         }
                     }
@@ -715,10 +770,13 @@
                     } else {
                         s = 0 + r;
                     }
+                    if (s >= 10) {
+                        s = 0.01;
+                    }
                     $(indexCd_id).children("a").attr("score", s);
                     setbgcolor(indexCd_id, dateString);
                     filerMonth(indexCd_id, dateString);
-                    filerScore(indexCd_id, pingfengString);
+                    filerScore(indexCd_id, s);
                 }
 
                 if (document.title.search(/JAVLibrary/) > 0 && elems) {
@@ -737,7 +795,7 @@
                         let pingfengString;
                         // 查找影片是否存在我浏览过的MyMovie表中
                         let prom =javDb.select().from(myMovie).
-                                        where(lf.op.and(myMovie.is_browse.eq(true),myMovie.index_cd.eq(_vid))).exec();
+                        where(lf.op.and(myMovie.is_browse.eq(true),myMovie.index_cd.eq(_vid))).exec();
                         prom.then( results =>{
                             //let promise1 = Promise.resolve();
                             //return new Promise(resolve => {
@@ -780,7 +838,7 @@
                         //修改样式
                         $(aEle.parentElement.parentElement).attr("style","flex-direction: column;");
                         // Javlib的跳转链接
-                        $(aEle.parentElement).append("<a style='color:red;' href='http://www.javlibrary.com/cn/vl_searchbyid.php?keyword="
+                        $(aEle.parentElement).append("<a style='color:red;' href='https://www.javlibrary.com/cn/vl_searchbyid.php?keyword="
                             + Common.getAvCode(avid) +"&"+avid+ "' target='_blank' title='点击到Javlib看看'>&nbsp;&nbsp;Javlib</a>");
                         // 番号预览大图
                         Common.addAvImg(Common.getAvCode(avid), function ($img) {
@@ -986,7 +1044,7 @@
                 },
             },
             resource_sites:{
-                "btsow.club": function (kw, cb) { //btsow
+                [GM_getValue('btsow_url')]: function (kw, cb) {
                     let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -1044,7 +1102,7 @@
                 //         }
                 //     });
                 // },
-                "www.btdig.com": function (kw, cb) {
+                [GM_getValue('btdig_url')]: function (kw, cb) {
                     let promise = request("https://" + GM_getValue('search_index') + "/search?q=" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -1072,7 +1130,7 @@
                         cb(result.finalUrl, data);
                     });
                 },
-                "sukebei.nyaa.si": function (kw, cb) {
+                [GM_getValue('nyaa_url')]: function (kw, cb) {
                     let promise = request("https://" + GM_getValue('search_index') + "/?f=0&c=0_0&q=" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -1199,7 +1257,7 @@
                 //         }
                 //     });
                 // },
-                "www.torrentkitty.tv": function (kw, cb) {
+                [GM_getValue('torrentkitty_url')]: function (kw, cb) {
                     let promise = request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -2176,7 +2234,7 @@
 
                 thirdparty.busTypeSearch();
                 // 加入javlibry的跳转链接
-                $('.col-md-3.info').append(`<a href="http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=${AVID}" style="color: rgb(204, 0, 0);">JavLibrary&nbsp;</a>`);
+                $('.col-md-3.info').append(`<a href="https://www.javlibrary.com/cn/vl_searchbyid.php?keyword=${AVID}" style="color: rgb(204, 0, 0);">JavLibrary&nbsp;</a>`);
                 // 修改javbus磁链列表头，增加两列
                 $('#magnet-table tbody tr').append('<td style="text-align:center;white-space:nowrap">操作</td><td style="text-align:center;white-space:nowrap">离线下载</td>');
                 // 先执行一次，针对已经提前加载出磁链列表结果时有效
@@ -2287,6 +2345,12 @@
     }
 
     function mainRun() {
+        GM_addStyle(`
+			.tm-setting {display: flex;align-items: center;justify-content: space-between;padding-top: 20px;}
+            .tm-checkbox {width: 16px;height: 16px;}
+			.tm-text {width: 150px;height: 16px;}
+		`);
+
         if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
             GM_addStyle(`
                 .min {width:66px;min-height: 233px;height:auto;cursor: pointer;} /*Common.addAvImg使用*/
