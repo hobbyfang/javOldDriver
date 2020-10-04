@@ -2379,7 +2379,9 @@
 
         const links = document.getElementsByTagName("a");
         for(const link of links) {
-            link.target = "_blank";
+            if(link.href.includes('javbus')) {
+                link.target = "_blank";
+            }
         }
     }
     mainRun();
