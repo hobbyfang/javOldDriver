@@ -950,6 +950,12 @@
                         let href = $doc.find(this.selector.next).attr('href');
                         let nextURL = href ? this.getNextURL(href) : undefined;
                         let elems = $doc.find(this.selector.item);
+                        for(const elem of elems) {
+                            const links = elem.getElementsByTagName('a');
+                            for(const link of links) {
+                                link.target = "_blank";
+                            }
+                        }
                         return {
                             nextURL,
                             elems
@@ -2363,13 +2369,6 @@
                 .header_hobby {font-weight: bold;text-align: right;width: 75px;} /*javbus*/
             `);
 
-            //获取所有番号影片链接的a元素
-            var a_array = $("div[class='item'] a");
-            for (var index = 0; index < a_array.length; index++) {
-                var aEle = a_array[index];
-                $(aEle).attr("target", "_blank");
-            }
-
             javlibaryScript();
             javBusScript();
         }
@@ -2377,6 +2376,11 @@
         oneJavScript();
         jav321Script();
         thirdparty.login115Run();
+
+        const links = document.getElementsByTagName("a");
+        for(const link of links) {
+            link.target = "_blank";
+        }
     }
     mainRun();
 })();
