@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.1.7
+// @version      3.1.8
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -64,6 +64,7 @@
 // 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
 // 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
 
+// v3.1.8 修复了磁链选项undefined问题。
 // v3.1.7 增加脚本设置功能，支持磁链地址失效可自己更换。更新最新磁链地址。
 // v3.1.6 更换失效的磁链地址。另btdig，nayy，torrentkitty站点需科学上网，其中btdig还需手工验证非机器访问。
 // v3.1.5 增加过滤评分及排序时排除10分的番号，更换失效的磁链地址。
@@ -115,6 +116,19 @@
     let javDb;
     // 表
     let myMovie;
+    // 磁链访问地址初始化
+    if (GM_getValue('btsow_url', undefined) === undefined) {
+        GM_setValue('btsow_url', 'btsow.online');
+    }
+    if (GM_getValue('btdig_url', undefined) === undefined) {
+        GM_setValue('btdig_url', 'www.btdig.com');
+    }
+    if (GM_getValue('nyaa_url', undefined) === undefined) {
+        GM_setValue('nyaa_url', 'sukebei.nyaa.si');
+    }
+    if (GM_getValue('torrentkitty_url', undefined) === undefined) {
+        GM_setValue('torrentkitty_url', 'www.torrentkitty.tv');
+    }
 
     GM_registerMenuCommand('设置', () => {
         let scroll_true = '';
@@ -122,20 +136,6 @@
             GM_setValue('scroll_status', 1);
             scroll_true = "checked";
         }
-        // 磁链访问地址初始化
-        if (GM_getValue('btsow_url', undefined) === undefined) {
-            GM_setValue('btsow_url', 'btsow.online');
-        }
-        if (GM_getValue('btdig_url', undefined) === undefined) {
-            GM_setValue('btdig_url', 'www.btdig.com');
-        }
-        if (GM_getValue('nyaa_url', undefined) === undefined) {
-            GM_setValue('nyaa_url', 'sukebei.nyaa.si');
-        }
-        if (GM_getValue('torrentkitty_url', undefined) === undefined) {
-            GM_setValue('torrentkitty_url', 'www.torrentkitty.tv');
-        }
-
 
         let dom = `<div>
                <label class="tm-setting">javlib/javbus开启瀑布流<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
