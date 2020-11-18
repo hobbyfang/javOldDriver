@@ -1713,25 +1713,6 @@
         javDb.insertOrReplace().into(myMovie).values([row]).exec();
     }
 
-    // /**
-    //  * 添加movie信息到myMovie表中
-    //  * @param index_cd jav索引编码(网页)
-    //  */
-    // function addMovie(index_cd) {
-    //     let url = location.origin + "/ja/?v=" + index_cd;
-    //     let promise1 = request(url);
-    //     promise1.then((result) => {
-    //         if($.type(result) !== "function" && result.status !== 200){
-    //             return Promise.resolve();
-    //         }
-    //         syncMovie(result);
-    //         return Promise.resolve();
-    //     }).catch((e)=>{
-    //         console.log(e);//debugger;
-    //     });
-    //     return promise1;
-    // }
-
     /**
      * javbus详情页磁链列表增加复制、115离线快捷键功能函数
      */
@@ -2012,7 +1993,6 @@
             //获取番号影片详情页的番号  例如：http://www.javlibrary.com/cn/?v=javli7j724
             if ($('.header').length && $('meta[name="keywords"]').length) {
                 let AVID = getAvidAndChgPage();
-
                 window.onload = function () {
                     $('iframe').remove();
                 };
