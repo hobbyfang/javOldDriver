@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.1.9
+// @version      3.2.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -59,29 +59,32 @@
 // 大陆用户推荐Chrome(V52+) + Tampermonkey（必须扩展） + V2ray/ShadowsocksR(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 // 上车请使用chrome浏览器，其他浏览器的问题本人不支持发现和修复相关问题。
 
-// 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本,
-// 根据电脑性能及访问网速情况不同,需消耗约2分钟左右(以1000个车牌量计算)缓存个人数据到本地浏览器中.
-// 此目的用于过滤个人已阅览过的内容提供快速判断.目前在同步过程中如果浏览器当前页面不在javlibrary站点,同步会被暂停或中止,需注意.
-// 当然如果不登录javlibrary或同版本号已经同步过,则不会运行同步,并无此影响.
+// 注意:2.0在每个版本号更新后,javlibrary每个不同域名站点在登录javlibrary的情况下，都会分别首次运行此脚本。
+// 根据电脑性能及访问网速情况不同,正常能在1分钟以内(以5000个车牌量为例)缓存个人数据到本地浏览器中.
+// 此目的用于过滤个人已阅览过的内容提供快速判断,目前个人图书馆账号的想要、看过、拥有及最新浏览过的番号为已阅数据依据。
+// 目前在同步过程中如果浏览器当前页面不在javlibrary站点或者浏览器在后台,同步会被暂停或中止,需注意.
+// 当然如果不登录javlibrary或同版本号已经同步过,就不会运行同步,那么则无此影响.
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
-// v3.1.9 修复了已知问题。
-// v3.1.8 修复了磁链选项undefined问题。
-// v3.1.7 增加脚本设置功能，支持磁链地址失效可自己更换。更新最新磁链地址。
-// v3.1.6 更换失效的磁链地址。另btdig，nayy，torrentkitty站点需科学上网，其中btdig还需手工验证非机器访问。
-// v3.1.5 增加过滤评分及排序时排除10分的番号，更换失效的磁链地址。
-// v3.1.4 更换失效的磁链地址。
-// v3.1.3 更换失效的磁链地址。
-// v3.1.2 优化javbus/avmoo/avsox步兵瀑布流排版。
-// v3.1.1 更新了磁链站点。
-// v3.1.0 优化javbus/avmoo/avsox瀑布流排版。
-// v3.0.5 排版做了一些微调。
-// v3.0.4 屏蔽了失效的磁链站点。
-// v3.0.3 修复了已知问题。
-// v3.0.2 修复了已知问题。
-// v3.0.1 修复了已知问题。
-// v3.0.0 增加115在线播放的关联入口。同时本代码重新梳理及优化。
+// v3.2.0  优化图书馆缓存个人数据的同步效率(60秒内可完成)。优化图书馆站点瀑布流列表排版。修复了部分115在线播放查找识别问题。
+// v3.1.10 修复了部分115在线播放跳转首页问题。
+// v3.1.9  修复了已知问题。
+// v3.1.8  修复了磁链选项undefined问题。
+// v3.1.7  增加脚本设置功能，支持磁链地址失效可自己更换。更新最新磁链地址。
+// v3.1.6  更换失效的磁链地址。另btdig，nayy，torrentkitty站点需科学上网，其中btdig还需手工验证非机器访问。
+// v3.1.5  增加过滤评分及排序时排除10分的番号，更换失效的磁链地址。
+// v3.1.4  更换失效的磁链地址。
+// v3.1.3  更换失效的磁链地址。
+// v3.1.2  优化javbus/avmoo/avsox步兵瀑布流排版。
+// v3.1.1  更新了磁链站点。
+// v3.1.0  优化javbus/avmoo/avsox瀑布流排版。
+// v3.0.5  排版做了一些微调。
+// v3.0.4  屏蔽了失效的磁链站点。
+// v3.0.3  修复了已知问题。
+// v3.0.2  修复了已知问题。
+// v3.0.1  修复了已知问题。
+// v3.0.0  增加115在线播放的关联入口。同时本代码重新梳理及优化。
 
 // v2.3.0 增加jav321网站内容排版的支持，增加查找已登录115网盘是否拥有当前番号显示。
 // v2.2.2 修复了已知问题。
@@ -121,7 +124,7 @@
     let myMovie;
     // 磁链访问地址初始化
     if (GM_getValue('btsow_url', undefined) === undefined) {
-        GM_setValue('btsow_url', 'btsow.online');
+        GM_setValue('btsow_url', 'btsow.store');
     }
     if (GM_getValue('btdig_url', undefined) === undefined) {
         GM_setValue('btdig_url', 'www.btdig.com');
@@ -130,7 +133,7 @@
         GM_setValue('nyaa_url', 'sukebei.nyaa.si');
     }
     if (GM_getValue('torrentkitty_url', undefined) === undefined) {
-        GM_setValue('torrentkitty_url', 'www.torkitty.com');
+        GM_setValue('torrentkitty_url', 'www.torrentkitty.app');
     }
 
     GM_registerMenuCommand('设置', () => {
@@ -413,27 +416,31 @@
          */
         search115Data: function (javId, callback) {
             //异步请求搜索115番号 //115查询
-            let javId2 = javId.replace(/(-)/g, "");
+            let javId2 = javId.replace(/(-)/g, ""); //把番号-去除，例如ABC-123 =》 ABC123
+            //保存查询关键词参数
+            GM_setValue("115_search_var",`${javId}|${javId2}`);
             let promise1 = request(`https://webapi.115.com/files/search?search_value=${javId}%20${javId2}&format=json`);
             promise1.then((result) => {
                 let resultJson = JSON.parse(result.responseText);
                 if(resultJson.count > 0) {
                     let pickcode = '';
+                    let reg = new RegExp(GM_getValue("115_search_var"), "gi");
                     for (let i = 0; i < resultJson.data.length; i++) {
                         let row = resultJson.data[i];
-                        if(row.vdi){//iv vdi ico
+                        //debugger;
+                        if(row.vdi && (row.n.search(reg) >= 0)){//iv vdi ico
                             pickcode = row.pc;
-                            callback(true,`http://120.78.32.31/play.html?pickcode=${pickcode}`);
+                            callback(true,`https://v.anxia.com/?pickcode=${pickcode}`,pickcode);
                             return;
                         }
                     }
                 }
-                callback(false,null);
+                callback(false,null,null);
             });
         },
         getSchemaBuilder: function() {
             // 构造jav库
-            let ds = lf.schema.create('jav', 1);
+            let ds = lf.schema.create('jav', 5);
             // 创建MyMovie表
             ds.createTable('MyMovie').
                 //addColumn('id', lf.Type.INTEGER).
@@ -452,7 +459,7 @@
                 //发布日期
                 addColumn('release_date', lf.Type.STRING).
                 //评分
-                addColumn('score', lf.Type.INTEGER).
+                addColumn('score', lf.Type.STRING).
                 //片长(分钟)
                 addColumn('duration', lf.Type.INTEGER).
                 //导演
@@ -463,14 +470,18 @@
                 addColumn('publisher', lf.Type.STRING).
                 //加入时间
                 addColumn('add_time', lf.Type.STRING).
+                //115的pickcode
+                addColumn('pick_code', lf.Type.STRING).
                 //是否已阅
                 addColumn('is_browse', lf.Type.BOOLEAN).
-                //是否想要
-                addColumn('is_want', lf.Type.BOOLEAN).
-                //是否看过
-                addColumn('is_seen', lf.Type.BOOLEAN).
-                //是否拥有
-                addColumn('is_have', lf.Type.BOOLEAN).
+                //是否想要 0:否 1：是 2：未知
+                addColumn('is_want', lf.Type.INTEGER).
+                //是否看过 0:否 1：是 2：未知
+                addColumn('is_seen', lf.Type.INTEGER).
+                //是否拥有 0:否 1：是 2：未知
+                addColumn('is_have', lf.Type.INTEGER).
+                //是否同步
+                addColumn('is_sync', lf.Type.BOOLEAN).
                 //定义主键
                 addPrimaryKey(['index_cd']).
                 //定义索引
@@ -697,7 +708,9 @@
             var $pages2 = $('div.videos div.video');
             if ($pages2.length) {
                 GM_addStyle(`
-                    .videothumblist .videos .video {height: 265px;padding: 0px;margin: 4px;}
+                    .videothumblist .videos .video {height: 270px;padding: 0px;margin: 4px;}
+                    .videothumblist .videos .video .title {height: 2.8em;}
+                    .id {height: 1.3em;overflow: hidden;}
                 `);
                 $pages2[0].parentElement.id = "waterfall";
                 w = new thirdparty.waterfall({
@@ -763,7 +776,8 @@
                     }
                 }
 
-                function extCode(indexCd_id, dateString, pingfengString) {
+                function extCode(indexCd_id, actor, dateString, pingfengString) {
+                    $(indexCd_id).find(".id").append(` &nbsp;${actor}`);
                     $(indexCd_id).children("a").append(`<div class='hobby_add'style='color: red;font-size: 14px;'>
                         ${dateString}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${pingfengString}</div>`);
                     $(indexCd_id).children("a").attr("release_date", dateString);
@@ -795,25 +809,35 @@
                             }
                         });
                         let indexCd_id;
+                        let actor;
                         let dateString;
                         let pingfengString;
                         // 查找影片是否存在我浏览过的MyMovie表中
                         let prom =javDb.select().from(myMovie).
-                        where(lf.op.and(myMovie.is_browse.eq(true),myMovie.index_cd.eq(_vid))).exec();
+                                    where(lf.op.and(myMovie.is_browse.eq(true),myMovie.index_cd.eq(_vid))).exec();
                         prom.then( results =>{
                             //let promise1 = Promise.resolve();
                             //return new Promise(resolve => {
-                            if(results.length != 0 ){//存在
+                            if(results.length != 0 ){
+                                //存在
                                 indexCd_id = "#vid_" + results[0].index_cd;
                                 if ($(indexCd_id).context.URL.indexOf("bestrated.php?filterMyBrowse") > 0) {
                                     $(indexCd_id).remove();
                                 }
                                 else{
                                     $(indexCd_id).css("background-color", "#ffe7d3");//hotpink,khaki,indianred,peachpuff
-                                    extCode(indexCd_id, results[0].release_date, results[0].score);
+                                    if(results[0].is_sync){ //已经同步过
+                                        extCode(indexCd_id, results[0].actor, results[0].release_date, results[0].score);
+                                    }
+                                    else{ //未同步过
+                                        getMovieInfo(true);
+                                    }
                                 }
                             }
                             else {//不存在
+                                getMovieInfo(false);
+                            }
+                            function getMovieInfo(isSave) {
                                 let promise1 = request(location.origin + "/ja/?v=" + _vid);
                                 promise1.then((result) => {
                                     indexCd_id = "#vid_" + result.finalUrl.split("=")[1];//例如：http://www.j12lib.com/cn/?v=javlikd42a
@@ -823,9 +847,13 @@
                                     // 阻止构造Document对象时加载src内容
                                     movie_info = movie_info.replace("src", "hobbysrc");
                                     let $doc = $(Common.parsetext(movie_info));
+                                    actor = $('#video_cast .text', $doc).text();
                                     dateString = $('#video_date .text', $doc).text();
                                     pingfengString = $('#video_review .text .score', $doc).text();
-                                    extCode(indexCd_id, dateString, pingfengString);
+                                    extCode(indexCd_id, actor, dateString, pingfengString);
+                                    // todo 1118
+                                    if (isSave) syncMovie(result);
+                                    return Promise.resolve();
                                 });
                             }
                         });
@@ -1644,55 +1672,65 @@
     }
 
     /**
-     * 添加movie信息到myMovie表中
-     * @param index_cd 索引编码(网页)
+     * 同步movie信息到myMovie表中
+     * @param result 页面响应结果
      */
-    function addMovie(index_cd) {
-        let url = location.origin + "/ja/?v=" + index_cd;
+    function syncMovie(result) {
         let commonClass = Common;// 无此步骤Common作用域失效,暂时未知原因
-        let promise1 = request(url);
-        promise1.then((result) => {
-            if($.type(result) !== "function" && result.status !== 200){
-                return Promise.resolve();
-            }
-            let doc = result.responseText;
-            let movie_name = doc.substring(doc.search(/<title>/) + 7, doc.search(/ - JAVLibrary<\/title>/));
-            let movie_info = doc.substring(doc.search(/<table id="video_jacket_info">/), doc.search(/<div class="socialmedia">/));
-            movie_info = movie_info.replace("src", "hobbysrc");
-            let $doc = $(commonClass.parsetext(movie_info));
-            let movie = {};
-            //console.log($doc); // todo
-            movie.index_cd = result.finalUrl.split("v=")[1];
-            movie.code = $('.header', $doc)[0].nextElementSibling.textContent;
-            movie.release_date = $('#video_date .text', $doc).text();
-            movie.duration = $('#video_length .text', $doc).text();
-            movie.director = $('#video_director .text', $doc).text();
-            movie.maker = $('#video_maker .text', $doc).text();
-            movie.score = $('#video_review .text .score', $doc).text();
-            movie.actor = $('#video_cast .text', $doc).text();
-            movie.cover_img_url = $('#video_jacket_img', $doc).attr("hobbysrc").replace("//", "");
-            movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
-            movie.movie_name = movie_name;
-            movie.publisher = $('#video_label .text a', $doc).text();
-            movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-            movie.is_browse = true;
-            movie.is_want = ($('#subscribed .smallbutton.hidden', $doc).length > 0) ? true : false;
-            movie.is_seen = ($('#watched .smallbutton.hidden', $doc).length > 0) ? true : false;
-            movie.is_have = ($('#owned .smallbutton.hidden', $doc).length > 0) ? true : false;
+        let doc = result.responseText;
+        let movie_name = doc.substring(doc.search(/<title>/) + 7, doc.search(/ - JAVLibrary<\/title>/));
+        let movie_info = doc.substring(doc.search(/<table id="video_jacket_info">/), doc.search(/<div class="socialmedia">/));
+        movie_info = movie_info.replace("src", "hobbysrc");
+        let $doc = $(commonClass.parsetext(movie_info));
+        let movie = {};
+        //console.log($doc); // todo
+        movie.index_cd = result.finalUrl.split("v=")[1];
+        movie.code = $('.header', $doc)[0].nextElementSibling.textContent;
+        movie.release_date = $('#video_date .text', $doc).text();
+        movie.duration = $('#video_length .text', $doc).text();
+        movie.director = $('#video_director .text', $doc).text();
+        movie.maker = $('#video_maker .text', $doc).text();
+        movie.score = $('#video_review .text .score', $doc).text();
+        movie.actor = $('#video_cast .text', $doc).text();
+        movie.cover_img_url = $('#video_jacket_img', $doc).attr("hobbysrc").replace("//", "");
+        movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+        movie.movie_name = movie_name;
+        movie.publisher = $('#video_label .text a', $doc).text();
+        movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+        movie.pick_code = '';
+        movie.is_browse = true;
+        movie.is_want = ($('#subscribed .smallbutton.hidden', $doc).length > 0) ? 1 : 0;
+        movie.is_seen = ($('#watched .smallbutton.hidden', $doc).length > 0) ? 1 : 0;
+        movie.is_have = ($('#owned .smallbutton.hidden', $doc).length > 0) ? 1 : 0;
+        movie.is_sync = true;
 
-            let myBrowseJsonArray = JSON.parse(GM_getValue("myBrowseAllData"));
-            let jsonObj = myBrowseJsonArray.filter((p) => {
-                return p.index_cd == result.finalUrl.split("v=")[1];
-            });
-            movie.add_time = jsonObj[0].add_time;
-            let row = myMovie.createRow(movie);
-            javDb.insertOrReplace().into(myMovie).values([row]).exec();
-            return Promise.resolve();
-        }).catch((e)=>{
-            console.log(e);//debugger;
+        let myBrowseJsonArray = JSON.parse(GM_getValue("myBrowseAllData"));
+        let jsonObj = myBrowseJsonArray.filter((p) => {
+            return p.index_cd == result.finalUrl.split("v=")[1];
         });
-        return promise1;
+        movie.add_time = jsonObj[0].add_time;
+        let row = myMovie.createRow(movie);
+        javDb.insertOrReplace().into(myMovie).values([row]).exec();
     }
+
+    // /**
+    //  * 添加movie信息到myMovie表中
+    //  * @param index_cd jav索引编码(网页)
+    //  */
+    // function addMovie(index_cd) {
+    //     let url = location.origin + "/ja/?v=" + index_cd;
+    //     let promise1 = request(url);
+    //     promise1.then((result) => {
+    //         if($.type(result) !== "function" && result.status !== 200){
+    //             return Promise.resolve();
+    //         }
+    //         syncMovie(result);
+    //         return Promise.resolve();
+    //     }).catch((e)=>{
+    //         console.log(e);//debugger;
+    //     });
+    //     return promise1;
+    // }
 
     /**
      * javbus详情页磁链列表增加复制、115离线快捷键功能函数
@@ -1739,47 +1777,38 @@
                 GM_setValue("myBrowseAllNum", myBrowseArray.length);//console.log(JSON.stringify(myBrowseArray));
 
                 let startTime = new Date();//console.log("startTime: " + startTime);
-                let b = GM_getValue(domain + "_stepTwo_V2", false);
+                let b = GM_getValue(domain + "_stepTwo_V3", false);
                 if (!b) {
-                    GM_setValue(domain + "_addMovieNum", 0);
-                    // 创建请求队列  //浏览器对同一域名进行请求的最大并发连接数:chrome为6
-                    let queue2 = new Queue(7);
-                    // 循环数组,将请求数据数组全部添加到并发处理队列中,然后并发执行指定数量的多线程.
+                    let jsonObj;
+                    let row;
                     for (let i = 0; i < myBrowseArray.length; i++) {
-                        let jsonObj = myBrowseArray[i];
-                        queue2.push(function(){
-                            let defer = $.Deferred();
-                            javDb.select().from(myMovie).where(myMovie.index_cd.eq(jsonObj.index_cd)).exec()
-                                .then((results)=>{
-                                    let log = ()=>{
-                                        console.log(domain + "_addmovieNum:" + (GM_getValue(domain + "_addMovieNum") + 1));
-                                        GM_setValue(domain + "_addMovieNum", (GM_getValue(domain + "_addMovieNum") + 1));
-                                    };
-                                    if (results.length == 0){
-                                        return addMovie(jsonObj.index_cd).then(()=>{
-                                            log();
-                                            defer.resolve();
-                                            return Promise.resolve();
-                                        });
-                                    }
-                                    else {
-                                        log();
-                                        defer.resolve();
-                                        return Promise.resolve();
-                                    }
-                                });
-                            return defer.promise();
+                        jsonObj = myBrowseArray[i];
+                        row = myMovie.createRow({
+                            'index_cd':jsonObj.index_cd,
+                            'code':'',
+                            'release_date':'',
+                            'duration':'',
+                            'director':'',
+                            'maker':'',
+                            'score':'',
+                            'actor':'',
+                            'cover_img_url':'',
+                            'thumbnail_url':'',
+                            'movie_name':'',
+                            'publisher':'',
+                            'add_time':jsonObj.add_time,
+                            'pick_code':'',
+                            'is_browse':true,
+                            'is_want':2,
+                            'is_seen':2,
+                            'is_have':2,
+                            'is_sync':false
                         });
+                        javDb.insertOrReplace().into(myMovie).values([row]).exec();
                     }
-                    var s4 = setInterval(function () {
-                        if(GM_getValue(domain + "_addMovieNum",0) == myBrowseArray.length){
-                            console.log(domain + "_stepTwoTime:" + (new Date() - startTime));
-                            //alert(domain + "_stepTwoTime:" + (new Date() - startTime));
-                            //GM_setValue(domain + "_stepTwo_V2", true);  // todo 需使用
-                            GM_setValue(domain + "_doDataSyncStepAll_V2", true); // todo 需使用
-                            clearInterval(s4);
-                        }
-                    }, 500);
+                    GM_setValue(domain + "_stepTwo_V3", true);
+                    console.log(domain + "_stepTwoTime:" + (new Date() - startTime));
+                    return Promise.resolve();
                 }
             }
         });
@@ -1923,12 +1952,12 @@
             if ($('a[href="myaccount.php"]').length) {
                 // 已经登录
                 // 从未同步过,同步云数据到本地数据库
-                let isSync = GM_getValue(domain + "_doDataSyncStepAll_V2", false);
+                let isSync = GM_getValue(domain + "_doDataSyncStepAll_V3", false);
                 console.log(domain + "  是否同步过：" + isSync);
                 if (!isSync) {
                     pm_mater.then(() => {
                         return new Promise(resolve => {
-                            var hasStepOne = GM_getValue(domain + "_stepOne_V2", false);
+                            var hasStepOne = GM_getValue(domain + "_stepOne_V3", false);
                             let stepOneStartTime = new Date();
                             console.log(domain + "  同步是否完成第一步：" + hasStepOne);
                             if (!hasStepOne) {
@@ -1959,7 +1988,7 @@
                                                 }
                                             }
                                             if (end_num == queue.threads.length) {
-                                                GM_setValue(domain + "_stepOne_V2", true);  // todo 需打开
+                                                GM_setValue(domain + "_stepOne_V3", true);  // todo 需打开
                                                 console.log(domain + "_stepOneTime:" + (new Date() - stepOneStartTime));
                                                 //alert(location.host + "_stepOneTime:" + (new Date() - stepOneStartTime));
                                                 clearInterval(s4);
@@ -1983,47 +2012,17 @@
             //获取番号影片详情页的番号  例如：http://www.javlibrary.com/cn/?v=javli7j724
             if ($('.header').length && $('meta[name="keywords"]').length) {
                 let AVID = getAvidAndChgPage();
-                $('#video_title h3').html($('#video_title a').html());
+
                 window.onload = function () {
                     $('iframe').remove();
-
                 };
-
-                // 只支持javlibray处理已阅影片
-                let movie = {};
-                movie.index_cd = location.search.split("=")[1];
-                movie.code = AVID;
-                movie.release_date = $('#video_date .text').text();
-                movie.duration = $('#video_length .text').text();
-                movie.director = $('#video_director .text').text();
-                movie.maker = $('#video_maker .text').text();
-                movie.score = $('#video_review .text .score').text();
-                movie.actor = $('#video_cast .text').text();
-                movie.cover_img_url = $('#video_jacket_img').attr("src").replace("//", "");
-                movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
-                movie.movie_name = $('#video_title a').text();
-                movie.publisher = $('#video_label .text a').text();
-                movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
-                movie.is_browse = true;
-                movie.is_want = ($('#subscribed .smallbutton.hidden').length > 0) ? true : false;
-                movie.is_seen = ($('#watched .smallbutton.hidden').length > 0) ? true : false;
-                movie.is_have = ($('#owned .smallbutton.hidden').length > 0) ? true : false;
-                pm_mater.then(() => {
-                    //查找是否存在此番号数据
-                    return javDb.select().from(myMovie).where(myMovie.index_cd.eq(movie.index_cd)).exec()
-                        .then((results) => {
-                            if (results.length > 0) {
-                                movie.add_time = results[0].add_time;
-                            }
-                            let row = myMovie.createRow(movie);
-                            javDb.insertOrReplace().into(myMovie).values([row]).exec();
-                        });
-                });
+                let pickcode = '';
 
                 //查找115是否有此番号
-                Common.search115Data(AVID, function (BOOLEAN_TYPE, playUrl) {
+                Common.search115Data(AVID, function (BOOLEAN_TYPE, playUrl, pc) {
                     if (BOOLEAN_TYPE) {
                         let $imgObj = $('#video_jacket_img');
+                        pickcode = pc;
                         $imgObj.after(`
                             <div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">
                                 <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: left;">115网盘已拥有此片</p>
@@ -2054,6 +2053,41 @@
                             });
                         }
                     }, !BOOLEAN_TYPE);
+
+                    // 只支持javlibray处理已阅影片
+                    let movie = {};
+                    movie.index_cd = location.search.split("=")[1];
+                    movie.code = AVID;
+                    movie.release_date = $('#video_date .text').text();
+                    movie.duration = $('#video_length .text').text();
+                    movie.director = $('#video_director .text').text();
+                    movie.maker = $('#video_maker .text').text();
+                    movie.score = $('#video_review .text .score').text();
+                    movie.actor = $('#video_cast .text').text();
+                    movie.cover_img_url = $('#video_jacket_img').attr("src").replace("http://", "");
+                    movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+                    movie.movie_name = $('#video_title a').text();
+                    movie.publisher = $('#video_label .text a').text();
+                    movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
+                    movie.pick_code = pickcode;
+                    movie.is_browse = true;
+                    movie.is_want = ($('#subscribed .smallbutton.hidden').length > 0) ? 1 : 0;
+                    movie.is_seen = ($('#watched .smallbutton.hidden').length > 0) ? 1 : 0;
+                    movie.is_have = ($('#owned .smallbutton.hidden').length > 0) ? 1 : 0;
+                    movie.is_sync = true;
+                    pm_mater.then(() => {
+                        //查找是否存在此番号数据
+                        return javDb.select().from(myMovie).where(myMovie.index_cd.eq(movie.index_cd)).exec()
+                            .then((results) => {
+                                if (results.length > 0) {
+                                    movie.add_time = results[0].add_time;
+                                }
+                                let row = myMovie.createRow(movie);
+                                javDb.insertOrReplace().into(myMovie).values([row]).exec();
+                            });
+                    });
+
+                    $('#video_title h3').html($('#video_title a').html());
                 });
 
                 // 挊
@@ -2081,7 +2115,7 @@
                 let AVID = getAvidAndChgPage();
 
                 //查找115是否有此番号
-                Common.search115Data(AVID, function (BOOLEAN_TYPE, playUrl) {
+                Common.search115Data(AVID, function (BOOLEAN_TYPE, playUrl, pc) {
                     if (BOOLEAN_TYPE) {
                         let $imgObj = $('.bigImage');
                         $imgObj.after(`
@@ -2171,7 +2205,7 @@
             let javID = arr[0];
 
             //查找115是否有此番号
-            Common.search115Data(javID, function (BOOLEAN_TYPE, playUrl) {
+            Common.search115Data(javID, function (BOOLEAN_TYPE, playUrl, pc) {
                 if (BOOLEAN_TYPE) {
                     let $imgObj = $('div.col-xs-12.col-md-12 img.img-responsive');
                     $imgObj.after(`
