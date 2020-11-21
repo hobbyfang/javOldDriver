@@ -371,11 +371,11 @@
                     if (imgUrl !== null){
                         let p = request(imgUrl,"",10000);
                         p.then((result) => {
-                            if (result.finalUrl.search(/removed.png/i) < 0){
+                            if (result.loadstuts && result.finalUrl.search(/removed.png/i) < 0){
                                 this.addImg(imgUrl, func, isZoom);
                             }
                             else {
-                                console.log("blogjav获取的图片地址已经被移除");
+                                console.log("blogjav获取的图片地址已经被移除或加载失败");
                                 p2.then(url => {
                                     addJavArchiveImg.call(this);
                                 });
@@ -543,7 +543,7 @@
         },
         getSchemaBuilder: function() {
             // 构造jav库
-            let ds = lf.schema.create('jav', 5);
+            let ds = lf.schema.create('jav_v2', 5);
             // 创建MyMovie表
             ds.createTable('MyMovie').
                 //addColumn('id', lf.Type.INTEGER).
@@ -559,6 +559,8 @@
                 addColumn('actor', lf.Type.STRING).
                 //封面图路径
                 addColumn('cover_img_url', lf.Type.STRING).
+                //预览图路径
+                addColumn('prev_img_url', lf.Type.STRING).
                 //发布日期
                 addColumn('release_date', lf.Type.STRING).
                 //评分
@@ -652,7 +654,7 @@
 
     function request(url , referrerStr, timeoutInt) {
         return new Promise((resolve,reject) => {
-            //let time1 = new Date();
+            console.log(`发起网址请求：${url}`);
             GM_xmlhttpRequest({
                 url,
                 method: 'GET',
@@ -1276,9 +1278,8 @@
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
                         let doc = Common.parsetext(result.responseText);
                         let data = [];
-                        let t = doc.querySelectorAll("#archiveResult tr");
+                        let t = $(doc).find("#archiveResult tr:gt(0)");
                         if (t) {
-                            t = Array.slice(t, 1, t.length);
                             for (let elem of t) {
                                 if((/(No result)/g).test(elem.querySelector(".name").textContent))
                                     break;
@@ -1802,6 +1803,7 @@
         movie.actor = $('#video_cast .text', $doc).text();
         movie.cover_img_url = $('#video_jacket_img', $doc).attr("hobbysrc").replace("//", "");
         movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+        movie.prev_img_url = "";
         movie.movie_name = movie_name;
         movie.publisher = $('#video_label .text a', $doc).text();
         movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
@@ -1885,6 +1887,7 @@
                             'actor':'',
                             'cover_img_url':'',
                             'thumbnail_url':'',
+                            'prev_img_url':'',
                             'movie_name':'',
                             'publisher':'',
                             'add_time':jsonObj.add_time,
@@ -2157,6 +2160,7 @@
                     movie.actor = $('#video_cast .text').text();
                     movie.cover_img_url = $('#video_jacket_img').attr("src").replace("http://", "");
                     movie.thumbnail_url = movie.cover_img_url.replace("pl", "ps");
+                    movie.prev_img_url = "";
                     movie.movie_name = $('#video_title a').text();
                     movie.publisher = $('#video_label .text a').text();
                     movie.add_time = (new Date()).Format("yyyy-MM-dd hh:mm:ss");
@@ -2174,7 +2178,9 @@
                                     movie.add_time = results[0].add_time;
                                 }
                                 let row = myMovie.createRow(movie);
-                                javDb.insertOrReplace().into(myMovie).values([row]).exec();
+                                let x = javDb.insertOrReplace().into(myMovie).values([row]).exec();
+                                console.log(`${movie.code} 已经存入已阅影片`);
+                                console.log(x);
                             });
                     });
 
