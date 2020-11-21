@@ -63,11 +63,12 @@
 // 根据电脑性能及访问网速情况不同,正常能在1分钟以内(以5000个车牌量为例)缓存个人数据到本地浏览器中.
 // 此目的用于过滤个人已阅览过的内容提供快速判断,目前个人图书馆账号的想要、看过、拥有及最新浏览过的番号为已阅数据依据。
 // 目前在同步过程中如果浏览器当前页面不在javlibrary站点或者浏览器在后台,同步会被暂停或中止,需注意.
-// 当然如果不登录javlibrary或同版本号已经同步过,就不会运行同步,那么则无此影响.
+// 如果不登录javlibrary或同版本号已经同步过,就不会运行同步,那么则无此影响.
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
-// v3.2.0  优化图书馆缓存个人数据的同步效率(60秒内可完成)。优化图书馆站点瀑布流列表排版。修复了部分115在线播放查找识别问题。
+// v3.2.0  新增javarchive站的预览图做备用，当blogjav预览图无法正常读取时使用。
+//         优化图书馆缓存个人数据的同步效率(60秒内可完成)。优化图书馆站点瀑布流列表排版。修复了部分115在线播放查找识别问题。
 // v3.1.10 修复了部分115在线播放跳转首页问题。
 // v3.1.9  修复了已知问题。
 // v3.1.8  修复了磁链选项undefined问题。
@@ -81,9 +82,6 @@
 // v3.1.0  优化javbus/avmoo/avsox瀑布流排版。
 // v3.0.5  排版做了一些微调。
 // v3.0.4  屏蔽了失效的磁链站点。
-// v3.0.3  修复了已知问题。
-// v3.0.2  修复了已知问题。
-// v3.0.1  修复了已知问题。
 // v3.0.0  增加115在线播放的关联入口。同时本代码重新梳理及优化。
 
 // v2.3.0 增加jav321网站内容排版的支持，增加查找已登录115网盘是否拥有当前番号显示。
@@ -124,7 +122,7 @@
     let myMovie;
     // 磁链访问地址初始化
     if (GM_getValue('btsow_url', undefined) === undefined) {
-        GM_setValue('btsow_url', 'btsow.store');
+        GM_setValue('btsow_url', 'btsow.surf');
     }
     if (GM_getValue('btdig_url', undefined) === undefined) {
         GM_setValue('btdig_url', 'www.btdig.com');
@@ -344,6 +342,21 @@
             let num = avid.match(/\d+$/gi);
             return letter+"-"+num;
         },
+        addImg:function (targetImgUrl, func, isZoom) {
+            console.log("显示的图片地址:" + targetImgUrl);
+            //创建img元素,加载目标图片地址
+            //创建新img元素
+            let className = "";
+            if (isZoom != undefined && !isZoom) {
+                className = "min";
+            }
+            let $img = $(`<img name="javRealImg" title="点击可放大缩小 (图片正常时)" class="${className}"></img>`);
+            $img.attr("src", targetImgUrl);
+            $img.attr("style", "float: left;cursor: pointer;max-width: 100%;");
+
+            //将新img元素插入指定位置
+            func($img);
+        },
         /**
          * 加入AV预览内容图
          * @param avid av唯一码
@@ -351,14 +364,129 @@
          * @param {boolean} isZoom 是否放大,默认true
          */
         addAvImg: function (avid, func, isZoom) {
-            //异步请求搜索blogjav.net的番号
-            let promise1 = request('http://blogjav.net/?s=' + avid);//大图地址
-            promise1.then((result) => {
-                var doc = Common.parsetext(result.responseText);
-                let a_array = $(doc).find(".more-link");
+            let p2 = this.getBigPreviewImgUrlFromJavArchive(avid);
+            return new Promise(resolve => {
+                let p = this.getBigPreviewImgUrlFromBlogjav(avid);
+                p.then(imgUrl => {
+                    if (imgUrl !== null){
+                        let p = request(imgUrl,"",10000);
+                        p.then((result) => {
+                            if (result.finalUrl.search(/removed.png/i) < 0){
+                                this.addImg(imgUrl, func, isZoom);
+                            }
+                            else {
+                                console.log("blogjav获取的图片地址已经被移除");
+                                p2.then(url => {
+                                    addJavArchiveImg.call(this);
+                                });
+                            }
+                        });
+                    }
+                    else {
+                        p2.then(url => {
+                            addJavArchiveImg.call(this);
+                        });
+                    }
+
+                    function addJavArchiveImg() {
+                        imgUrl = GM_getValue("temp_img_url", "");
+                        if (imgUrl === "") {
+                            console.log("没有找到预览图");
+                            //this.addImg("test", func, isZoom);
+                        } else {
+                            GM_setValue("temp_img_url", "");
+                            this.addImg(imgUrl, func, isZoom);
+                        }
+                    }
+                });
+                resolve();
+            });
+        },
+        /**
+         * 根据番号从blogjav获取大预览图Url
+         * @param avid av唯一码
+         * @returns {Promise} 大预览图Url地址
+         */
+        getBigPreviewImgUrlFromBlogjav: function(avid){
+            return new Promise(resolve => {
+                //异步请求搜索blogjav.net的番号
+                let promise1 =  request('http://blogjav.net/?s=' + avid, "",15000);
+                promise1.then((result) => {
+                    return new Promise(resolve => {
+                        if(!result.loadstuts){
+                            console.log("blogjav查找番号出错");
+                            resolve(null);
+                        }
+                        var doc = Common.parsetext(result.responseText);
+                        let a_array = $(doc).find(".more-link");
+                        let a = a_array[0];
+                        //如果找到全高清大图优先获取全高清的
+                        for (let i = 0; i < a_array.length; i++) {
+                            var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
+                            if (fhd_idx > 0) {
+                                a = a_array[i];
+                                break;
+                            }
+                        }
+                        resolve(a);
+                    });
+                }).then(a => {
+                    return new Promise(resolve => {
+                        let targetImgUrl = "";
+                        if (a) {
+                            //异步请求调用内页详情的访问地址
+                            let promise2 = request(a.href,"http://pixhost.to/", 15000);
+                            promise2.then((result) => {
+                                return new Promise(resolve => {
+                                    if(!result.loadstuts)  resolve(null);
+                                    var bodyStr = result.responseText;
+                                    var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
+
+                                    var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.*\/thumbs\//);
+
+                                    //debugger;
+                                    //如果找到内容大图
+                                    if (img_start_idx > 0) {
+                                        var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
+                                        targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('https', 'http');
+                                        console.log("blogjav获取的图片地址:" + targetImgUrl);
+                                        if(targetImgUrl.length === 0){
+                                            resolve(null);
+                                        }
+                                        else {
+                                            resolve(targetImgUrl);
+                                        }
+                                    }
+                                });
+                            }).then( imgUrl => {
+                                resolve(imgUrl);
+                            });
+                        }
+                        else{
+                            resolve(null);
+                        }
+                    });
+                }).then(imgUrl => {
+                    resolve(imgUrl);
+                });
+            });
+        },
+        /**
+         * 根据番号从JavArchive获取大预览图Url，并且缓存到GM中
+         * @param avid av唯一码
+         */
+        getBigPreviewImgUrlFromJavArchive: function(avid){
+            //异步请求搜索JavArchive的番号
+            let promise1 = request('http://javarchive.com/?s=' + avid);
+            return promise1.then((result) => {
+                if (!result.loadstuts) resolve(null);
+                let doc = Common.parsetext(result.responseText);
+                // 查找包含avid番号的a标签数组,忽略大小写
+                let a_array = $(doc).find(`.post-meta .thumb a[title*='${avid}'i]`);
                 let a = a_array[0];
+                //如果找到全高清大图优先获取全高清的
                 for (let i = 0; i < a_array.length; i++) {
-                    var fhd_idx = a_array[i].innerHTML.search(/FHD/);
+                    let fhd_idx = a_array[i].title.search(/Uncensored|FHD/i);
                     //debugger;
                     if (fhd_idx > 0) {
                         a = a_array[i];
@@ -367,48 +495,23 @@
                 }
                 if (a) {
                     //异步请求调用内页详情的访问地址
-                    GM_xmlhttpRequest({
-                        method: "GET",
-                        //大图地址
-                        url: a.href,
-                        headers: {
-                            referrer: "http://pixhost.to/" //绕过防盗图的关键
-                        },
-                        onload: function (XMLHttpRequest) {
-                            var bodyStr = XMLHttpRequest.responseText;
-                            var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
-
-                            var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.*\/thumbs\//);
-                            //debugger;
-                            //如果找到内容大图
-                            if (img_start_idx > 0) {
-                                var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
-                                var targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('https', 'http');
-
-                                //如果找到全高清大图优先显示全高清的
-                                console.log("图片地址:" + targetImgUrl);
-                                //创建img元素,加载目标图片地址
-                                //创建新img元素
-                                let className = "";
-                                if(isZoom != undefined && !isZoom){
-                                    className = "min";
-                                }
-                                var $img = $('<img name="javRealImg" title="点击可放大缩小 (图片正常时)" class="' + className + '"></img>');
-                                $img.attr("src", targetImgUrl);
-                                $img.attr("style", "float: left;cursor: pointer;max-width: 100%;");
-
-                                //将新img元素插入指定位置
-                                func($img);
-                            }
-                        },
-                        onerror: function (e) {
-                            console.log(e);
+                    let promise2 = request(a.href,"http://pixhost.to/");
+                    return promise2.then((result) => {
+                        if(!result.loadstuts)  return;
+                        let doc = Common.parsetext(result.responseText);
+                        let img_array = $(doc).find('.post-content .external img');
+                        if (img_array.length > 0) {
+                            let imgUrl = img_array[0].src.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                                .replace('thumbs', 'images').replace('//t', '//img')
+                                .replace(/[\?*\"*]/, '').replace('https', 'http');
+                            console.log("javarchive获取的图片地址:" + imgUrl);
+                            GM_setValue("temp_img_url",imgUrl);
+                            return Promise.resolve(imgUrl);
                         }
-                    });//end  GM_xmlhttpRequest
+                    });
                 }
             });
         },
-
         /**
          * 查询115网盘是否拥有番号
          * @param javId 番号
@@ -547,30 +650,35 @@
         },
     };
 
-    function request(url) {
-        return new Promise(resolve => {
+    function request(url , referrerStr, timeoutInt) {
+        return new Promise((resolve,reject) => {
             //let time1 = new Date();
             GM_xmlhttpRequest({
                 url,
                 method: 'GET',
                 headers:  {
-                    "Cache-Control": "no-cache"
+                    "Cache-Control": "no-cache",
+                    referrer: referrerStr
                 },
-                timeout: 30000,
+                timeout: timeoutInt > 0 ? timeoutInt : 20000,
                 onload: response => { //console.log(url + " reqTime:" + (new Date() - time1));
+                    response.loadstuts = true;
                     resolve(response);
                 },
                 onabort: response =>{
                     console.log(url + " abort");
+                    response.loadstuts = false;
                     resolve(response);
                 },
                 onerror: response =>{
                     console.log(url + " error");
                     console.log(response);
+                    response.loadstuts = false;
                     resolve(response);
                 },
                 ontimeout: response =>{
-                    console.log(url + " timeout");
+                    console.log(`${url} ${timeoutInt}ms timeout`);
+                    response.loadstuts = false;
                     resolve(response);
                 },
             });
@@ -1749,12 +1857,14 @@
                 let myBrowseAll = j1 + j2 + j3.substring(0, j3.length - 1);
                 let myBrowseArray = JSON.parse("[" + myBrowseAll + "]");
 
+                //json数组去重
                 myBrowseArray = uniqueArray(myBrowseArray, "index_cd", function (item, resultObj) {
                     if (item["add_time"] < resultObj["add_time"]) {
                         resultObj["add_time"] = item["add_time"];
                     }
                 });
                 GM_setValue("myBrowseAllData", JSON.stringify(myBrowseArray));
+                //应同步的总数
                 GM_setValue("myBrowseAllNum", myBrowseArray.length);//console.log(JSON.stringify(myBrowseArray));
 
                 let startTime = new Date();//console.log("startTime: " + startTime);
@@ -1933,11 +2043,13 @@
             if ($('a[href="myaccount.php"]').length) {
                 // 已经登录
                 // 从未同步过,同步云数据到本地数据库
+                //debugger;
                 let isSync = GM_getValue(domain + "_doDataSyncStepAll_V3", false);
                 console.log(domain + "  是否同步过：" + isSync);
                 if (!isSync) {
                     pm_mater.then(() => {
                         return new Promise(resolve => {
+                            //debugger;
                             var hasStepOne = GM_getValue(domain + "_stepOne_V3", false);
                             let stepOneStartTime = new Date();
                             console.log(domain + "  同步是否完成第一步：" + hasStepOne);
@@ -1973,19 +2085,18 @@
                                                 console.log(domain + "_stepOneTime:" + (new Date() - stepOneStartTime));
                                                 //alert(location.host + "_stepOneTime:" + (new Date() - stepOneStartTime));
                                                 clearInterval(s4);
-                                                resolve();
+                                                return resolve();
                                             }
                                         }
                                     }, 300);
                                 }, 1000);
                             } else {
-                                resolve();
+                                return resolve();
                             }
                         });
                     }).then(() => {
                             saveData();
-                        }
-                    );
+                    });
                 }
                 // 增加同步数据到本地的触发按钮
             }
