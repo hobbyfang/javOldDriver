@@ -67,6 +67,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.3.0  新增图书馆浏览时根据115在线播放来同步图书馆的已拥有功能（建议登录，不然会弹窗提示）。
 // v3.2.0  新增javarchive站的预览图做备用，当blogjav预览图无法正常读取时使用。
 //         优化图书馆缓存个人数据的同步效率(60秒内可完成)。优化图书馆站点瀑布流列表排版。修复了部分115在线播放查找识别问题。
 // v3.1.10 修复了部分115在线播放跳转首页问题。
@@ -479,7 +480,7 @@
             //异步请求搜索JavArchive的番号
             let promise1 = request('http://javarchive.com/?s=' + avid);
             return promise1.then((result) => {
-                if (!result.loadstuts) resolve(null);
+                if (!result.loadstuts) return ;
                 let doc = Common.parsetext(result.responseText);
                 // 查找包含avid番号的a标签数组,忽略大小写
                 let a_array = $(doc).find(`.post-meta .thumb a[title*='${avid}'i]`);
@@ -488,7 +489,7 @@
                 for (let i = 0; i < a_array.length; i++) {
                     let fhd_idx = a_array[i].title.search(/Uncensored|FHD/i);
                     //debugger;
-                    if (fhd_idx > 0) {
+                    if (fhd_idx >= 0) {
                         a = a_array[i];
                         break;
                     }
@@ -499,7 +500,7 @@
                     return promise2.then((result) => {
                         if(!result.loadstuts)  return;
                         let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.post-content .external img');
+                        let img_array = $(doc).find('.post-content .external img[src*=".th"]');
                         if (img_array.length > 0) {
                             let imgUrl = img_array[0].src.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                 .replace('thumbs', 'images').replace('//t', '//img')
@@ -531,7 +532,7 @@
                     for (let i = 0; i < resultJson.data.length; i++) {
                         let row = resultJson.data[i];
                         //debugger;
-                        if(row.vdi && (row.n.search(reg) >= 0)){//iv vdi ico
+                        if(row.play_long && (row.n.search(reg) >= 0)){//iv vdi ico play_long
                             pickcode = row.pc;
                             callback(true,`https://v.anxia.com/?pickcode=${pickcode}`,pickcode);
                             return;
@@ -681,6 +682,7 @@
                 ontimeout: response =>{
                     console.log(`${url} ${timeoutInt}ms timeout`);
                     response.loadstuts = false;
+                    response.finalUrl = url;
                     resolve(response);
                 },
             });
@@ -1626,7 +1628,7 @@
                                     .nong-offline-download:hover{color:red !important;}
                                 `);
                                 main.cur_tab = thirdparty.nong.magnet_table.full();
-                                console.log('h1026 挊的番号：', main.cur_vid);
+                                console.log('挊的番号：', main.cur_vid);
                                 v.proc();
 
                                 // console.log(main.cur_tab)
@@ -1900,7 +1902,11 @@
                         });
                         javDb.insertOrReplace().into(myMovie).values([row]).exec();
                     }
-                    GM_setValue(domain + "_stepTwo_V3", true);
+                    // 如果保存影片数量大于等于需同步总数，则同步完成
+                    if (GM_getValue(domain + "_saveMovieNum", 0) >= myBrowseArray.length){
+                        GM_setValue(domain + "_stepTwo_V3", true);
+                        GM_setValue(domain + "_doDataSyncStepAll_V3", true);
+                    }
                     console.log(domain + "_stepTwoTime:" + (new Date() - startTime));
                     return Promise.resolve();
                 }
@@ -1962,6 +1968,7 @@
                 return javDb.select().from(myMovie).where(myMovie.is_browse.eq(true)).exec();
             }).then(function (results) {
                 console.log("已经保存已阅影片数量:" + results.length);
+                GM_setValue(domain + "_saveMovieNum", results.length);
                 // results.forEach(function(row) {
                 //     console.log(row['index_cd'],'|',row['code'],'|', row['add_time'],'|',row['movie_name']);
                 // });
@@ -2124,6 +2131,7 @@
                                 <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: right;width: 50%;">115在线播放 ►</p></a>
                             </div>
                         `);
+                        $('#owned button[class="smallbutton"]').click();
                     }
                     console.log("番号输出:" + AVID);
                     Common.addAvImg(AVID, function ($img) {
