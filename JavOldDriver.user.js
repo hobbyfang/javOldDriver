@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.0
+// @version      3.3.1
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -66,7 +66,7 @@
 // 如果不登录javlibrary或同版本号已经同步过,就不会运行同步,那么则无此影响.
 
 // 油猴脚本技术交流：https://t.me/hobby666
-
+// v3.3.1  修复javbus收藏女优列表排版问题。
 // v3.3.0  新增图书馆浏览时根据115在线播放来同步图书馆的已拥有功能（建议登录，不然会弹窗提示）。
 // v3.2.0  新增javarchive站的预览图做备用，当blogjav预览图无法正常读取时使用。
 //         优化图书馆缓存个人数据的同步效率(60秒内可完成)。优化图书馆站点瀑布流列表排版。修复了部分115在线播放查找识别问题。
@@ -531,7 +531,6 @@
                     let reg = new RegExp(GM_getValue("115_search_var"), "gi");
                     for (let i = 0; i < resultJson.data.length; i++) {
                         let row = resultJson.data[i];
-                        //debugger;
                         if(row.play_long && (row.n.search(reg) >= 0)){//iv vdi ico play_long
                             pickcode = row.pc;
                             callback(true,`https://v.anxia.com/?pickcode=${pickcode}`,pickcode);
@@ -1003,7 +1002,8 @@
                 }
 
                 if(((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) && elems) {
-                    if(!location.pathname.includes('/actresses')){//排除actresses页面
+                    if(location.pathname.search('/actresses|/&mdl=favor&sort=4') < 0){//排除actresses页面
+                        // 处理列表文字内容排版
                         for (let i = 0; i < elems.length; i++) {
                             //$(elems[i]).css("height","385px");
                             if($(elems[i]).find("div.avatar-box").length > 0) continue;
