@@ -500,9 +500,9 @@
                     return promise2.then((result) => {
                         if(!result.loadstuts)  return;
                         let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.post-content .external img[src*=".th"]');
+                        let img_array = $(doc).find('.post-content .external img[data-src*=".th"]');
                         if (img_array.length > 0) {
-                            let imgUrl = img_array[0].src.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                            let imgUrl = img_array[0].dataset.src.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                 .replace('thumbs', 'images').replace('//t', '//img')
                                 .replace(/[\?*\"*]/, '').replace('https', 'http');
                             console.log("javarchive获取的图片地址:" + imgUrl);
