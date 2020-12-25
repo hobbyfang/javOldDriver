@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.1
+// @version      3.3.2
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -52,6 +52,7 @@
 // @grant        GM_setClipboard
 // @grant        GM_getResourceURL
 // @grant        GM_registerMenuCommand
+// @grant        GM_info
 
 // @connect      *
 // @copyright    hobby 2016-12-18
@@ -66,6 +67,8 @@
 // 如果不登录javlibrary或同版本号已经同步过,就不会运行同步,那么则无此影响.
 
 // 油猴脚本技术交流：https://t.me/hobby666
+
+// v3.3.2  修复了已知问题。
 // v3.3.1  修复备用预览图问题。修复javbus收藏女优列表排版问题。
 // v3.3.0  新增图书馆浏览时根据115在线播放来同步图书馆的已拥有功能（建议登录，不然会弹窗提示）。
 // v3.2.0  新增javarchive站的预览图做备用，当blogjav预览图无法正常读取时使用。
@@ -121,155 +124,40 @@
     let javDb;
     // 表
     let myMovie;
-    // 磁链访问地址初始化
-    if (GM_getValue('btsow_url', undefined) === undefined) {
-        GM_setValue('btsow_url', 'btsow.surf');
-    }
-    if (GM_getValue('btdig_url', undefined) === undefined) {
-        GM_setValue('btdig_url', 'www.btdig.com');
-    }
-    if (GM_getValue('nyaa_url', undefined) === undefined) {
-        GM_setValue('nyaa_url', 'sukebei.nyaa.si');
-    }
-    if (GM_getValue('torrentkitty_url', undefined) === undefined) {
-        GM_setValue('torrentkitty_url', 'www.torrentkitty.app');
-    }
-
-    GM_registerMenuCommand('设置', () => {
-        let scroll_true = '';
-        if (GM_getValue('scroll_status', 1) !== 0){
-            GM_setValue('scroll_status', 1);
-            scroll_true = "checked";
-        }
-
-        let dom = `<div>
-               <label class="tm-setting">javlib/javbus开启瀑布流<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
-               <label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="${GM_getValue('btsow_url')}"></label>
-               <label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="${GM_getValue('btdig_url')}"></label>
-               <label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="${GM_getValue('nyaa_url')}"></label>
-               <label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="${ GM_getValue('torrentkitty_url')}"></label>
-            </div>`;
-        let $dom = $(dom);
-        Swal.fire({
-            title: '脚本设置',
-            html: $dom[0],
-            confirmButtonText: '保存'
-        }).then((result) => {
-            if (result.value){
-                if($('#scroll_true')[0].checked){
-                    GM_setValue('scroll_status', 1);
-                }
-                else{
-                    GM_setValue('scroll_status', 0);
-                }
-                GM_setValue('btsow_url', $('#btsow_url').val());
-                GM_setValue('btdig_url', $('#btdig_url').val());
-                GM_setValue('nyaa_url', $('#nyaa_url').val());
-                GM_setValue('torrentkitty_url', $('#torrentkitty_url').val());
-                history.go(0);
-            }
-        })
-    });
-
-    /**
-     * 对Date的扩展，将 Date 转化为指定格式的String
-     * 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
-     * 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
-     * 例子：(new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423f
-     * (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
-     * @param fmt 日期格式
-     * @returns {void | string} 格式化后的日期字符串
-     */
-    Date.prototype.Format = function (fmt) { //author: meizz
-        var o = {
-            "M+": this.getMonth() + 1,                    //月份
-            "d+": this.getDate(),                         //日
-            "h+": this.getHours(),                        //小时
-            "m+": this.getMinutes(),                      //分
-            "s+": this.getSeconds(),                      //秒
-            "q+": Math.floor((this.getMonth() + 3) / 3),  //季度
-            "S": this.getMilliseconds()                   //毫秒
-        };
-        if (/(y+)/.test(fmt))
-            fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
-        for (var k in o)
-            if (new RegExp("(" + k + ")").test(fmt))
-                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
-        return fmt;
-    };
-
-    /**
-     * 多线程异步队列 依赖 jQuery 1.8+
-     * @n {Number} 正整数, 线程数量
-     */
-    function Queue (n) {
-        n = parseInt(n, 10);
-        return new Queue.prototype.init( (n && n > 0) ? n : 1 )
-    }
-
-    Queue.prototype = {
-        init: function (n) {
-            this.threads = [];
-            this.taskList = [];
-            while (n--) {
-                this.threads.push(new this.Thread)
-            }
-        },
-        /**
-         * @callback {Fucntion} promise对象done时的回调函数，它的返回值必须是一个promise对象
-         */
-        push: function (callback) {
-            if (typeof callback !== 'function') return;
-            var index = this.indexOfIdle();
-            if (index != -1) {
-                this.threads[index].idle(callback);
-                //try { console.log('Thread-' + (index+1) + ' accept the task!') } catch (e) {}
-            }
-            else {
-                this.taskList.push(callback);
-                for (var i = 0, l = this.threads.length; i < l; i++) {
-                    (function(thread, self, id){
-                        thread.idle(function(){
-                            if (self.taskList.length > 0) {
-                                //try { console.log('Thread-' + (id+1) + ' accept the task!') } catch (e) {}
-                                let promise = self.taskList.shift()();    // 正确的返回值应该是一个promise对象
-                                return promise.promise ? promise : $.Deferred().resolve().promise();
-                            } else {
-                                return $.Deferred().resolve().promise();
-                            }
-                        })
-                    })(this.threads[i], this, i);
-
-                }
-            }
-        },
-        indexOfIdle: function () {
-            var threads = this.threads,
-                thread = null,
-                index = -1;
-            for (var i = 0, l = threads.length; i < l; i++) {
-                thread = threads[i];
-                if (thread.promise.state() === 'resolved') {
-                    index = i;
-                    break;
-                }
-            }
-            return index;
-        },
-        Thread: function () {
-            this.promise = $.Deferred().resolve().promise();
-            this.idle = function (callback) {
-                this.promise = this.promise.then(callback)
-            }
-        }
-    };
-    Queue.prototype.init.prototype = Queue.prototype;
 
     /**
      * 公用类
      * @Class
      */
-    let Common = {
+    var Common = {
+        /**
+         * 版本号比较方法
+         * 传入两个字符串，当前版本号：curV；比较版本号：reqV
+         * @param curV 当前版本号
+         * @param reqV 比较版本号
+         * @returns {boolean} 调用方法举例：compare("3.1.10","3.1.9")，将返回true
+         */
+        compareVersions :function (curV, reqV) {
+            if (curV && reqV) {
+                //将两个版本号拆成数字
+                var arr1 = curV.split('.'),
+                    arr2 = reqV.split('.');
+                var minLength = Math.min(arr1.length, arr2.length),
+                    position = 0,
+                    diff = 0;
+                //依次比较版本号每一位大小，当对比得出结果后跳出循环（后文有简单介绍）
+                while (position < minLength && ((diff = parseInt(arr1[position]) - parseInt(arr2[position])) == 0)) {
+                    position++;
+                }
+                diff = (diff != 0) ? diff : (arr1.length - arr2.length);
+                //若curV大于reqV，则返回true
+                return diff > 0;
+            } else {
+                //输入为空
+                console.log("版本号不能为空");
+                return false;
+            }
+        },
         /**
          * 设置cookie
          * @param cname  名字
@@ -478,6 +366,7 @@
          */
         getBigPreviewImgUrlFromJavArchive: function(avid){
             //异步请求搜索JavArchive的番号
+            GM_setValue("temp_img_url", "");
             let promise1 = request('http://javarchive.com/?s=' + avid);
             return promise1.then((result) => {
                 if (!result.loadstuts) return ;
@@ -500,9 +389,11 @@
                     return promise2.then((result) => {
                         if(!result.loadstuts)  return;
                         let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.post-content .external img[data-src*=".th"]');
+                        let img_array = $(doc).find('.post-content .external img[alt*=".th"]');
                         if (img_array.length > 0) {
-                            let imgUrl = img_array[0].dataset.src.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                            let imgUrl = img_array[0].src;
+                            imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
+                            imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                 .replace('thumbs', 'images').replace('//t', '//img')
                                 .replace(/[\?*\"*]/, '').replace('https', 'http');
                             console.log("javarchive获取的图片地址:" + imgUrl);
@@ -594,6 +485,154 @@
             return ds;
         },
     };
+
+    // 是否新版本
+    let isNewVersion = Common.compareVersions(GM_info.script.version,GM_getValue("javOldDriver_version","0.0.1"));
+
+    // 磁链访问地址初始化
+    if (isNewVersion || GM_getValue('btsow_url', undefined) === undefined) {
+        GM_setValue('btsow_url', 'btsow.cam');
+    }
+    if (isNewVersion || GM_getValue('btdig_url', undefined) === undefined) {
+        GM_setValue('btdig_url', 'www.btdig.com');
+    }
+    if (isNewVersion || GM_getValue('nyaa_url', undefined) === undefined) {
+        GM_setValue('nyaa_url', 'sukebei.nyaa.si');
+    }
+    if (isNewVersion || GM_getValue('torrentkitty_url', undefined) === undefined) {
+        GM_setValue('torrentkitty_url', 'www.torrentkitty.app');
+    }
+    GM_setValue("javOldDriver_version",GM_info.script.version);
+
+    GM_registerMenuCommand('设置', () => {
+        let scroll_true = '';
+        if (GM_getValue('scroll_status', 1) !== 0){
+            GM_setValue('scroll_status', 1);
+            scroll_true = "checked";
+        }
+
+        let dom = `<div>
+               <label class="tm-setting">javlib/javbus开启瀑布流<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
+               <label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="${GM_getValue('btsow_url')}"></label>
+               <label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="${GM_getValue('btdig_url')}"></label>
+               <label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="${GM_getValue('nyaa_url')}"></label>
+               <label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="${ GM_getValue('torrentkitty_url')}"></label>
+            </div>`;
+        let $dom = $(dom);
+        Swal.fire({
+            title: '脚本设置',
+            html: $dom[0],
+            confirmButtonText: '保存'
+        }).then((result) => {
+            if (result.value){
+                if($('#scroll_true')[0].checked){
+                    GM_setValue('scroll_status', 1);
+                }
+                else{
+                    GM_setValue('scroll_status', 0);
+                }
+                GM_setValue('btsow_url', $('#btsow_url').val());
+                GM_setValue('btdig_url', $('#btdig_url').val());
+                GM_setValue('nyaa_url', $('#nyaa_url').val());
+                GM_setValue('torrentkitty_url', $('#torrentkitty_url').val());
+                history.go(0);
+            }
+        })
+    });
+
+    /**
+     * 对Date的扩展，将 Date 转化为指定格式的String
+     * 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，/';
+     * 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
+     * 例子：(new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423f
+     * (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
+     * @param fmt 日期格式
+     * @returns {void | string} 格式化后的日期字符串
+     */
+    Date.prototype.Format = function (fmt) { //author: meizz
+        var o = {
+            "M+": this.getMonth() + 1,                    //月份
+            "d+": this.getDate(),                         //日
+            "h+": this.getHours(),                        //小时
+            "m+": this.getMinutes(),                      //分
+            "s+": this.getSeconds(),                      //秒
+            "q+": Math.floor((this.getMonth() + 3) / 3),  //季度
+            "S": this.getMilliseconds()                   //毫秒
+        };
+        if (/(y+)/.test(fmt))
+            fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+        for (var k in o)
+            if (new RegExp("(" + k + ")").test(fmt))
+                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        return fmt;
+    };
+
+    /**
+     * 多线程异步队列 依赖 jQuery 1.8+
+     * @n {Number} 正整数, 线程数量
+     */
+    function Queue (n) {
+        n = parseInt(n, 10);
+        return new Queue.prototype.init( (n && n > 0) ? n : 1 )
+    }
+
+    Queue.prototype = {
+        init: function (n) {
+            this.threads = [];
+            this.taskList = [];
+            while (n--) {
+                this.threads.push(new this.Thread)
+            }
+        },
+        /**
+         * @callback {Fucntion} promise对象done时的回调函数，它的返回值必须是一个promise对象
+         */
+        push: function (callback) {
+            if (typeof callback !== 'function') return;
+            var index = this.indexOfIdle();
+            if (index != -1) {
+                this.threads[index].idle(callback);
+                //try { console.log('Thread-' + (index+1) + ' accept the task!') } catch (e) {}
+            }
+            else {
+                this.taskList.push(callback);
+                for (var i = 0, l = this.threads.length; i < l; i++) {
+                    (function(thread, self, id){
+                        thread.idle(function(){
+                            if (self.taskList.length > 0) {
+                                //try { console.log('Thread-' + (id+1) + ' accept the task!') } catch (e) {}
+                                let promise = self.taskList.shift()();    // 正确的返回值应该是一个promise对象
+                                return promise.promise ? promise : $.Deferred().resolve().promise();
+                            } else {
+                                return $.Deferred().resolve().promise();
+                            }
+                        })
+                    })(this.threads[i], this, i);
+
+                }
+            }
+        },
+        indexOfIdle: function () {
+            var threads = this.threads,
+                thread = null,
+                index = -1;
+            for (var i = 0, l = threads.length; i < l; i++) {
+                thread = threads[i];
+                if (thread.promise.state() === 'resolved') {
+                    index = i;
+                    break;
+                }
+            }
+            return index;
+        },
+        Thread: function () {
+            this.promise = $.Deferred().resolve().promise();
+            this.idle = function (callback) {
+                this.promise = this.promise.then(callback)
+            }
+        }
+    };
+    Queue.prototype.init.prototype = Queue.prototype;
 
     let main = { // todo
         //av信息查询类
