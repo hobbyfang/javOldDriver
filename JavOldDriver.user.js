@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.2
+// @version      3.3.3
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -68,6 +68,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.3.3  预览图备用站更换成javstore。
 // v3.3.2  修复了已知问题。
 // v3.3.1  修复备用预览图问题。修复javbus收藏女优列表排版问题。
 // v3.3.0  新增图书馆浏览时根据115在线播放来同步图书馆的已拥有功能（建议登录，不然会弹窗提示）。
@@ -253,7 +254,7 @@
          * @param {boolean} isZoom 是否放大,默认true
          */
         addAvImg: function (avid, func, isZoom) {
-            let p2 = this.getBigPreviewImgUrlFromJavArchive(avid);
+            let p2 = this.getBigPreviewImgUrlFromJavStore(avid);
             return new Promise(resolve => {
                 let p = this.getBigPreviewImgUrlFromBlogjav(avid);
                 p.then(imgUrl => {
@@ -390,6 +391,49 @@
                         if(!result.loadstuts)  return;
                         let doc = Common.parsetext(result.responseText);
                         let img_array = $(doc).find('.post-content .external img[alt*=".th"]');
+                        if (img_array.length > 0) {
+                            let imgUrl = img_array[0].src;
+                            imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
+                            imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                                .replace('thumbs', 'images').replace('//t', '//img')
+                                .replace(/[\?*\"*]/, '').replace('https', 'http');
+                            console.log("javarchive获取的图片地址:" + imgUrl);
+                            GM_setValue("temp_img_url",imgUrl);
+                            return Promise.resolve(imgUrl);
+                        }
+                    });
+                }
+            });
+        },
+        /**
+         * 根据番号从JavStore获取大预览图Url，并且缓存到GM中
+         * @param avid av唯一码
+         */
+        getBigPreviewImgUrlFromJavStore: function(avid){
+            //异步请求搜索JavStore的番号
+            GM_setValue("temp_img_url", "");
+            let promise1 = request(`http://javstore.net/search/${avid}.html`);
+            return promise1.then((result) => {
+                if (!result.loadstuts) return ;
+                let doc = Common.parsetext(result.responseText);
+                // 查找包含avid番号的a标签数组,忽略大小写
+                let a_array = $(doc).find(`.news_1n li h3 span a[title*='${avid}'i]`);
+                let a = a_array[0];
+                //如果找到全高清大图优先获取全高清的
+                for (let i = 0; i < a_array.length; i++) {
+                    let fhd_idx = a_array[i].title.search(/Uncensored|FHD/i);
+                    if (fhd_idx >= 0) {
+                        a = a_array[i];
+                        break;
+                    }
+                }
+                if (a) {
+                    //异步请求调用内页详情的访问地址
+                    let promise2 = request(`http://javstore.net${a.pathname}`,"http://pixhost.to/");
+                    return promise2.then((result) => {
+                        if(!result.loadstuts)  return;
+                        let doc = Common.parsetext(result.responseText);
+                        let img_array = $(doc).find('.news a img[alt*=".th"]');
                         if (img_array.length > 0) {
                             let imgUrl = img_array[0].src;
                             imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
