@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.3
+// @version      3.3.4
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -68,6 +68,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.3.4  优化了部分115在线播放查找识别问题。
 // v3.3.3  预览图备用站更换成javstore。
 // v3.3.2  修复了已知问题。
 // v3.3.1  修复备用预览图问题。修复javbus收藏女优列表排版问题。
@@ -456,9 +457,11 @@
         search115Data: function (javId, callback) {
             //异步请求搜索115番号 //115查询
             let javId2 = javId.replace(/(-)/g, ""); //把番号-去除，例如ABC-123 =》 ABC123
+            let javId3 = javId.replace(/(-)/g, "00"); //把番号-替换为00，例如CCVR-065 =》 CCVR00065
+            let javId4 = javId.replace(/(-)/g, "-0"); //把番号-替换为-0，例如DSVR-584 =》 DSVR-0584
             //保存查询关键词参数
-            GM_setValue("115_search_var",`${javId}|${javId2}`);
-            let promise1 = request(`https://webapi.115.com/files/search?search_value=${javId}%20${javId2}&format=json`);
+            GM_setValue("115_search_var",`${javId}|${javId2}|${javId3}|${javId4}`);
+            let promise1 = request(`https://webapi.115.com/files/search?search_value=${javId}%20${javId2}%20${javId3}%20${javId4}&format=json`);
             promise1.then((result) => {
                 let resultJson = JSON.parse(result.responseText);
                 if(resultJson.count > 0) {
@@ -556,7 +559,7 @@
         }
 
         let dom = `<div>
-               <label class="tm-setting">javlib/javbus开启瀑布流<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
+               <label class="tm-setting">javlib/javbus开启瀑布流(自动读下一页)<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
                <label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="${GM_getValue('btsow_url')}"></label>
                <label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="${GM_getValue('btdig_url')}"></label>
                <label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="${GM_getValue('nyaa_url')}"></label>
