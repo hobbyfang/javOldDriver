@@ -68,7 +68,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
-// v3.3.4  优化了部分115在线播放查找识别问题。
+// v3.3.4  修复blogjav站点改版后的预览图,优化了部分115在线播放查找识别问题。
 // v3.3.3  预览图备用站更换成javstore。
 // v3.3.2  修复了已知问题。
 // v3.3.1  修复备用预览图问题。修复javbus收藏女优列表排版问题。
@@ -126,6 +126,14 @@
     let javDb;
     // 表
     let myMovie;
+
+    //<video width="640" height="300" id="videojs-vr-player" class="video-js vjs-default-skin" controls playsinline>
+    //    <source src="https://v.anxia.com/site/api/video/m3u8/a0wvdo20tcr8qh4l8.m3u8" type="video/mp4">
+    //</video>
+    // var player = videojs('videojs-vr-player');
+    // player.vr();
+    // @require1      https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video.cjs.min.js
+    // @require1      https://cdn.jsdelivr.net/npm/videojs-vr@1.7.1/dist/videojs-vr.cjs.min.js
 
     /**
      * 公用类
@@ -309,7 +317,7 @@
                             resolve(null);
                         }
                         var doc = Common.parsetext(result.responseText);
-                        let a_array = $(doc).find(".more-link");
+                        let a_array = $(doc).find(".entry-title a");
                         let a = a_array[0];
                         //如果找到全高清大图优先获取全高清的
                         for (let i = 0; i < a_array.length; i++) {
@@ -330,15 +338,12 @@
                             promise2.then((result) => {
                                 return new Promise(resolve => {
                                     if(!result.loadstuts)  resolve(null);
-                                    var bodyStr = result.responseText;
-                                    var yixieBody = bodyStr.substring(bodyStr.search(/<span id="more-(\S*)"><\/span>/), bodyStr.search(/<div class="category/));
+                                    let doc = Common.parsetext(result.responseText);
+                                    let img_array = $(doc).find('.entry-content a img[src*="pixhost."]');
 
-                                    var img_start_idx = yixieBody.search(/"><img .*src="https*:\/\/(\S*)pixhost.*\/thumbs\//);
-
-                                    //debugger;
                                     //如果找到内容大图
-                                    if (img_start_idx > 0) {
-                                        var new_img_src = yixieBody.substring(yixieBody.indexOf('src', img_start_idx) + 5, yixieBody.indexOf('alt') - 2);
+                                    if (img_array.length > 0) {
+                                        var new_img_src = img_array[0].src;
                                         targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('https', 'http');
                                         console.log("blogjav获取的图片地址:" + targetImgUrl);
                                         if(targetImgUrl.length === 0){
