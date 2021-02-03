@@ -10,7 +10,7 @@
 // @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/lovefield@2.1.12/dist/lovefield.min.js
 // @require      https://cdn.jsdelivr.net/npm/sweetalert2@9
-// @resource     icon http://geekdream.com/image/115helper_icon_001.jpg
+// @resource     icon https://cdn.jsdelivr.net/gh/hobbyfang/javOldDriver@master/115helper_icon_001.jpg
 
 // @include     *://*javlibrary.com/*
 // @include     *://*javlib.com/*
@@ -126,14 +126,6 @@
     let javDb;
     // 表
     let myMovie;
-
-    //<video width="640" height="300" id="videojs-vr-player" class="video-js vjs-default-skin" controls playsinline>
-    //    <source src="https://v.anxia.com/site/api/video/m3u8/a0wvdo20tcr8qh4l8.m3u8" type="video/mp4">
-    //</video>
-    // var player = videojs('videojs-vr-player');
-    // player.vr();
-    // @require1      https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video.cjs.min.js
-    // @require1      https://cdn.jsdelivr.net/npm/videojs-vr@1.7.1/dist/videojs-vr.cjs.min.js
 
     /**
      * 公用类
