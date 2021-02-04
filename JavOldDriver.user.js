@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.4
+// @version      3.3.5
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -38,16 +38,17 @@
 // @include     *://www.*dmm*/*
 
 // @include     *://*/movie/*
-// @include     *://*/cn*
-// @include     *://*/tw*
-// @include     *://*/ja*
-// @include     *://*/en*
+// @include     *://*.com/cn*
+// @include     *://*.com/tw*
+// @include     *://*.com/ja*
+// @include     *://*.com/en*
 
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_deleteValue
 // @grant        GM_notification
 // @grant        GM_setClipboard
 // @grant        GM_getResourceURL
@@ -68,6 +69,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.3.5  修复了已知问题。
 // v3.3.4  修复blogjav站点改版后的预览图,优化了部分115在线播放查找识别问题。
 // v3.3.3  预览图备用站更换成javstore。
 // v3.3.2  修复了已知问题。
@@ -263,6 +265,7 @@
                         let p = request(imgUrl,"",10000);
                         p.then((result) => {
                             if (result.loadstuts && result.finalUrl.search(/removed.png/i) < 0){
+                                GM_deleteValue(`temp_img_url_${avid}`);
                                 this.addImg(imgUrl, func, isZoom);
                             }
                             else {
@@ -280,12 +283,12 @@
                     }
 
                     function addJavArchiveImg() {
-                        imgUrl = GM_getValue("temp_img_url", "");
+                        imgUrl = GM_getValue(`temp_img_url_${avid}`, "");
                         if (imgUrl === "") {
                             console.log("没有找到预览图");
                             //this.addImg("test", func, isZoom);
                         } else {
-                            GM_setValue("temp_img_url", "");
+                            GM_deleteValue(`temp_img_url_${avid}`);
                             this.addImg(imgUrl, func, isZoom);
                         }
                     }
@@ -365,7 +368,7 @@
          */
         getBigPreviewImgUrlFromJavArchive: function(avid){
             //异步请求搜索JavArchive的番号
-            GM_setValue("temp_img_url", "");
+            GM_setValue(`temp_img_url_${avid}`, "");
             let promise1 = request('http://javarchive.com/?s=' + avid);
             return promise1.then((result) => {
                 if (!result.loadstuts) return ;
@@ -396,7 +399,7 @@
                                 .replace('thumbs', 'images').replace('//t', '//img')
                                 .replace(/[\?*\"*]/, '').replace('https', 'http');
                             console.log("javarchive获取的图片地址:" + imgUrl);
-                            GM_setValue("temp_img_url",imgUrl);
+                            GM_setValue(`temp_img_url_${avid}`,imgUrl);
                             return Promise.resolve(imgUrl);
                         }
                     });
@@ -409,7 +412,7 @@
          */
         getBigPreviewImgUrlFromJavStore: function(avid){
             //异步请求搜索JavStore的番号
-            GM_setValue("temp_img_url", "");
+            GM_setValue(`temp_img_url_${avid}`, "");
             let promise1 = request(`http://javstore.net/search/${avid}.html`);
             return promise1.then((result) => {
                 if (!result.loadstuts) return ;
@@ -439,7 +442,7 @@
                                 .replace('thumbs', 'images').replace('//t', '//img')
                                 .replace(/[\?*\"*]/, '').replace('https', 'http');
                             console.log("javarchive获取的图片地址:" + imgUrl);
-                            GM_setValue("temp_img_url",imgUrl);
+                            GM_setValue(`temp_img_url_${avid}`,imgUrl);
                             return Promise.resolve(imgUrl);
                         }
                     });
@@ -805,7 +808,7 @@
                 }
             };
             let CreateSearch = () => {         //get <p>
-                let p = document.querySelector('span.genre > a[href*="https://www.javbus.com/genre/"]');
+                let p = document.querySelector('span.genre > a[href*="/genre/"]');
                 if (!p) return;
                 p = p.parentNode.parentNode;
                 p.querySelectorAll('a').forEach(e => {
