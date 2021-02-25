@@ -2380,12 +2380,14 @@
 
             Common.search115Data(javID, function (BOOLEAN_TYPE, playUrl, pc) {
                 if (BOOLEAN_TYPE) {
-                    let $imgObj = $('div.col-xs-12.col-md-12 img.img-responsive');
+                    let $imgObj = $('.bigImage');
                     $imgObj.after(`
-<div style="position: absolute;width: 100%;height: 22%;background: rgba(0,0,0,0.5);top: 78%;left: 0;">
-<a target="_blank" href="${playUrl}"><p class="hobby_p">115在线播放 ►</p></a>
-</div>
-`);
+                        <div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">
+                            <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: left;">115网盘已拥有此片</p>
+                            <a target="_blank" href="${playUrl}">
+                            <p style="color: white;font-size: 46px;margin: 0 0 0px;display: inline-block;text-align: right;width: 50%;">115在线播放 ►</p></a>
+                        </div>
+                    `);
                 }
 
                 //插入预览图
@@ -2523,7 +2525,7 @@
             javlibaryScript();
             javBusScript();
         }
-	javBDScript();
+        javBDScript();
         oneJavScript();
         jav321Script();
         thirdparty.login115Run();
