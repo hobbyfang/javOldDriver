@@ -20,6 +20,7 @@
 // @include     *://115.com/*
 // @include     *://onejav.com/*
 // @include     *://*jav321.com/video/*
+// @include     *://javdb.com/v/*
 
 // @include     *://*/vl_update*
 // @include     *://*/vl_newrelease*
@@ -2353,7 +2354,61 @@
             }
         }
     }
+	
+    function javBDScript(){
+        if ((/(javbd)*\/v\/*/g).test(document.URL)) {
+            GM_addStyle(`
+                .min {width:66px;min-height: 233px;height:auto;cursor: pointer;} /*Common.addAvImg使用*/
+                .col-md-3 {width: 20%;padding-left: 18px; padding-right: 2px;}
+                .col-xs-12,.col-md-12 {padding-left: 2px; padding-right: 0px;}
+                .col-md-7 {width: 79%;padding-left: 2px;padding-right: 0px;}
+                .col-md-9 {width: max-content;}
+                .col-md-offset-1 {margin-left: auto;}
+                .hobby {display: inline-block;float: left;}
+                .hobby_mov {width: 75%;}
+                .hobby_p {color: white;font-size: 40px;margin: 0 0 0px;display: inline-block;text-align: right;width: 100%;}
+            `);
+            //$(".col-md-7.col-md-offset-1.col-xs-12 .row .col-md-3 .img-responsive:eq(0)").offsetParent().attr("class", "hobby");
+            //$("#video_overlay_sample").offsetParent().attr("class", "hobby_mov");
+            // 调整div位置
+            //$('div.col-md-7.col-md-offset-1.col-xs-12').before($('div.col-xs-12.col-md-12')[0].parentElement);
 
+            let meta = document.getElementsByClassName("title is-4")[0].getElementsByTagName('strong')[0];
+            let arr = meta.textContent.split(" ");
+            let javID = arr[0];
+            console.log("javID:" + javID);
+
+            Common.search115Data(javID, function (BOOLEAN_TYPE, playUrl, pc) {
+                if (BOOLEAN_TYPE) {
+                    let $imgObj = $('div.col-xs-12.col-md-12 img.img-responsive');
+                    $imgObj.after(`
+<div style="position: absolute;width: 100%;height: 22%;background: rgba(0,0,0,0.5);top: 78%;left: 0;">
+<a target="_blank" href="${playUrl}"><p class="hobby_p">115在线播放 ►</p></a>
+</div>
+`);
+                }
+
+                //插入预览图
+                Common.addAvImg(javID, function ($img) {
+                    //https://www.jav321.com/video/300mium-391
+                    var divEle = $("div[class='movie-info-panel")[0];
+                    //$(divEle).attr("id", "video_info");
+                    if (divEle) {
+                        $(divEle).after($img);
+                        $img.click(function () {
+                            $(this).toggleClass('min');
+                            if ($(this).attr("class")) {
+                                this.parentElement.parentElement.scrollIntoView();
+                            }
+                        });
+                    }
+                }, !BOOLEAN_TYPE);
+
+
+            });
+        }
+    }
+	
     function oneJavScript() {
         if ((/(OneJAV)/g).test(document.title)) { //todo 190404
             GM_addStyle(`
@@ -2468,7 +2523,7 @@
             javlibaryScript();
             javBusScript();
         }
-
+	javBDScript();
         oneJavScript();
         jav321Script();
         thirdparty.login115Run();
