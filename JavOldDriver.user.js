@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.5
+// @version      3.3.6
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -69,6 +69,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.3.6  修复了预览图失效的问题。
 // v3.3.5  修复了已知问题。
 // v3.3.4  修复blogjav站点改版后的预览图,优化了部分115在线播放查找识别问题。
 // v3.3.3  预览图备用站更换成javstore。
@@ -304,7 +305,7 @@
         getBigPreviewImgUrlFromBlogjav: function(avid){
             return new Promise(resolve => {
                 //异步请求搜索blogjav.net的番号
-                let promise1 =  request('http://blogjav.net/?s=' + avid, "",15000);
+                let promise1 =  request('https://blogjav.net/?s=' + avid, "",15000);
                 promise1.then((result) => {
                     return new Promise(resolve => {
                         if(!result.loadstuts){
@@ -329,17 +330,17 @@
                         let targetImgUrl = "";
                         if (a) {
                             //异步请求调用内页详情的访问地址
-                            let promise2 = request(a.href,"http://pixhost.to/", 15000);
+                            let promise2 = request(a.href,"https://pixhost.to/", 15000);
                             promise2.then((result) => {
                                 return new Promise(resolve => {
                                     if(!result.loadstuts)  resolve(null);
                                     let doc = Common.parsetext(result.responseText);
-                                    let img_array = $(doc).find('.entry-content a img[src*="pixhost."]');
+                                    let img_array = $(doc).find('.entry-content a img[data-src*="pixhost."]');
 
                                     //如果找到内容大图
                                     if (img_array.length > 0) {
-                                        var new_img_src = img_array[0].src;
-                                        targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('https', 'http');
+                                        var new_img_src = $(img_array[0]).data('src');
+                                        targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
                                         console.log("blogjav获取的图片地址:" + targetImgUrl);
                                         if(targetImgUrl.length === 0){
                                             resolve(null);
@@ -369,7 +370,7 @@
         getBigPreviewImgUrlFromJavArchive: function(avid){
             //异步请求搜索JavArchive的番号
             GM_setValue(`temp_img_url_${avid}`, "");
-            let promise1 = request('http://javarchive.com/?s=' + avid);
+            let promise1 = request('https://javarchive.com/?s=' + avid);
             return promise1.then((result) => {
                 if (!result.loadstuts) return ;
                 let doc = Common.parsetext(result.responseText);
@@ -413,7 +414,7 @@
         getBigPreviewImgUrlFromJavStore: function(avid){
             //异步请求搜索JavStore的番号
             GM_setValue(`temp_img_url_${avid}`, "");
-            let promise1 = request(`http://javstore.net/search/${avid}.html`);
+            let promise1 = request(`https://javstore.net/search/${avid}.html`);
             return promise1.then((result) => {
                 if (!result.loadstuts) return ;
                 let doc = Common.parsetext(result.responseText);
@@ -430,7 +431,7 @@
                 }
                 if (a) {
                     //异步请求调用内页详情的访问地址
-                    let promise2 = request(`http://javstore.net${a.pathname}`,"http://pixhost.to/");
+                    let promise2 = request(`https://javstore.net${a.pathname}`,"http://pixhost.to/");
                     return promise2.then((result) => {
                         if(!result.loadstuts)  return;
                         let doc = Common.parsetext(result.responseText);
@@ -440,7 +441,7 @@
                             imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
                             imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                 .replace('thumbs', 'images').replace('//t', '//img')
-                                .replace(/[\?*\"*]/, '').replace('https', 'http');
+                                .replace(/[\?*\"*]/, '');
                             console.log("javarchive获取的图片地址:" + imgUrl);
                             GM_setValue(`temp_img_url_${avid}`,imgUrl);
                             return Promise.resolve(imgUrl);
@@ -1011,7 +1012,7 @@
                         let pingfengString;
                         // 查找影片是否存在我浏览过的MyMovie表中
                         let prom =javDb.select().from(myMovie).
-                                    where(lf.op.and(myMovie.is_browse.eq(true),myMovie.index_cd.eq(_vid))).exec();
+                        where(lf.op.and(myMovie.is_browse.eq(true),myMovie.index_cd.eq(_vid))).exec();
                         prom.then( results =>{
                             //let promise1 = Promise.resolve();
                             //return new Promise(resolve => {
@@ -2191,7 +2192,7 @@
                             }
                         });
                     }).then(() => {
-                            saveData();
+                        saveData();
                     });
                 }
                 // 增加同步数据到本地的触发按钮
