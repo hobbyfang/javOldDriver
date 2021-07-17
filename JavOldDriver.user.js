@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.6
+// @version      3.3.7
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -69,6 +69,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.3.7  修复了图书馆女优名乱码的问题。
 // v3.3.6  修复了预览图失效的问题。
 // v3.3.5  修复了已知问题。
 // v3.3.4  修复blogjav站点改版后的预览图,优化了部分115在线播放查找识别问题。
@@ -1089,7 +1090,7 @@
                 }
 
                 if(((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) && elems) {
-                    if(location.pathname.search('/actresses|/&mdl=favor&sort=4') < 0){//排除actresses页面
+                    if(location.pathname.search('/searchstar|/actresses|/&mdl=favor&sort=4') < 0){//排除actresses页面
                         // 处理列表文字内容排版
                         for (let i = 0; i < elems.length; i++) {
                             //$(elems[i]).css("height","385px");
