@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.3.7
+// @version      3.4.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -69,6 +69,8 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.4.0  针对JVR影片查找资源的需求，结合javlib站的进阶搜寻中多重搜寻来过滤VR资源，增加了javdb站做为jav磁链接下载来源。
+//         修复了预览图失效的问题。
 // v3.3.7  修复了javbus女优名乱码的问题。
 // v3.3.6  修复了预览图失效的问题。
 // v3.3.5  修复了已知问题。
@@ -336,11 +338,12 @@
                                 return new Promise(resolve => {
                                     if(!result.loadstuts)  resolve(null);
                                     let doc = Common.parsetext(result.responseText);
-                                    let img_array = $(doc).find('.entry-content a img[data-src*="pixhost."]');
+                                    let img_array = $(doc).find('.entry-content a img[data-lazy-src*="pixhost."]');
+                                    //debugger;
 
                                     //如果找到内容大图
                                     if (img_array.length > 0) {
-                                        var new_img_src = $(img_array[0]).data('src');
+                                        var new_img_src = $(img_array[0]).data('lazySrc');
                                         targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
                                         console.log("blogjav获取的图片地址:" + targetImgUrl);
                                         if(targetImgUrl.length === 0){
@@ -349,6 +352,9 @@
                                         else {
                                             resolve(targetImgUrl);
                                         }
+                                    }
+                                    else {
+                                        resolve(null);
                                     }
                                 });
                             }).then( imgUrl => {
@@ -540,7 +546,7 @@
 
     // 磁链访问地址初始化
     if (isNewVersion || GM_getValue('btsow_url', undefined) === undefined) {
-        GM_setValue('btsow_url', 'btsow.cam');
+        GM_setValue('btsow_url', 'btsow.one');
     }
     if (isNewVersion || GM_getValue('btdig_url', undefined) === undefined) {
         GM_setValue('btdig_url', 'www.btdig.com');
@@ -550,6 +556,9 @@
     }
     if (isNewVersion || GM_getValue('torrentkitty_url', undefined) === undefined) {
         GM_setValue('torrentkitty_url', 'www.torrentkitty.app');
+    }
+    if (isNewVersion || GM_getValue('javdb_url', undefined) === undefined) {
+        GM_setValue('javdb_url', 'javdb.com');
     }
     GM_setValue("javOldDriver_version",GM_info.script.version);
 
@@ -566,6 +575,7 @@
                <label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="${GM_getValue('btdig_url')}"></label>
                <label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="${GM_getValue('nyaa_url')}"></label>
                <label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="${ GM_getValue('torrentkitty_url')}"></label>
+               <label class="tm-setting">javdb网址<input type="text" id="javdb_url" class="tm-text" value="${ GM_getValue('javdb_url')}"></label>
             </div>`;
         let $dom = $(dom);
         Swal.fire({
@@ -584,6 +594,7 @@
                 GM_setValue('btdig_url', $('#btdig_url').val());
                 GM_setValue('nyaa_url', $('#nyaa_url').val());
                 GM_setValue('torrentkitty_url', $('#torrentkitty_url').val());
+                GM_setValue('javdb_url', $('#javdb_url').val());
                 history.go(0);
             }
         })
@@ -1354,7 +1365,7 @@
                                     "maglink": elem.querySelector("td:nth-child(3)>a:nth-last-child(1)").href,
                                     //"torrent_url": "https://nyaa.si" + elem.querySelector("td:nth-child(3)>a:nth-child(1)").href,
                                     "size": elem.querySelector("td:nth-child(4)").textContent,
-                                    "src": "https://sukebei.nyaa.si"
+                                    "src": "https://"+ [GM_getValue('nyaa_url')]
                                         + elem.querySelector("td:nth-child(2)>a:nth-child(1)").getAttribute('href'),
                                 });
                             }
@@ -1377,7 +1388,7 @@
                                     "title": elem.querySelector(".name").textContent,
                                     "maglink": elem.querySelector(".action>a:nth-child(2)").href,
                                     "size": elem.querySelector(".size").textContent,
-                                    "src": "https://www.torrentkitty.tv" + elem.querySelector(".action>a:nth-child(1)").getAttribute('href'),
+                                    "src": "https://"+ [GM_getValue('torrentkitty_url')] + elem.querySelector(".action>a:nth-child(1)").getAttribute('href'),
                                 });
                             }
                         }
@@ -1392,7 +1403,59 @@
                         cb(result.finalUrl, data);
                     });
                 },
+                [GM_getValue('javdb_url')]: function (kw, cb) {
+                    let promise = request("https://" + GM_getValue('search_index') + "/search?f=download&q=" + kw , "https://" + GM_getValue('search_index') + "/");
+                    promise.then((result) => {
+                        let data = [];
+                        return new Promise((resolve,reject) => {
+                            thirdparty.nong.search_engines.full_url = result.finalUrl;
+                            let doc = Common.parsetext(result.responseText);
+                            let a = $(doc).find(`#videos .uid:contains('${kw.toUpperCase()}')`);
+                            if(a) {
+                                resolve(a[0].parentElement.href.replace(location.origin,'https://' + [GM_getValue('javdb_url')]));
+                            }
+                            else{
+                                reject();
+                            }
+                        }).then( url => {
 
+                                let promise2 = request(url);
+                                promise2.then(result => {
+                                    thirdparty.nong.search_engines.full_url = result.finalUrl;
+                                    let doc = Common.parsetext(result.responseText);
+                                    let t = $(doc).find('#magnets-content tbody tr');
+                                    if (t) {
+                                        for (let elem of t) {
+                                            data.push({
+                                                "title": elem.querySelector(".magnet-name span:nth-child(1)").textContent,
+                                                "maglink": elem.querySelector(".magnet-name a:nth-child(1)").href,
+                                                "size": elem.querySelector(".magnet-name .meta").textContent,
+                                                "src": "#",
+                                            });
+                                        }
+                                    }
+                                    else {
+                                        data.push({
+                                            "title": "没有找到磁链接",
+                                            "maglink": "",
+                                            "size": "0",
+                                            "src": result.finalUrl,
+                                        });
+                                    }
+                                    cb(result.finalUrl, data);
+                                })
+                            }
+                        ).catch(() => {
+                            data.push({
+                                "title": "没有找到磁链接",
+                                "maglink": "",
+                                "size": "0",
+                                "src": result.finalUrl,
+                            });
+                            cb(result.finalUrl, data);
+                        });
+                    });
+                },
             },
             // 挊
             search_engines: {
