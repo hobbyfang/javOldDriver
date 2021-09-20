@@ -235,9 +235,10 @@
          * @returns {String}  带-的番号
          */
         getAvCode:function (avid) {
-            let letter = avid.match(/^[a-z|A-Z]+/gi);
+            //适配FC2-PPV和200GANA、300NTK等之类的
+            let letter = /^FC2-?PPV/i.test(avid) ? 'FC2-PPV': avid.match(/^(?:\d{3})?[a-z|A-Z]+/gi);
             let num = avid.match(/\d+$/gi);
-            return letter+"-"+num;
+            return (letter + '-' + num).toUpperCase();
         },
         addImg:function (targetImgUrl, func, isZoom) {
             console.log("显示的图片地址:" + targetImgUrl);
@@ -249,7 +250,7 @@
             }
             let $img = $(`<img name="javRealImg" title="点击可放大缩小 (图片正常时)" class="${className}"></img>`);
             $img.attr("src", targetImgUrl);
-            $img.attr("style", "float: left;cursor: pointer;max-width: 100%;");
+            $img.attr("style", "float: left;cursor: pointer;max-width: 1536px;" + (targetImgUrl.startsWith("data:") ? "width: auto;min-height: 0;": ""));
 
             //将新img元素插入指定位置
             func($img);
@@ -261,42 +262,93 @@
          * @param {boolean} isZoom 是否放大,默认true
          */
         addAvImg: function (avid, func, isZoom) {
-            let p2 = this.getBigPreviewImgUrlFromJavStore(avid);
-            return new Promise(resolve => {
-                let p = this.getBigPreviewImgUrlFromBlogjav(avid);
-                p.then(imgUrl => {
-                    if (imgUrl !== null){
-                        let p = request(imgUrl,"",10000);
-                        p.then((result) => {
-                            if (result.loadstuts && result.finalUrl.search(/removed.png/i) < 0){
-                                GM_deleteValue(`temp_img_url_${avid}`);
-                                this.addImg(imgUrl, func, isZoom);
-                            }
-                            else {
-                                console.log("blogjav获取的图片地址已经被移除或加载失败");
-                                p2.then(url => {
-                                    addJavArchiveImg.call(this);
-                                });
-                            }
-                        });
-                    }
-                    else {
-                        p2.then(url => {
-                            addJavArchiveImg.call(this);
-                        });
-                    }
+            var maxImgHashNum = 1009;
+            var imgHashKeyPrefix = 'avidImg_';  //avid#time#imgurl
+            var maxImgCacheTimeSeconds = 86400;
+            var emptyImageData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAB4CAMAAABsOSjPAAAAn1BMVEUAAAD/lgD/x3f/zoj/nRH/3Kr/+e7/sD//68z/1Zj/qzP/skT/uVX/9eX/pCL/oh3/wGb/8d3/4LL/5Lv/2aL/tUv/kAD/0o//9uj/v2L/mQn//vv//Pf/rjf/+vL/1pn/2pT/mAX/kwD/+/X/9OH/4rb/qzD/qSX/mAH/6sn/6cL/26f/y4D/nxr/vV7/uU//wnH/7tb/1YX/wEL/nypWdfcGAAAAAXRSTlMAQObYZgAABOdJREFUeNrs2F1TgkAYhmGeRMRWLbDlS5BAUPysqf7/b6sYt600dQ8a3nW4T3Teo2uWHRYw2tquMOiU5mhDl64ADR36jdZhsVv0X7XoFn2iFt2iT9Si/wG93AxY73Q8fLAooW2GizI7MRm0j4tLCiJoBTPyN4sE2s6h0o4EmkMprySAXmaK6CcC6A0UG1nNowdQLFo2j2aQmTxMKpyrbB7dk5rd54VfLXAmlxI6NOqKrUZocygOG43QXEycSB90KCZTUx90Mvk6bvRBV+P95F6jPY1RUQ9SrW55uPOdqR3id3kUEUYDkZkdmu8da731KrLoI3mPxkfDV486Ovthrps800aPUrs7l2ZR6uV00XPrc2GZMMtWC7Lo26Aez7gwyyxGFJ0MxWHOhVlmlW7pugE1dL03hPpl/y/wA2KfxX6gk++62cSoixkShxba9fuywjgsfgKwHZNCHyuYfVtvjjqfOHqdSWHMsG8XU0Z3I6Av98ZXi5vOR5uNQxDtVoBQzzhk+f63Sw+9juQenjKiz9Pj/oNsnQ4qYeNpZ0H1JYBBsWzVPPoZim2L5tElFOsRuOXFc6iVEkAbXSiVTCigjRAKmTaNE/G9nfNtbRsGwnjudBKW5Gk2ZtCtsJcb7N2+/5ebHv1JXROEkkFxih6IkSr57ufrnaQ2Ia93UP/4c5pt3Ar16dvfE509XpT/Hb62FX593852YHp9+dLWz3MfTfc686cQbmpAD+iGBvSAbmhAD+iGBvSAbmhAD+iGBvSAbuhjoDdKErYPmDSBttISWRvzhJI899m1tDShFRW5B6AnomBqSzXn3fWWANPchDbMMxF74segq3khf/h3X3g3b+Ek02V3aUFX+2QuD2l9e6vFH35VimjaQaPTr7mVHtW+XB6TAXRO5uVgRP8fNPdCM81WyCsp0dOeiBaDGY4o28GgqB00C7l8s5RhHx8iUFK4BW0dkdMpoyY493E4TJ5ydFUgCoFUL/RMQkViriXKGKgIS26pN2ht4a1Az7WkpZg5FuIGs8XBlrocp2uC59LNsv3QlO/2uH9DgwEINws7kmSdWWqZAE7jQRSMlGGPJULzgnv0EVqn1W9B6WP2CqcuuaJkZioOSN8BHVZHHoZtZIELXEL8cQ7JQrIiVXgPfXGYBCOeJKWGOmYEoANHpUBbuPKANrUFCy6aVWkJNdIPzYBzIArx4hBPQJucDj72HYVdduThtMXQpsjF4SVX0RFaJ9LqJLl0FTqatQgDPNdlowNaXyPtk5EKyPl2kzyuggdBytj96pGjKiTLFdqRugFt3kFzju+a/Sm0MnTOvP5IAzVlAeotxF6YLlYigaDAHfh8gpw8rhU6Q0U5pIdGKekMvd2ABqCCWcYMC9S5ACAxVS38diEaR1kqBwoGcImvrAAbUC7J2ny/eVtAgw1yZUjfgjZCZXE3lOUL9BxdrVIdNKEnKuIYX1egLZy4sphMBq0ggAB13bprOCu1zwsWCqORHmiXM8hSn9HCZ/aspdC000Nx1npZGVXFKl0AwmwvVuU5a4lcXgOqlLqy8ARUZnUcgnjXMdcjiI4ty7q4W9kWHjXx2oDul+rdiU/yR4C28SV9B5SzQJtr0nfoLNDlIOFNz9zTQKfi031TzwN9hwb0gG5oQA/oDxR9iq80ehI9PfQT6amhh4Y+k/4BYXA+w/0JM4sAAAAASUVORK5CYII=';
 
-                    function addJavArchiveImg() {
-                        imgUrl = GM_getValue(`temp_img_url_${avid}`, "");
-                        if (imgUrl === "") {
-                            console.log("没有找到预览图");
-                            //this.addImg("test", func, isZoom);
-                        } else {
-                            GM_deleteValue(`temp_img_url_${avid}`);
-                            this.addImg(imgUrl, func, isZoom);
+            function hashCode(s) {
+                var hash = 5381, i = s.length;
+                while (i) {
+                    hash = ((hash * 33) ^ s.charCodeAt(--i)) & 0xffffffff;
+                }
+                return ('0000000' + (hash >>> 0).toString(16)).substr(-8);
+            }
+
+            return new Promise(resolve => {
+                var imgHashKey = imgHashKeyPrefix + parseInt(hashCode(avid), 16) % maxImgHashNum;
+                var imgHashValue = GM_getValue(imgHashKey, "");
+                var imgUrlCache = "";
+
+                if (imgHashValue != "") {
+                    var items = imgHashValue.split("#");
+                    if (items[0] == avid && parseInt(items[1]) + maxImgCacheTimeSeconds * 1000 > new Date().getTime()) {
+                        imgUrlCache = items[2] != "-" ? items[2]: emptyImageData;
+                    }
+                }
+
+                if (imgUrlCache != "") {
+                    this.addImg(imgUrlCache, func, isZoom);
+                }
+                else {
+                    var that = this;
+                    function getPreviewImgCall(promiseCallFuncList) {
+                        var promiseCallFunc = promiseCallFuncList.shift();
+                        if (promiseCallFunc) {
+                            promiseCallFunc(avid).then((imgUrl) => {
+                                if (imgUrl) {
+                                    return new Promise((resolve) => {
+                                        //检测已删除图片
+                                        var req = GM_xmlhttpRequest({
+                                            url: imgUrl,
+                                            headers: {'Referer': imgUrl.replace(/^(https?:\/\/[^\/#&]+).*$/, '$1')},
+                                            method: 'HEAD',
+                                            timeout: 5000,
+                                            withCredentials: false,
+                                            anonymous: true,
+                                            onerror: function(xhr) {
+                                                resolve(false);
+                                            },
+                                            ontimeout: function(xhr) {
+                                                resolve(false);
+                                            },
+                                            onabort: function(xhr) {
+                                                resolve(false);
+                                            },
+                                            onreadystatechange: function(xhr) {
+                                                if (xhr.readyState == 4) {
+                                                    if ((xhr.status == 200 || xhr.status == 301 || xhr.status == 302) && (imgUrl.replace(/^https?:\/\//, '') == xhr.finalUrl.replace(/^https?:\/\//, '') || xhr.finalUrl.search(/remove/i) < 0)) {
+                                                        GM_setValue(imgHashKey, avid + '#' + new Date().getTime() + '#' + imgUrl);
+                                                        that.addImg(imgUrl, func, isZoom);
+                                                        resolve(true);
+                                                    }
+                                                    else {
+                                                        console.log('忽略 ' + avid + ' 不能正常显示的图片:' + imgUrl);
+                                                        resolve(false);
+                                                    }
+                                                    req.abort();
+                                                }
+                                            }
+                                        });
+                                    });
+                                }
+                                return Promise.resolve(false);
+                            }).then((success) => {
+                                if (!success) {
+                                    getPreviewImgCall(promiseCallFuncList);
+                                }
+                            });
+                        }
+                        else {
+                            GM_setValue(imgHashKey, avid + '#' + new Date().getTime() + '#' + '-');
+                            that.addImg(emptyImageData, func, isZoom);
+                            console.log(avid + ' 找不到能正常显示的图片');
                         }
                     }
-                });
+
+                    getPreviewImgCall([this.getBigPreviewImgUrlFromJavStore, this.getBigPreviewImgUrlFromBlogjav, this.getBigPreviewImgUrlFromJavArchive]);
+                }
+
                 resolve();
             });
         },
@@ -306,68 +358,50 @@
          * @returns {Promise} 大预览图Url地址
          */
         getBigPreviewImgUrlFromBlogjav: function(avid){
-            return new Promise(resolve => {
-                //异步请求搜索blogjav.net的番号
-                let promise1 =  request('https://blogjav.net/?s=' + avid, "",15000);
-                promise1.then((result) => {
-                    return new Promise(resolve => {
-                        if(!result.loadstuts){
-                            console.log("blogjav查找番号出错");
-                            resolve(null);
-                        }
-                        var doc = Common.parsetext(result.responseText);
-                        let a_array = $(doc).find(".entry-title a");
-                        let a = a_array[0];
-                        //如果找到全高清大图优先获取全高清的
-                        for (let i = 0; i < a_array.length; i++) {
-                            var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
-                            if (fhd_idx > 0) {
-                                a = a_array[i];
+            //异步请求搜索blogjav.net的番号
+            return request('https://blogjav.net/?s=' + avid.replace(/(fc2)-(ppv)-/i, '$1 $2 ')).then((result) => {
+                if (result.loadstuts) {
+                    let doc = Common.parsetext(result.responseText);
+                    // 查找包含avid番号的a标签数组,忽略大小写
+                    let a_array = $(doc).find('#main>article>header a');
+                    let a = a_array[0];
+                    //如果找到全高清大图优先获取全高清的
+                    let testAvid = new RegExp('\\b' + avid.replace(/^.*?[-_]([a-zA-Z]+?)-?(\d+)(?:\b|_).*$|^([a-zA-Z]+?)-?(\d+)(?:\b|_).*$/, '$1$3-$2$4').replace('-', '[ -]').replace(/(fc2)(ppv)/i, '$1[ -]?$2') + '\\b', 'i');
+
+                    for (let i = 0; i < a_array.length; i++) {
+                        if (testAvid.test(a_array[i].text.trim())) {
+                            a = a_array[i];
+                            if (a_array[i].text.search(/Uncensored|FHD/i) >= 0) {
                                 break;
                             }
                         }
-                        resolve(a);
-                    });
-                }).then(a => {
-                    return new Promise(resolve => {
-                        let targetImgUrl = "";
-                        if (a) {
-                            //异步请求调用内页详情的访问地址
-                            let promise2 = request(a.href,"https://pixhost.to/", 15000);
-                            promise2.then((result) => {
-                                return new Promise(resolve => {
-                                    if(!result.loadstuts)  resolve(null);
-                                    let doc = Common.parsetext(result.responseText);
-                                    let img_array = $(doc).find('.entry-content a img[data-lazy-src*="pixhost."]');
-                                    //debugger;
+                    }
+                    if (a) {
+                        var queryUrl = a.getAttribute('href');
+                        if (!/^(http|\/\/)/i.test(queryUrl)) {
+                            queryUrl = 'https://blogjav.net' + (/^\//.test(queryUrl) ? "" : "/") + queryUrl.replace(/^\.+\/?/, "");
+                        }
+                        //异步请求调用内页详情的访问地址
+                        return request(queryUrl, 'https://blogjav.net/').then((result) => {
+                            if (result.loadstuts) {
+                                let doc = Common.parsetext(result.responseText);
+                                let img_array = $(doc).find('#main>div.entry-content>p>a>img');
+                                if (img_array.length > 0) {
+                                    let imgUrl = img_array[0].src;
+                                    imgUrl = imgUrl && !/^data:image/.test(imgUrl) ? imgUrl : img_array[0].dataset.src;
+                                    imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                                        .replace('/thumbs/', '/images/').replace(/[a-z]+(\d+.pixhost.to)/, 'img$1')
+                                        .replace(/[\?*\"*]/, '');
+                                    console.log('blogjav.net获取 ' + avid + ' 的图片地址:' + imgUrl);
+                                    return imgUrl;
+                                }
+                            }
+                            return null;
+                        });
+                    }
+                }
 
-                                    //如果找到内容大图
-                                    if (img_array.length > 0) {
-                                        var new_img_src = $(img_array[0]).data('lazySrc');
-                                        targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
-                                        console.log("blogjav获取的图片地址:" + targetImgUrl);
-                                        if(targetImgUrl.length === 0){
-                                            resolve(null);
-                                        }
-                                        else {
-                                            resolve(targetImgUrl);
-                                        }
-                                    }
-                                    else {
-                                        resolve(null);
-                                    }
-                                });
-                            }).then( imgUrl => {
-                                resolve(imgUrl);
-                            });
-                        }
-                        else{
-                            resolve(null);
-                        }
-                    });
-                }).then(imgUrl => {
-                    resolve(imgUrl);
-                });
+                return Promise.resolve(null);
             });
         },
         /**
@@ -376,42 +410,49 @@
          */
         getBigPreviewImgUrlFromJavArchive: function(avid){
             //异步请求搜索JavArchive的番号
-            GM_setValue(`temp_img_url_${avid}`, "");
-            let promise1 = request('https://javarchive.com/?s=' + avid);
-            return promise1.then((result) => {
-                if (!result.loadstuts) return ;
-                let doc = Common.parsetext(result.responseText);
-                // 查找包含avid番号的a标签数组,忽略大小写
-                let a_array = $(doc).find(`.post-meta .thumb a[title*='${avid}'i]`);
-                let a = a_array[0];
-                //如果找到全高清大图优先获取全高清的
-                for (let i = 0; i < a_array.length; i++) {
-                    let fhd_idx = a_array[i].title.search(/Uncensored|FHD/i);
-                    //debugger;
-                    if (fhd_idx >= 0) {
-                        a = a_array[i];
-                        break;
+            return request('https://javarchive.com/search/' + avid.replace(/(fc2)-(ppv)-/i, '$1 $2 ') + ".html").then((result) => {
+                if (result.loadstuts) {
+                    let doc = Common.parsetext(result.responseText);
+                    // 查找包含avid番号的a标签数组,忽略大小写
+                    let a_array = $(doc).find('#content_news>ul>li>a');
+                    let a = a_array[0];
+                    //如果找到全高清大图优先获取全高清的
+                    let testAvid = new RegExp('\\b' + avid.replace(/^.*?[-_]([a-zA-Z]+?)-?(\d+)(?:\b|_).*$|^([a-zA-Z]+?)-?(\d+)(?:\b|_).*$/, '$1$3-$2$4').replace('-', '[ -]').replace(/(fc2)(ppv)/i, '$1[ -]?$2') + '\\b', 'i');
+
+                    for (let i = 0; i < a_array.length; i++) {
+                        if (testAvid.test(a_array[i].title.trim())) {
+                            a = a_array[i];
+                            if (a_array[i].title.search(/Uncensored|FHD/i) >= 0) {
+                                break;
+                            }
+                        }
+                    }
+                    if (a) {
+                        var queryUrl = a.getAttribute('href');
+                        if (!/^(http|\/\/)/i.test(queryUrl)) {
+                            queryUrl = 'https://javarchive.com' + (/^\//.test(queryUrl) ? "" : "/") + queryUrl.replace(/^\.+\/?/, "");
+                        }
+                        //异步请求调用内页详情的访问地址
+                        return request(queryUrl, 'https://javarchive.com/').then((result) => {
+                            if (result.loadstuts) {
+                                let doc = Common.parsetext(result.responseText);
+                                let img_array = $(doc).find('.box_right_all>div>div.news>a>img');
+                                if (img_array.length > 0) {
+                                    let imgUrl = img_array[0].src;
+                                    imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
+                                    imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                                        .replace('/thumbs/', '/images/').replace(/[a-z]+(\d+.pixhost.to)/, 'img$1')
+                                        .replace(/[\?*\"*]/, '');
+                                    console.log('javarchive获取 ' + avid + ' 的图片地址:' + imgUrl);
+                                    return imgUrl;
+                                }
+                            }
+                            return null;
+                        });
                     }
                 }
-                if (a) {
-                    //异步请求调用内页详情的访问地址
-                    let promise2 = request(a.href,"http://pixhost.to/");
-                    return promise2.then((result) => {
-                        if(!result.loadstuts)  return;
-                        let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.post-content .external img[alt*=".th"]');
-                        if (img_array.length > 0) {
-                            let imgUrl = img_array[0].src;
-                            imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
-                            imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
-                                .replace('thumbs', 'images').replace('//t', '//img')
-                                .replace(/[\?*\"*]/, '').replace('https', 'http');
-                            console.log("javarchive获取的图片地址:" + imgUrl);
-                            GM_setValue(`temp_img_url_${avid}`,imgUrl);
-                            return Promise.resolve(imgUrl);
-                        }
-                    });
-                }
+
+                return Promise.resolve(null);
             });
         },
         /**
@@ -420,41 +461,49 @@
          */
         getBigPreviewImgUrlFromJavStore: function(avid){
             //异步请求搜索JavStore的番号
-            GM_setValue(`temp_img_url_${avid}`, "");
-            let promise1 = request(`https://javstore.net/search/${avid}.html`);
-            return promise1.then((result) => {
-                if (!result.loadstuts) return ;
-                let doc = Common.parsetext(result.responseText);
-                // 查找包含avid番号的a标签数组,忽略大小写
-                let a_array = $(doc).find(`.news_1n li h3 span a[title*='${avid}'i]`);
-                let a = a_array[0];
-                //如果找到全高清大图优先获取全高清的
-                for (let i = 0; i < a_array.length; i++) {
-                    let fhd_idx = a_array[i].title.search(/Uncensored|FHD/i);
-                    if (fhd_idx >= 0) {
-                        a = a_array[i];
-                        break;
+            return request('https://javstore.net/search/' + avid.replace(/(fc2)-(ppv)-/i, '$1 $2 ') + '.html').then((result) => {
+                if (result.loadstuts) {
+                    let doc = Common.parsetext(result.responseText);
+                    // 查找包含avid番号的a标签数组,忽略大小写
+                    let a_array = $(doc).find('.news_1n li>h3>span>a');
+                    let a = a_array[0];
+                    //如果找到全高清大图优先获取全高清的
+                    let testAvid = new RegExp('\\b' + avid.replace(/^.*?[-_]([a-zA-Z]+?)-?(\d+)(?:\b|_).*$|^([a-zA-Z]+?)-?(\d+)(?:\b|_).*$/, '$1$3-$2$4').replace('-', '[ -]').replace(/(fc2)(ppv)/i, '$1[ -]?$2') + '\\b', 'i');
+
+                    for (let i = 0; i < a_array.length; i++) {
+                        if (testAvid.test(a_array[i].title.trim())) {
+                            a = a_array[i];
+                            if (a_array[i].title.search(/Uncensored|FHD/i) >= 0) {
+                                break;
+                            }
+                        }
+                    }
+                    if (a) {
+                        var queryUrl = a.getAttribute('href');
+                        if (!/^(http|\/\/)/i.test(queryUrl)) {
+                            queryUrl = 'https://javstore.net' + (/^\//.test(queryUrl) ? "" : "/") + queryUrl.replace(/^\.+\/?/, "");
+                        }
+                        //异步请求调用内页详情的访问地址
+                        return request(queryUrl, 'http://javstore.net/').then((result) => {
+                            if (result.loadstuts) {
+                                let doc = Common.parsetext(result.responseText);
+                                let img_array = $(doc).find('.category_news_main_right>.news>a>img');
+                                if (img_array.length > 0) {
+                                    let imgUrl = img_array[0].src;
+                                    imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
+                                    imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                                        .replace('/thumbs/', '/images/').replace(/[a-z]+(\d+.pixhost.to)/, 'img$1')
+                                        .replace(/[\?*\"*]/, '');
+                                    console.log('javstore获取 ' + avid + ' 的图片地址:' + imgUrl);
+                                    return imgUrl;
+                                }
+                            }
+                            return null;
+                        });
                     }
                 }
-                if (a) {
-                    //异步请求调用内页详情的访问地址
-                    let promise2 = request(`https://javstore.net${a.pathname}`,"http://pixhost.to/");
-                    return promise2.then((result) => {
-                        if(!result.loadstuts)  return;
-                        let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.news a img[alt*=".th"]');
-                        if (img_array.length > 0) {
-                            let imgUrl = img_array[0].src;
-                            imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
-                            imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
-                                .replace('thumbs', 'images').replace('//t', '//img')
-                                .replace(/[\?*\"*]/, '');
-                            console.log("javarchive获取的图片地址:" + imgUrl);
-                            GM_setValue(`temp_img_url_${avid}`,imgUrl);
-                            return Promise.resolve(imgUrl);
-                        }
-                    });
-                }
+
+                return Promise.resolve(null);
             });
         },
         /**
@@ -1257,7 +1306,10 @@
                 $(this.anchor).replaceWith($end);
             };
             waterfall.prototype.reachBottom = function (elem, limit) {
-                return (elem.getBoundingClientRect().top - $(window).height()) < limit;
+                if (elem) {
+                    return (elem.getBoundingClientRect().top - $(window).height()) < limit;
+                }
+                return false;
             };
             waterfall.prototype.scroll = function () {
                 if (this.reachBottom(this.anchor, 500) && this.appendElems(this._2func)) {
