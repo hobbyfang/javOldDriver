@@ -363,7 +363,7 @@
                 if (result.loadstuts) {
                     let doc = Common.parsetext(result.responseText);
                     // 查找包含avid番号的a标签数组,忽略大小写
-                    let a_array = $(doc).find('#main>article>header a');
+                    let a_array = $(doc).find('#main>article header>h2>a');
                     let a = a_array[0];
                     //如果找到全高清大图优先获取全高清的
                     let testAvid = new RegExp('\\b' + avid.replace(/^.*?[-_]([a-zA-Z]+?)-?(\d+)(?:\b|_).*$|^([a-zA-Z]+?)-?(\d+)(?:\b|_).*$/, '$1$3-$2$4').replace('-', '[ -]').replace(/(fc2)(ppv)/i, '$1[ -]?$2') + '\\b', 'i');
@@ -376,6 +376,8 @@
                             }
                         }
                     }
+
+                    console.log("XXXXXa=" + a.getAttribute('href'));
                     if (a) {
                         var queryUrl = a.getAttribute('href');
                         if (!/^(http|\/\/)/i.test(queryUrl)) {
@@ -385,10 +387,10 @@
                         return request(queryUrl, 'https://blogjav.net/').then((result) => {
                             if (result.loadstuts) {
                                 let doc = Common.parsetext(result.responseText);
-                                let img_array = $(doc).find('#main>div.entry-content>p>a>img');
+                                let img_array = $(doc).find('#main div.entry-content>p>a>img');
                                 if (img_array.length > 0) {
                                     let imgUrl = img_array[0].src;
-                                    imgUrl = imgUrl && !/^data:image/.test(imgUrl) ? imgUrl : img_array[0].dataset.src;
+                                    imgUrl = imgUrl && !/^data:image/.test(imgUrl) ? imgUrl : img_array[0].getAttribute('data-lazy-src');
                                     imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                         .replace('/thumbs/', '/images/').replace(/[a-z]+(\d+.pixhost.to)/, 'img$1')
                                         .replace(/[\?*\"*]/, '');
@@ -439,7 +441,6 @@
                                 let img_array = $(doc).find('.box_right_all>div>div.news>a>img');
                                 if (img_array.length > 0) {
                                     let imgUrl = img_array[0].src;
-                                    imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
                                     imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                         .replace('/thumbs/', '/images/').replace(/[a-z]+(\d+.pixhost.to)/, 'img$1')
                                         .replace(/[\?*\"*]/, '');
@@ -490,7 +491,6 @@
                                 let img_array = $(doc).find('.category_news_main_right>.news>a>img');
                                 if (img_array.length > 0) {
                                     let imgUrl = img_array[0].src;
-                                    imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
                                     imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                         .replace('/thumbs/', '/images/').replace(/[a-z]+(\d+.pixhost.to)/, 'img$1')
                                         .replace(/[\?*\"*]/, '');
