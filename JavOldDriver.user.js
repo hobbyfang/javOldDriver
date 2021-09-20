@@ -376,8 +376,6 @@
                             }
                         }
                     }
-
-                    console.log("XXXXXa=" + a.getAttribute('href'));
                     if (a) {
                         var queryUrl = a.getAttribute('href');
                         if (!/^(http|\/\/)/i.test(queryUrl)) {
