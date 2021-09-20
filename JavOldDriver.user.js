@@ -484,7 +484,7 @@
                             queryUrl = 'https://javstore.net' + (/^\//.test(queryUrl) ? "" : "/") + queryUrl.replace(/^\.+\/?/, "");
                         }
                         //异步请求调用内页详情的访问地址
-                        return request(queryUrl, 'http://javstore.net/').then((result) => {
+                        return request(queryUrl, 'https://javstore.net/').then((result) => {
                             if (result.loadstuts) {
                                 let doc = Common.parsetext(result.responseText);
                                 let img_array = $(doc).find('.category_news_main_right>.news>a>img');
