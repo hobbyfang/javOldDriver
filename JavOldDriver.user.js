@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.4.0
+// @version      3.5.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -69,6 +69,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.5.0  图书馆jav列表“按评分排序”升级为“按【VR】+评分排序”，VR标题增加背景颜色区分。
 // v3.4.0  针对JVR影片查找资源的需求，结合javlib站的进阶搜寻中多重搜寻来过滤VR资源，增加了javdb站做为jav磁链接下载来源。
 //         修复了预览图失效的问题。
 // v3.3.7  修复了javbus女优名乱码的问题。
@@ -546,7 +547,7 @@
 
     // 磁链访问地址初始化
     if (isNewVersion || GM_getValue('btsow_url', undefined) === undefined) {
-        GM_setValue('btsow_url', 'btsow.one');
+        GM_setValue('btsow_url', 'btsow.rest');
     }
     if (isNewVersion || GM_getValue('btdig_url', undefined) === undefined) {
         GM_setValue('btdig_url', 'www.btdig.com');
@@ -988,6 +989,8 @@
 
                 function extCode(indexCd_id, actor, dateString, pingfengString) {
                     $(indexCd_id).find(".id").append(` &nbsp;${actor}`);
+                    let t = $(indexCd_id).find(".title").get(0);//todo v3.5.0
+                    $(t).text().indexOf("【VR】") >= 0 ? $(t).css("background-color", "black").css("color", "white"):null;
                     $(indexCd_id).children("a").append(`<div class='hobby_add'style='color: red;font-size: 14px;'>
                         ${dateString}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${pingfengString}</div>`);
                     $(indexCd_id).children("a").attr("release_date", dateString);
@@ -1430,7 +1433,7 @@
                                                 "title": elem.querySelector(".magnet-name span:nth-child(1)").textContent,
                                                 "maglink": elem.querySelector(".magnet-name a:nth-child(1)").href,
                                                 "size": elem.querySelector(".magnet-name .meta").textContent,
-                                                "src": "#",
+                                                "src": result.finalUrl,
                                             });
                                         }
                                     }
@@ -2151,7 +2154,7 @@
 
                     let a1 = document.createElement('a');
 
-                    $(a1).append('按评分排序&nbsp;&nbsp;');
+                    $(a1).append('按【VR】+评分排序&nbsp;&nbsp;');
                     $(a1).css({
                         "color": "blue",
                         "font": "bold 12px monospace"
@@ -2166,6 +2169,18 @@
                             if (a_score > b_score) {
                                 return -1;
                             } else if (a_score === b_score) {
+                                return 0;
+                            } else {
+                                return 1;
+                            }
+                        });
+                        div_array.sort(function (a, b) {
+                            //debugger;
+                            let a_val = $(a).children("a").attr("title").indexOf("【VR】") >= 0 ? 1:0;
+                            let b_val = $(b).children("a").attr("title").indexOf("【VR】") >= 0 ? 1:0;
+                            if (a_val > b_val) {
+                                return -1;
+                            } else if (a_val === b_val) {
                                 return 0;
                             } else {
                                 return 1;
