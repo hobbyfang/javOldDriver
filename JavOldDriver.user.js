@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.5.0
+// @version      3.5.1
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -21,27 +21,8 @@
 // @include     *://onejav.com/*
 // @include     *://*jav321.com/video/*
 
-// @include     *://*/vl_update*
-// @include     *://*/vl_newrelease*
-// @include     *://*/vl_newentries*
-// @include     *://*/vl_mostwanted*
-// @include     *://*/vl_bestrated*
-// @include     *://*/vl_genre*
-// @include     *://*/vl_star*
-// @include     *://*/?v=jav*
-// @include     *://*/mv_owned*
-// @include     *://*/mv_watched*
-// @include     *://*/mv_wanted*
-// @include     *://*/mv_visited*
-
 // @include     *://www.*bus*/*
 // @include     *://www.*dmm*/*
-
-// @include     *://*/movie/*
-// @include     *://*.com/cn*
-// @include     *://*.com/tw*
-// @include     *://*.com/ja*
-// @include     *://*.com/en*
 
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -69,6 +50,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.5.1  修复javdb站源的磁力搜索，增加jav磁链地址的修改入口。
 // v3.5.0  图书馆jav列表“按评分排序”升级为“按【VR】+评分排序”，VR标题增加背景颜色区分。
 // v3.4.0  针对JVR影片查找资源的需求，结合javlib站的进阶搜寻中多重搜寻来过滤VR资源，增加了javdb站做为jav磁链接下载来源。
 //         修复了预览图失效的问题。
@@ -98,7 +80,6 @@
 // v3.0.0  增加115在线播放的关联入口。同时本代码重新梳理及优化。
 
 // v2.3.0 增加jav321网站内容排版的支持，增加查找已登录115网盘是否拥有当前番号显示。
-// v2.2.2 修复了已知问题。
 // v2.2.0 增加onejav网站内容排版的支持，热门Jav预览搜集更省时省力。更换两个磁链资源新地址。
 // v2.1.5 增加点击番号完成复制功能。
 // v2.1.3 增加btdigg磁链资源站点。修复了已知问题。
@@ -139,6 +120,43 @@
      * @Class
      */
     var Common = {
+        openSystemConfig:() => {
+            let scroll_true = '';
+            if (GM_getValue('scroll_status', 1) !== 0){
+                GM_setValue('scroll_status', 1);
+                scroll_true = "checked";
+            }
+
+            let dom = `<div>
+                   <label class="tm-setting">javlib/javbus开启瀑布流(自动读下一页)<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
+                   <label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="${GM_getValue('btsow_url')}"></label>
+                   <label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="${GM_getValue('btdig_url')}"></label>
+                   <label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="${GM_getValue('nyaa_url')}"></label>
+                   <label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="${ GM_getValue('torrentkitty_url')}"></label>
+                   <label class="tm-setting">javdb网址<input type="text" id="javdb_url" class="tm-text" value="${ GM_getValue('javdb_url')}"></label>
+                </div>`;
+            let $dom = $(dom);
+            Swal.fire({
+                title: '脚本设置',
+                html: $dom[0],
+                confirmButtonText: '保存'
+            }).then((result) => {
+                if (result.value){
+                    if($('#scroll_true')[0].checked){
+                        GM_setValue('scroll_status', 1);
+                    }
+                    else{
+                        GM_setValue('scroll_status', 0);
+                    }
+                    GM_setValue('btsow_url', $('#btsow_url').val());
+                    GM_setValue('btdig_url', $('#btdig_url').val());
+                    GM_setValue('nyaa_url', $('#nyaa_url').val());
+                    GM_setValue('torrentkitty_url', $('#torrentkitty_url').val());
+                    GM_setValue('javdb_url', $('#javdb_url').val());
+                    history.go(0);
+                }
+            })
+        },
         /**
          * 版本号比较方法
          * 传入两个字符串，当前版本号：curV；比较版本号：reqV
@@ -146,7 +164,7 @@
          * @param reqV 比较版本号
          * @returns {boolean} 调用方法举例：compare("3.1.10","3.1.9")，将返回true
          */
-        compareVersions :function (curV, reqV) {
+        compareVersions :(curV, reqV) => {
             if (curV && reqV) {
                 //将两个版本号拆成数字
                 var arr1 = curV.split('.'),
@@ -547,7 +565,7 @@
 
     // 磁链访问地址初始化
     if (isNewVersion || GM_getValue('btsow_url', undefined) === undefined) {
-        GM_setValue('btsow_url', 'btsow.rest');
+        GM_setValue('btsow_url', 'btsow.bar');
     }
     if (isNewVersion || GM_getValue('btdig_url', undefined) === undefined) {
         GM_setValue('btdig_url', 'www.btdig.com');
@@ -563,43 +581,7 @@
     }
     GM_setValue("javOldDriver_version",GM_info.script.version);
 
-    GM_registerMenuCommand('设置', () => {
-        let scroll_true = '';
-        if (GM_getValue('scroll_status', 1) !== 0){
-            GM_setValue('scroll_status', 1);
-            scroll_true = "checked";
-        }
-
-        let dom = `<div>
-               <label class="tm-setting">javlib/javbus开启瀑布流(自动读下一页)<input type="checkbox" id="scroll_true" ${scroll_true} class="tm-checkbox"></label>
-               <label class="tm-setting">btsow网址<input type="text" id="btsow_url" class="tm-text" value="${GM_getValue('btsow_url')}"></label>
-               <label class="tm-setting">btdig网址<input type="text" id="btdig_url" class="tm-text" value="${GM_getValue('btdig_url')}"></label>
-               <label class="tm-setting">nyaa网址<input type="text" id="nyaa_url" class="tm-text" value="${GM_getValue('nyaa_url')}"></label>
-               <label class="tm-setting">torrentkitty网址<input type="text" id="torrentkitty_url" class="tm-text" value="${ GM_getValue('torrentkitty_url')}"></label>
-               <label class="tm-setting">javdb网址<input type="text" id="javdb_url" class="tm-text" value="${ GM_getValue('javdb_url')}"></label>
-            </div>`;
-        let $dom = $(dom);
-        Swal.fire({
-            title: '脚本设置',
-            html: $dom[0],
-            confirmButtonText: '保存'
-        }).then((result) => {
-            if (result.value){
-                if($('#scroll_true')[0].checked){
-                    GM_setValue('scroll_status', 1);
-                }
-                else{
-                    GM_setValue('scroll_status', 0);
-                }
-                GM_setValue('btsow_url', $('#btsow_url').val());
-                GM_setValue('btdig_url', $('#btdig_url').val());
-                GM_setValue('nyaa_url', $('#nyaa_url').val());
-                GM_setValue('torrentkitty_url', $('#torrentkitty_url').val());
-                GM_setValue('javdb_url', $('#javdb_url').val());
-                history.go(0);
-            }
-        })
-    });
+    GM_registerMenuCommand('设置', ()=>{Common.openSystemConfig()});
 
     /**
      * 对Date的扩展，将 Date 转化为指定格式的String
@@ -1413,7 +1395,7 @@
                         return new Promise((resolve,reject) => {
                             thirdparty.nong.search_engines.full_url = result.finalUrl;
                             let doc = Common.parsetext(result.responseText);
-                            let a = $(doc).find(`#videos .uid:contains('${kw.toUpperCase()}')`);
+                            let a = $(doc).find(`.box .video-title:contains('${kw.toUpperCase()}')`);
                             if(a) {
                                 resolve(a[0].parentElement.href.replace(location.origin,'https://' + [GM_getValue('javdb_url')]));
                             }
@@ -1426,7 +1408,7 @@
                                 promise2.then(result => {
                                     thirdparty.nong.search_engines.full_url = result.finalUrl;
                                     let doc = Common.parsetext(result.responseText);
-                                    let t = $(doc).find('#magnets-content tbody tr');
+                                    let t = $(doc).find('#magnets-content .item');
                                     if (t) {
                                         for (let elem of t) {
                                             data.push({
@@ -1508,6 +1490,17 @@
                                 }
                                 b.removeChild(b.firstChild);
                                 b.appendChild(select);
+                                let a3 = document.createElement('a');
+                                $(a3).append('&nbsp;修改&nbsp;')
+                                $(a3).css({
+                                    "color": "blue",
+                                    "font": "bold 12px monospace"
+                                });
+                                $(a3).attr("href", "#");
+                                $(a3).click(() => {
+                                    Common.openSystemConfig();
+                                });
+                                b.append(a3);
                                 a.appendChild(b);
                                 continue;
                             }
