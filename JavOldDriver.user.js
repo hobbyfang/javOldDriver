@@ -1,28 +1,39 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.5.1
+// @version      3.5.2
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
 // @author       Hobby
 
+// @require      https://cdn.staticfile.org/jquery/2.2.4/jquery.min.js
+// @require      https://cdn.staticfile.org/lovefield/2.1.12/lovefield.min.js
+// @require      https://cdn.staticfile.org/limonte-sweetalert2/9.17.2/sweetalert2.all.min.js
+// @require      https://lib.baomitu.com/jquery/2.2.4/jquery.min.js
+// @require      https://lib.baomitu.com/lovefield/2.1.12/lovefield.min.js
+// @require      https://lib.baomitu.com/limonte-sweetalert2/9.17.2/sweetalert2.all.min.js
 // @require      https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/lovefield@2.1.12/dist/lovefield.min.js
-// @require      https://cdn.jsdelivr.net/npm/sweetalert2@9
+// @require      https://cdn.jsdelivr.net/npm/sweetalert2@9.17.2/dist/sweetalert2.all.min.js
 // @resource     icon https://cdn.jsdelivr.net/gh/hobbyfang/javOldDriver@master/115helper_icon_001.jpg
 
 // @include     *://*javlibrary.com/*
 // @include     *://*javlib.com/*
 // @include     *://*javbus.com/*
 // @include     *://tellme.pw/avsox
+// @include     *://*avsox.*/*
 // @include     *://tellme.pw/avmoo
+// @include     *://*avmoo.*/*
 // @include     *://115.com/*
 // @include     *://onejav.com/*
 // @include     *://*jav321.com/video/*
 
+// @include     *://*.o58c.com/*
 // @include     *://www.*bus*/*
 // @include     *://www.*dmm*/*
+// @include     *://www.*javsee*/*
+// @include     *://www.*seejav*/*
 
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -50,6 +61,7 @@
 
 // 油猴脚本技术交流：https://t.me/hobby666
 
+// v3.5.2  修复部分地区无法访问脚本依赖库问题，重新梳理匹配脚本域名作用地址。
 // v3.5.1  修复javdb站源的磁力搜索，增加jav磁链地址的修改入口。
 // v3.5.0  图书馆jav列表“按评分排序”升级为“按【VR】+评分排序”，VR标题增加背景颜色区分。
 // v3.4.0  针对JVR影片查找资源的需求，结合javlib站的进阶搜寻中多重搜寻来过滤VR资源，增加了javdb站做为jav磁链接下载来源。
