@@ -2557,6 +2557,13 @@
         oneJavScript();
         jav321Script();
         thirdparty.login115Run();
+
+        const links = document.getElementsByTagName("a");
+        for(const link of links) {
+            if(link.href.includes('javbus')) {
+                link.target = "_blank";
+            }
+        }
     }
     mainRun();
 })();
