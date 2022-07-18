@@ -4,4 +4,4 @@
 
 https://sleazyfork.org/zh-CN/scripts/25781
 
-油猴脚本技术交流：https://t.me/hobby666
+油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
