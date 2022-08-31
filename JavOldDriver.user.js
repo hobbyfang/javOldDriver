@@ -75,7 +75,7 @@
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
 // v3.6.0  原番号页面增加dmm、javdb评分展示及在线播放跳转、JAV跳转，增加javstore番号页改造，增加javdb瀑布流及列表增加JAV跳转和排版优化。
-//         优化了onejav列表，其他已知bug修复，部分代码优化。
+//         原javlib番号页面自带预览图可点击查看，onejav列表简单优化，其他已知bug修复，部分代码优化。
 
 // v3.5.2  修复部分地区无法访问脚本依赖库问题，重新梳理匹配脚本域名作用地址。
 // v3.5.1  修复javdb站源的磁力搜索，增加jav磁链地址的修改入口。
@@ -1157,7 +1157,7 @@
                             let t = $(indexCd_id).find(".title").get(0); //todo v3.5.0
                             $(t).text().indexOf("【VR】") >= 0 ? $(t).css("background-color", "black").css("color", "white") : null;
                             $(indexCd_id).children("a").append(`<div class='hobby_add'style='color: red;font-size: 14px;'>
-                        ${dateString}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${pingfengString}</div>`);
+                                ${dateString}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${pingfengString}</div>`);
                             $(indexCd_id).children("a").attr("release_date", dateString);
                             let s = 0;
                             let r = Math.random() / 100;
