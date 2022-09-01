@@ -475,7 +475,7 @@
                             //this.addImg("test", func, isZoom);
                         } else {
                             GM_deleteValue(`temp_img_url_${avid}`);
-                            this.addImg(imgUrl, func, isZoom);
+                            addImg(imgUrl, func, isZoom);
                         }
                     }
 
