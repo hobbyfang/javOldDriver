@@ -608,13 +608,13 @@
             },
             /**
              * 获取Dmm对应番号的数据
-             * @param dmmId Dmm编号 
+             * @param {String} dmmIdUrl DmmId网址 
              * @returns {Promise}  Promise内实现异步返回参数dmmData
              */
-            getDmmData: function(dmmId) {
-                if (!dmmId) return Promise.resolve(null);
+            getDmmData: function(dmmIdUrl) {
+                if (!dmmIdUrl) return Promise.resolve(null);
                 //异步请求dmm的番号页面
-                let promise1 = request(`https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=${dmmId}/`);
+                let promise1 = request(dmmIdUrl);
                 return promise1.then((result) => {
                     if (!result.loadstuts) {
                         console.log("dmm获取番号数据出错");
@@ -624,6 +624,7 @@
                     dmmData.collect_num = $(doc).find(".tx-count span").text();
                     dmmData.score = $(doc).find(".d-review__average strong").text();
                     dmmData.user_num = $(doc).find(".d-review__evaluates strong").text();
+                    dmmData.url = result.finalUrl;
                     return dmmData;
                 });
             },
@@ -2510,15 +2511,28 @@
                     if(!dmmId){
                         dmmId = Common.avIdToDmmId(AVID);
                     }
-                    Common.getDmmData(dmmId).then((dmmData) => {
-                        $div_zuobiao.before(`
-                            <div id="video_review_dmm" class="item">
-                                <table><tbody><tr>
-                                    <td class="header"><a target="_blank" href="https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=${Common.getDmmId(imgs[0].src)}/">DMM评价:</a></td>
-                                    <td><span class="text">${dmmData.score.replace("点","分")}</span>, ${dmmData.user_num}人评, ${dmmData.collect_num}收藏</td>
-                                </tr></tbody></table>
-                            </div>
-                        `);
+                    
+                    Common.getDmmData(`https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=${dmmId}/`).then((dmmData) => {
+                        if(dmmData.collect_num){
+                            $div_zuobiao.before(addLinkHtml(dmmData));
+                        }
+                        else{
+                            let dmmId = Common.getDmmId($('#video_jacket_img').attr('src'));
+                            Common.getDmmData(`https://www.dmm.co.jp/mono/dvd/-/detail/=/cid=${dmmId}/`).then((dmmData) => {
+                                $div_zuobiao.before(addLinkHtml(dmmData));
+                            });
+                        }
+                        
+                        function addLinkHtml(dmmData){
+                            return `
+                                <div id="video_review_dmm" class="item">
+                                    <table><tbody><tr>
+                                        <td class="header"><a target="_blank" href="${dmmData.url}">DMM评价:</a></td>
+                                        <td><span class="text">${dmmData.score.replace("点","分")}</span>, ${dmmData.user_num}人评, ${dmmData.collect_num}收藏</td>
+                                    </tr></tbody></table>
+                                </div>
+                            `;
+                        }
                     });     
                 }
 
@@ -2683,12 +2697,12 @@
                 let a_imgs = $('#sample-waterfall>a');
                 if (a_imgs.length && !$('a.avatar-box[href*="uncensored"]').length && !location.hostname.includes('javbus.org') 
                     && $('#sample-waterfall>a[href*="pics.dmm"]').length) {
-                    let p1 = Common.getDmmData(Common.getDmmId(a_imgs[0].href));
+                    let p1 = Common.getDmmData(`https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=${Common.getDmmId(a_imgs[0].href)}/`);
                     p1.then((dmmData) => {
                         $p_zuobiao.before(`
                             <p>
                                 <span class="header">
-                                    <a target="_blank" href="https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=${Common.getDmmId(a_imgs[0].href)}/" style="color: blue;">
+                                    <a target="_blank" href="${dmmData.url}" style="color: blue;">
                                     DMM&nbsp;评:</a>
                                 </span>
                                 ${dmmData.score.replace("点","分")}, ${dmmData.user_num}人评, ${dmmData.collect_num}收藏
