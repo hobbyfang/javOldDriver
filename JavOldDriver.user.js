@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.6.0
+// @version      3.7.0
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -19,33 +19,33 @@
 // @resource     icon https://cdn.jsdelivr.net/gh/hobbyfang/javOldDriver@master/115helper_icon_001.jpg
 
 // javlib主要有码jav资源、排行榜、点评
-// @include     *://*javlibrary.com/*
-// @include     *://*javlib.com/*
-// @include     *://*.f61m.com/*
+// @include      *://*javlibrary.com/*
+// @include      *://*javlib.com/*
+// @include      *://*.y62x.com/*
 
 // javbus有无码jav资源、论坛
-// @include     *://*javbus.com/*
-// @include     *://www.*bus*/*
-// @include     *://www.*javsee*/*
-// @include     *://www.*seejav*/*
+// @include      *://*javbus.com/*
+// @include      *://www.*bus*/*
+// @include      *://www.*javsee*/*
+// @include      *://www.*seejav*/*
 
 // onejav有FC2资源、排行榜
-// @include     *://*onejav.com/*
+// @include      *://*onejav.com/*
 
 // avsox有无码jav资源，含FC2  tellme.pw/avsox
-// @include     *://*avsox.*/*
+// @include      *://*avsox.*/*
 
 // jav321有素人资源、排行榜      
-// @include     *://*jav321.com/video/*
+// @include      *://*jav321.com/video/*
 
 // javdb有各资源排行榜，但部分需付费  javdb.com
-// @include     *://*javdb*.com/*
+// @include      *://*javdb*.com/*
 
-// @include     *://*javstore.*/*
-// @include     *://*avmoo.*/*
-// @include     ://tellme.pw/avmoo
-// @include     *://115.com/*
-// @include     *://www.*dmm*/*
+// @include      *://*javstore.*/*
+// @include      *://*avmoo.*/*
+// @include      ://tellme.pw/avmoo
+// @include      *://115.com/*
+// @include      *://www.*dmm*/*
 
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -62,6 +62,7 @@
 
 // @connect      *
 // @copyright    hobby 2016-12-18
+// @license      GPL-3.0
 
 // 大陆用户推荐Chrome(V52+) + Tampermonkey（必须扩展） + V2ray/ShadowsocksR(代理) + Proxy SwitchyOmega（扩展）的环境下配合使用。
 // 上车请使用chrome浏览器，其他浏览器的问题本人不支持发现和修复相关问题。
@@ -74,6 +75,8 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
+
+// v3.7.0  增加javdb列表的JAV评分排序、屏蔽指定评分人数功能。优化blogjav预览图获取方式。
 // v3.6.0  原番号页面增加dmm、javdb评分展示及在线播放跳转、JAV跳转，增加javstore番号页改造，增加javdb瀑布流及列表增加JAV跳转和排版优化。
 //         原javlib番号页面自带预览图可点击查看，onejav列表简单优化，其他已知bug修复，部分代码优化。
 
@@ -115,6 +118,7 @@
 (function() {
         'use strict';
 
+        const JAVDB_ITEM_SELECTOR = '.movie-list.v.cols-4.vcols-8 .item, .movie-list.v.cols-4.vcols-5 .item, .movie-list.h.cols-4.vcols-8 .item, .movie-list.h.cols-4.vcols-5 .item';
         // 115用户ID
         let jav_userID = GM_getValue('jav_user_id', 0);
         // icon图标
@@ -345,7 +349,7 @@
                     let prefix = avid.replace(num, "");
                     avid = prefix + "+" + num;
                 }
-                return "https://blogjav.net/?s=" + avid;
+                return `https://www.google.com/search?q=${avid} site:blogjav.net`;
             },
             /**
              * 获取查询jav321的url
@@ -512,7 +516,7 @@
                         return null;
                     }
                     var doc = Common.parsetext(result.responseText);
-                    let a_array = $(doc).find(".entry-title a");
+                    let a_array = $(doc).find("#rso .g .yuRUbf a");
                     let a = null;
                     console.log("avid:" + avid);
                     //如果找到全高清大图优先获取全高清的
@@ -520,9 +524,9 @@
                         if (i == 5) break;
                         // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
                         let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
-                        if (a_array[i].innerHTML.search(reg) > 0) {
+                        if (a_array[i].querySelector("h3").innerHTML.search(reg) > 0) {
                             if (!a) a = a_array[i];
-                            var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
+                            var fhd_idx = a_array[i].querySelector("h3").innerHTML.search(/FHD/i);
                             if (fhd_idx > 0) {
                                 a = a_array[i];
                                 break;
@@ -754,7 +758,7 @@
             GM_setValue('torrentkitty_url', 'www.torrentkitty.live');
         }
         if (isNewVersion || GM_getValue('javdb_url', undefined) === undefined) {
-            GM_setValue('javdb_url', 'javdb004.com');
+            GM_setValue('javdb_url', 'javdb005.com');
         }
         if (isNewVersion || GM_getValue('javlib_url', undefined) === undefined) {
             GM_setValue('javlib_url', 'www.javlibrary.com');
@@ -878,7 +882,7 @@
             },
             javbus: {
                 type: 0,
-                re: /bus|dmm/,
+                re: /(jav|bus|dmm|see|cdn|fan){2}\./g,
                 vid: function() {
                     var a = $('.header_hobby')[0].nextElementSibling;
                     return a ? a.getAttribute("avid") : '';
@@ -1094,7 +1098,7 @@
                     }
 
                     // javdb
-                    var $pages4 = $('.movie-list.v.cols-4.vcols-8 .item, .movie-list.v.cols-4.vcols-5 .item, .movie-list.h.cols-4.vcols-8 .item, .movie-list.h.cols-4.vcols-5 .item');
+                    var $pages4 = $(JAVDB_ITEM_SELECTOR);
                     if ($pages4.length) {
                         GM_addStyle(`
                             .container {max-width: inherit !important;}
@@ -1104,7 +1108,7 @@
                         $pages4[0].parentElement.id = "waterfall";
                         w = new thirdparty.waterfall({
                             next: '.pagination .pagination-next',
-                            item: '.movie-list.v.cols-4.vcols-8 .item, .movie-list.v.cols-4.vcols-5 .item, .movie-list.h.cols-4.vcols-8 .item, .movie-list.h.cols-4.vcols-5 .item',
+                            item: JAVDB_ITEM_SELECTOR,
                             cont: '#waterfall',
                             pagi: '.pagination',
                         });
@@ -1328,6 +1332,10 @@
                                         </a>
                                     `);
                                     $div.append(Common.javstoreLinkMousedown($b, avid));
+
+                                    // 提取评分数、评分人数
+                                    $(e).attr("score", $(e).find('.score>span').text().split('分, 由')[0].trim());
+                                    $(e).attr("usernum", $(e).find('.score>span').text().split('分, 由')[1].replace("人評價", ""));
                                 }
                             });
                         }
@@ -2371,9 +2379,9 @@
                         "font": "bold 12px monospace"
                     });
                     $(a1).attr("href", "#");
-                    $(a1).click(function () {
+                    $(a1).click(() => {
                         let div_array = $("div.videos div.video");
-                        div_array.sort(function (a, b) {
+                        div_array.sort((a, b) => {
                             let a_score = parseFloat($(a).children("a").attr("score"));
                             let b_score = parseFloat($(b).children("a").attr("score"));
                             if (a_score > b_score) {
@@ -2384,7 +2392,7 @@
                                 return 1;
                             }
                         });
-                        div_array.sort(function (a, b) {
+                        div_array.sort((a, b) => {
                             let a_val = $(a).children("a").attr("title").indexOf("【VR】") >= 0 ? 1:0;
                             let b_val = $(b).children("a").attr("title").indexOf("【VR】") >= 0 ? 1:0;
                             if (a_val > b_val) {
@@ -2887,6 +2895,60 @@
             if($('.app-desktop-banner').length) $('.app-desktop-banner').remove();
             // 瀑布流脚本
             thirdparty.waterfallScrollInit();
+
+            // 非小封面列表
+            if (!$("#waterfall").hasClass("v cols-4 vcols-8")) {
+                // 如果没有，加入tabs元素
+                if(!$(".tabs.is-boxed").length){
+                    $("#waterfall").before(`<div class="tabs is-boxed" style="justify-content: flex-end;"></div>`);
+                }
+                // 加入一个锚点
+                $(".tabs.is-boxed").before(`<a name="maodian" style="position: relative;top: -60px;"></a>`);
+                // 加入排序与过滤功能
+                $('.tabs.is-boxed').append(`
+                    <div style="display: flex;">
+                        <div class="is-active" style="border: 1px solid #3273dc;">
+                            <a id="javtopscore" href="#maodian" style="background-color: white;color: #3273dc;font-weight: bold;">
+                                <span>JAV评分排序</span>
+                            </a>
+                        </div>
+                        <div style="border: 1px solid #3273dc;background-color: #f5f5f5;height: 2.8em;display: flex;">
+                            <a href="#maodian" style="color: #3273dc; font-weight: bold;">
+                                <span>屏蔽评分人数&nbsp&lt;&nbsp</span>
+                            </a>
+                            <input id="offusernum" name="offusernum" class="input" placeholder="0&nbsp人数" min="0" max="9999" type="number" 
+                                    style="height: 1.5em;width: 5.5em;padding: 2px;margin: 0.6em 1em 0 0;">
+                        </div>
+                    </div>
+                `);
+
+                $('#javtopscore').click(() => {
+                    let div_array = $(JAVDB_ITEM_SELECTOR);
+                    div_array.sort((a, b) => {
+                        let a_score = parseFloat($(a).attr("score"));
+                        let b_score = parseFloat($(b).attr("score"));
+                        if (a_score > b_score) {
+                            return -1;
+                        } else if (a_score === b_score) {
+                            return 0;
+                        } else {
+                            return 1;
+                        }
+                    });
+                    // 删除Dom列表数据关系，重新添加排序数据
+                    div_array.detach().appendTo("#waterfall");
+                    $('#javtopscore').css("background-color","#3273dc").css("color","white");
+                });
+
+                $('#offusernum').change(() => {
+                    let offusernum = $('#offusernum').val();
+                    if(offusernum){
+                        $(JAVDB_ITEM_SELECTOR).toArray().forEach(e => {
+                            parseInt($(e).attr("usernum")) < parseInt(offusernum) ? $(e).hide() : $(e).show();
+                        });
+                    }
+                });
+            }
         }
     }
 
