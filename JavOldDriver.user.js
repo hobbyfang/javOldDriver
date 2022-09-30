@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.7.0
+// @version      3.7.1
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -75,8 +75,9 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
-
+// v3.7.1  再优化blogjav预览图获取方式，优化预览图加载时间。修复了已知问题。
 // v3.7.0  增加javdb列表的JAV评分排序、屏蔽指定评分人数功能。优化blogjav预览图获取方式。
+
 // v3.6.0  原番号页面增加dmm、javdb评分展示及在线播放跳转、JAV跳转，增加javstore番号页改造，增加javdb瀑布流及列表增加JAV跳转和排版优化。
 //         原javlib番号页面自带预览图可点击查看，onejav列表简单优化，其他已知bug修复，部分代码优化。
 
@@ -333,23 +334,23 @@
                 return "https://onejav.com/search/" + avid;
             },
             /**
-             * 获取查询blogjav的url
+             * 获取查询blogjav的番号处理过后的查询字符
              * @param {String} avid 番号
-             * @returns {String}  返回符合blogjav查询番号参数的url
+             * @returns {String}  返回番号处理过后的查询字符
              */
-            getBlogJavSearchUrl: function(avid) {
+            getBlogJavSearchVal: function(avid) {
                 //FC2-PPV-9999999 => FC2+PPV+9999999 , HEYZO-9999 => HEYZO+9999
-                avid = avid.replace(/-/g, "+");
+                let cd = avid.replace(/-/g, "+");
                 // 不含空格的情况,同时只含有字母与数字
-                if (!(/\s+/g).test(avid) && (/^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]+$/g).test(avid)) {
+                if (!(/\s+/g).test(cd) && (/^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]+$/g).test(cd)) {
                     // ABP999 => ABP+999
                     // 取结尾数字
-                    let num = avid.match(/\d+$/gi);
+                    let num = cd.match(/\d+$/gi);
                     //前缀
-                    let prefix = avid.replace(num, "");
-                    avid = prefix + "+" + num;
+                    let prefix = cd.replace(num, "");
+                    cd = prefix + "+" + num;
                 }
-                return `https://www.google.com/search?q=${avid} site:blogjav.net`;
+                return cd;
             },
             /**
              * 获取查询jav321的url
@@ -456,31 +457,42 @@
              */
             addAvImg: function(avid, func, isZoom) {
                 let p = this.getBigPreviewImgUrlFromBlogjav(avid);
-                this.getBigPreviewImgUrlFromJavStore(avid);
+                let p2 = this.getBigPreviewImgUrlFromJavStore(avid);
                 p.then(imgUrl => {
-                    if (imgUrl !== null) {
-                        request(imgUrl, "", 10000).then((result) => {
-                            if (result.loadstuts && result.finalUrl.search(/removed.png/i) < 0) {
-                                GM_deleteValue(`temp_img_url_${avid}`);
-                                addImg(imgUrl, func, isZoom);
-                            } else {
-                                console.log("blogjav获取的图片地址已经被移除或加载失败");
-                                addJavArchiveImg.call(this);
-                            }
-                        });
-                    } else {
+                    if (imgUrl === null) {
                         addJavArchiveImg.call(this);
+                        return;
                     }
-
-                    function addJavArchiveImg() {
-                        imgUrl = GM_getValue(`temp_img_url_${avid}`, "");
-                        if (imgUrl === "") {
-                            console.log("没有找到预览图");
-                            //this.addImg("test", func, isZoom);
-                        } else {
+                    requestGM_XHR({
+                        url: imgUrl,
+                        timeout: 15000,
+                        onprogress: rsp => {
+                            //console.log("PROGRESS loaded:", rsp.loaded);
+                            if (rsp.loaded >= 10000) return true;
+                        },
+                    }).then(result => {
+                        if (result && result.finalUrl.search(/removed.png/i) < 0) {
                             GM_deleteValue(`temp_img_url_${avid}`);
                             addImg(imgUrl, func, isZoom);
+                        } else {
+                            Promise.reject("error");
                         }
+                    }).catch(msg => {
+                        console.log("blogjav获取的图片地址已经被移除或加载失败" + msg);
+                        addJavArchiveImg.call(this);
+                    });
+
+                    function addJavArchiveImg() {
+                        p2.then(url => {
+                            imgUrl = GM_getValue(`temp_img_url_${avid}`, "");
+                            if (imgUrl === "") {
+                                console.log("没有找到预览图");
+                                //this.addImg("test", func, isZoom);
+                            } else {
+                                GM_deleteValue(`temp_img_url_${avid}`);
+                                addImg(imgUrl, func, isZoom);
+                            }
+                        });
                     }
 
                     function addImg(targetImgUrl, func, isZoom) {
@@ -510,13 +522,13 @@
                     return Promise.resolve(null);
                 }
                 //请求搜索blogjav.net的番号
-                return request(Common.getBlogJavSearchUrl(avid), "", 15000).then((result) => {
+                return request(`https://www.bing.com/search?q=${Common.getBlogJavSearchVal(avid)}+site:blogjav.net`, "", 15000).then((result) => {
                     if (!result.loadstuts) {
-                        console.log("blogjav查找番号出错");
+                        console.log("从bing查找blogjav番号出错");
                         return null;
                     }
                     var doc = Common.parsetext(result.responseText);
-                    let a_array = $(doc).find("#rso .g .yuRUbf a");
+                    let a_array = $(doc).find("#b_results .b_algo h2 a");
                     let a = null;
                     console.log("avid:" + avid);
                     //如果找到全高清大图优先获取全高清的
@@ -524,9 +536,9 @@
                         if (i == 5) break;
                         // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
                         let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
-                        if (a_array[i].querySelector("h3").innerHTML.search(reg) > 0) {
+                        if (a_array[i].innerHTML.search(reg) > 0) {
                             if (!a) a = a_array[i];
-                            var fhd_idx = a_array[i].querySelector("h3").innerHTML.search(/FHD/i);
+                            var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
                             if (fhd_idx > 0) {
                                 a = a_array[i];
                                 break;
@@ -535,18 +547,49 @@
                     };
                     return Promise.resolve(a);
                 }).then(a => {
+                    if (a) {
+                        return Promise.resolve(a);
+                    } else {
+                        return request(`https://blogjav.net/?s=${Common.getBlogJavSearchVal(avid)}`, "", 15000).then((result) => {
+                            if (!result.loadstuts) {
+                                console.log("从blogjav查找番号出错");
+                                return null;
+                            }
+                            var doc = Common.parsetext(result.responseText);
+                            let a_array = $(doc).find(".entry-title a");
+                            let a = null;
+                            console.log("avid:" + avid);
+                            //如果找到全高清大图优先获取全高清的
+                            for (let i = 0; i < a_array.length; i++) {
+                                if (i == 5) break;
+                                // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
+                                let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
+                                if (a_array[i].innerHTML.search(reg) > 0) {
+                                    if (!a) a = a_array[i];
+                                    var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
+                                    if (fhd_idx > 0) {
+                                        a = a_array[i];
+                                        break;
+                                    }
+                                }
+                            };
+                            return Promise.resolve(a);
+                        });
+                    }
+                }).then(a => {
                     let targetImgUrl = "";
                     if (a) {
                         //请求调用内页详情的访问地址
                         return request(a.href, "https://pixhost.to/", 15000).then((result) => {
                             if (!result.loadstuts) return null;
                             let doc = Common.parsetext(result.responseText);
-                            let img_array = $(doc).find('.entry-content a img[data-lazy-src*="pixhost."]');
+                            let img_array = $(doc).find('.entry-content a img[data-lazy-src*="imagetwist."],.entry-content a img[data-lazy-src*="pixhost."]');
 
                             //如果找到内容大图
                             if (img_array.length > 0) {
                                 var new_img_src = $(img_array[img_array.length - 1]).data('lazySrc');
-                                targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
+                                targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('/th/', '/i/');
+                                if (/imagetwist/gi.test(targetImgUrl)) targetImgUrl = targetImgUrl.replace('.jpg', '.jpeg');
                                 console.log("blogjav获取的图片地址:" + targetImgUrl);
                                 if (targetImgUrl.length === 0) {
                                     return null;
@@ -602,7 +645,7 @@
                                 imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                     .replace('thumbs', 'images').replace('//t', '//img')
                                     .replace(/[\?*\"*]/, '');
-                                console.log("javarchive获取的图片地址:" + imgUrl);
+                                console.log("javstore获取的图片地址:" + imgUrl);
                                 GM_setValue(`temp_img_url_${avid}`, imgUrl);
                                 return Promise.resolve(imgUrl);
                             }
@@ -746,7 +789,7 @@
 
         // 磁链访问地址初始化
         if (isNewVersion || GM_getValue('btsow_url', undefined) === undefined) {
-            GM_setValue('btsow_url', 'btsow.click');
+            GM_setValue('btsow_url', 'btsow.cfd');
         }
         if (isNewVersion || GM_getValue('btdig_url', undefined) === undefined) {
             GM_setValue('btdig_url', 'www.btdig.com');
@@ -974,6 +1017,29 @@
                         response.finalUrl = url;
                         resolve(response);
                     },
+                });
+            });
+        }
+
+        function requestGM_XHR(details) {
+            return new Promise((resolve, reject) => {
+                console.log(`发起网址请求：${details.url}`);
+                GM_xmlhttpRequest({
+                    method: "GET",
+                    url: details.url,
+                    timeout: details.timeout > 0 ? details.timeout : 20000,
+                    onprogress: rsp => {
+                        if (details.onprogress(rsp)) resolve(rsp);
+                    },
+                    onload: rsp => resolve(rsp),
+                    onerror: rsp => {
+                        console.log(details.url + " error");
+                        reject(`error`);
+                    },
+                    ontimeout: rsp => {
+                        console.log(`${details.url} ${details.timeout > 0 ? details.timeout : 20000}ms timeout`);
+                        reject(`timeout`);
+                    }
                 });
             });
         }
@@ -1891,9 +1957,6 @@
                 full: function (src, data) {
                     var tab = this.create_empty_table();
                     tab.appendChild(thirdparty.nong.magnet_table.template.create_head());
-                    // for (var i = 0; i < data.length; i++) {
-                    //     tab.appendChild(thirdparty.nong.magnet_table.template.create_row(data[i]))
-                    // }
                     var loading = thirdparty.nong.magnet_table.template.create_loading();
                     tab.appendChild(loading);
                     return tab;
@@ -1985,7 +2048,7 @@
             searchMagnetRun: function () {
                 for (var i = 0; i < main_keys.length; i++) {
                     var v = main[main_keys[i]];
-                    if (v.re.test(location.href)) {
+                    if (new RegExp(v.re).test(location.href)) {
                         if (v.type === 0) {
                             try {
                                 main.cur_vid = v.vid();
@@ -2972,12 +3035,13 @@
                 let imgUrl = e.src;
                 imgUrl = imgUrl ? imgUrl : e.dataset.src;
                 imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
-                    .replace('thumbs', 'images').replace('//t', '//img')
-                    .replace(/[\?*\"*]/, '');
-                e.src = imgUrl;
+                    .replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
                 e.parentElement.href = "#";
                 e.parentElement.title = "返回顶部";
                 $(e.parentElement).attr("style","display: inherit;text-align: center;");
+                let $img = $(`<img src="${imgUrl}" border="0">`);
+                $(e.parentElement).append($img);
+                e.parentElement.removeChild(e);
             });
 
             $(".boxoleft").append(`
@@ -3011,7 +3075,7 @@
         javStoreScript();
         if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length){
             GM_addStyle(`
-                .min {width:66px;min-height: 233px;height:auto;cursor: pointer;} /*Common.addAvImg使用*/
+                .min {max-height: 535px;height:auto;cursor: pointer;} /*Common.addAvImg使用*/
                 .container {width: 100%;float: left;}
                 .col-md-3 {float: left;max-width: 260px;}
                 .col-md-9 {width: inherit;}
