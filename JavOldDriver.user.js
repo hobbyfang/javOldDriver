@@ -2541,7 +2541,7 @@
                         if ($(JAVDB_ITEM_SELECTOR).length && (this._count !== 0) && url === nextURL) {
                             if ($(`#waterfall>div>a[href="${$(elems[0]).find('a.box')[0].attr('href')}"]`).length > 0) {
                                 nextURL = undefined;
-                                elems = undefined;
+                                elems = [];
                             }
                         }
                         return {
