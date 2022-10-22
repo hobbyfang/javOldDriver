@@ -2537,12 +2537,11 @@
                                 link.target = "_blank";
                             }
                         }
-                        
                         // javdb列表 bug：一直有最后一页 console.log(`1 ${url}`);console.log(`2 ${nextURL}`);
                         if ($(JAVDB_ITEM_SELECTOR).length && (this._count !== 0) && url === nextURL) {
                             if ($(`#waterfall>div>a[href="${$(elems[0]).find('a.box')[0].attr('href')}"]`).length > 0) {
                                 nextURL = undefined;
-                                elems = [];
+                                elems = undefined;
                             }
                         }
                         return {
