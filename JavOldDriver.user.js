@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.0
+// @version      3.8.1
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -77,6 +77,7 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
+// v3.8.1  javlib、javbus、javdb新增了VR菜单入口，javbus新增了FC2菜单跳转，javdb修改了FC2菜单内容（需登录）。修复了已知问题。
 // v3.8.0  增加各Jav站点番号浏览记录缓存。增加javbus、javdb列表阅览番号标色。增加夸克在线播放的关联入口，夸克在线播放页排版调整。
 //         优化dmm评分数据获取，多数番号突破dmm地区访问限制。代码调整优化。修复了已知问题。
 
@@ -241,7 +242,7 @@
 
             // 磁链访问地址初始化
             if (isNewVersion || GM_getValue('btsow_url', undefined) === undefined) {
-                GM_setValue('btsow_url', 'btsow.cfd');
+                GM_setValue('btsow_url', 'btsow.beauty');
             }
             if (isNewVersion || GM_getValue('btdig_url', undefined) === undefined) {
                 GM_setValue('btdig_url', 'www.btdig.com');
@@ -253,7 +254,7 @@
                 GM_setValue('torrentkitty_url', 'www.torrentkitty.live');
             }
             if (isNewVersion || GM_getValue('javdb_url', undefined) === undefined) {
-                GM_setValue('javdb_url', 'javdb005.com');
+                GM_setValue('javdb_url', 'javdb006.com');
             }
             if (isNewVersion || GM_getValue('javlib_url', undefined) === undefined) {
                 GM_setValue('javlib_url', 'www.javlibrary.com');
@@ -705,7 +706,7 @@
                         imgUrl = GM_getValue(`temp_img_url_${avid}`, "");
                         if (imgUrl === "") {
                             console.log(`${avid} 没有找到预览图`);
-                            addImg(EMPTY_IMAGE_DATA, func, isZoom);
+                            addImg(EMPTY_IMAGE_DATA, func, false);
                         } else {
                             GM_deleteValue(`temp_img_url_${avid}`);
                             addImg(imgUrl, func, isZoom);
@@ -872,9 +873,22 @@
                             imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
                                 .replace('thumbs', 'images').replace('//t', '//img')
                                 .replace(/[\?*\"*]/, '');
-                            console.log("javstore获取的图片地址:" + imgUrl);
-                            GM_setValue(`temp_img_url_${avid}`, imgUrl);
-                            return Promise.resolve(imgUrl);
+
+                            return Common.requestGM_XHR({
+                                method: 'HEAD',
+                                url: imgUrl,
+                                headers: { 'referrer': imgUrl.replace(/^(https?:\/\/[^\/#&]+).*$/, '$1') },
+                                timeout: 5000
+                            }).then(result => {
+                                if (result.status == 200 && (imgUrl.replace(/^https?:\/\//, '') == result.finalUrl.replace(/^https?:\/\//, '') || result.finalUrl.search(/removed.png/i) < 0)) {
+                                    console.log("javstore获取的图片地址:" + imgUrl);
+                                    GM_setValue(`temp_img_url_${avid}`, imgUrl);
+                                    return Promise.resolve(imgUrl);
+                                } else {
+                                    console.log("javstore获取的图片地址已经被移除或加载失败");
+                                    return Promise.resolve();
+                                }
+                            });
                         }
                     });
                 }
@@ -1541,6 +1555,9 @@
                     // 增加同步数据到本地的触发按钮
                 }
 
+                // 新增VR发行菜单入口
+                $('.menul1 ul li:contains("新发行")').after('<li><a href="vl_genre.php?g=aaua">VR发行</a></li>');
+
                 // 处理javlib番号详情页面的脚本
                 if ($('.header').length && $('meta[name="keywords"]').length) {
                     //获取番号影片详情页的番号  例如：http://www.javlibrary.com/cn/?v=javli7j724
@@ -1715,6 +1732,11 @@
                     .info p {line-height: 18px!important;} 
                     .screencap img{	width:100%;	max-width: 1000px;}
                 `);
+                // 新增FC2菜单入口
+                $('#navbar ul.nav.navbar-nav li:eq(0)')
+                .after(`<li><a href="https://${GM_getValue('javdb_url')}/advanced_search?type=3&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h" target="_blank">FC2</a></li>`);
+                // 新增VR菜单入口
+                $('#navbar ul.nav.navbar-nav li:eq(0)').after('<li><a href="/search/VR&type=1">VR</a></li>');
                 // 指定站点页面加入瀑布流控制按钮
                 let li_elem = document.createElement('li');
                 $(li_elem).append($(a3));
@@ -1929,6 +1951,16 @@
         static javDBScript() {
             if ((/(JavDB)/g).test(document.title)) {
                 if ($('.app-desktop-banner').length) $('.app-desktop-banner').remove();
+                if ($('.modal.is-active.over18-modal').length) $('.modal.is-active.over18-modal').remove();
+
+                // 修改FC2菜单入口
+                $('.navbar-dropdown.is-boxed .navbar-item:contains("FC2")')
+                .attr("href","/advanced_search?type=3&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h");
+                // 新增VR菜单入口
+                $('.navbar-dropdown.is-boxed .navbar-item:eq(0)')
+                .after('<a class="navbar-item" href="/advanced_search?type=0&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&tags%5B%5D=212%7CVR&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h">VR</a>');
+                
+
                 // 瀑布流脚本
                 thirdparty.waterfallScrollInit();
 
