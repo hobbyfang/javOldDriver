@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.1
+// @version      3.8.2
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -77,6 +77,7 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
+// v3.8.2  修复javstore番号页图片显示问题,修复javstore备用预览图失效的问题。
 // v3.8.1  javlib、javbus、javdb新增了VR菜单入口，javbus新增了FC2菜单跳转，javdb修改了FC2菜单内容（需登录）。修复了已知问题。
 // v3.8.0  增加各Jav站点番号浏览记录缓存。增加javbus、javdb列表阅览番号标色。增加夸克在线播放的关联入口，夸克在线播放页排版调整。
 //         优化dmm评分数据获取，多数番号突破dmm地区访问限制。代码调整优化。修复了已知问题。
@@ -866,13 +867,13 @@
                     return promise2.then((result) => {
                         if (!result.loadstuts) return;
                         let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.news a img[alt*=".th"]');
+                        let img_array = $(doc).find('.news a font[size*="+1"]');
                         if (img_array.length > 0) {
-                            let imgUrl = img_array[img_array.length - 1].src;
-                            imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
-                            imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
-                                .replace('thumbs', 'images').replace('//t', '//img')
-                                .replace(/[\?*\"*]/, '');
+                            let imgUrl = img_array[img_array.length - 1].parentElement.href;
+                            // imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
+                            // imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                            //     .replace('thumbs', 'images').replace('//t', '//img')
+                            //     .replace(/[\?*\"*]/, '');
 
                             return Common.requestGM_XHR({
                                 method: 'HEAD',
@@ -2060,13 +2061,11 @@
                     $('.category_news_left_side,.slide_exlogo,.box_left_news.news_2n').remove();
                 }
                 // 显示大预览图
-                let img_array = $('.news a img[alt*=".th"]');
+                let img_array = $('.news a font[size*="+1"]');
                 img_array.toArray().forEach(e => {
-                    let imgUrl = e.src;
-                    imgUrl = imgUrl ? imgUrl : e.dataset.src;
-                    imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
-                        .replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
+                    let imgUrl = e.parentElement.href;
                     e.parentElement.href = "#";
+                    e.parentElement.target = "";
                     e.parentElement.title = "返回顶部";
                     $(e.parentElement).attr("style", "display: inherit;text-align: center;");
                     let $img = $(`<img src="${imgUrl}" border="0">`);
