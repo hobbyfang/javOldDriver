@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.2
+// @version      3.8.3
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -77,6 +77,7 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
+// v3.8.3  修复javstore22年12月番号视频内容预览大图改版前后的图片获取及显示兼容问题。解决获取dmm评价数据受18岁询问限制。
 // v3.8.2  修复javstore番号页图片显示问题,修复javstore备用预览图失效的问题。
 // v3.8.1  javlib、javbus、javdb新增了VR菜单入口，javbus新增了FC2菜单跳转，javdb修改了FC2菜单内容（需登录）。修复了已知问题。
 // v3.8.0  增加各Jav站点番号浏览记录缓存。增加javbus、javdb列表阅览番号标色。增加夸克在线播放的关联入口，夸克在线播放页排版调整。
@@ -127,6 +128,10 @@
     'use strict';
     const EMPTY_IMAGE_DATA = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAB4CAMAAABsOSjPAAAAn1BMVEUAAAD/lgD/x3f/zoj/nRH/3Kr/+e7/sD//68z/1Zj/qzP/skT/uVX/9eX/pCL/oh3/wGb/8d3/4LL/5Lv/2aL/tUv/kAD/0o//9uj/v2L/mQn//vv//Pf/rjf/+vL/1pn/2pT/mAX/kwD/+/X/9OH/4rb/qzD/qSX/mAH/6sn/6cL/26f/y4D/nxr/vV7/uU//wnH/7tb/1YX/wEL/nypWdfcGAAAAAXRSTlMAQObYZgAABOdJREFUeNrs2F1TgkAYhmGeRMRWLbDlS5BAUPysqf7/b6sYt600dQ8a3nW4T3Teo2uWHRYw2tquMOiU5mhDl64ADR36jdZhsVv0X7XoFn2iFt2iT9Si/wG93AxY73Q8fLAooW2GizI7MRm0j4tLCiJoBTPyN4sE2s6h0o4EmkMprySAXmaK6CcC6A0UG1nNowdQLFo2j2aQmTxMKpyrbB7dk5rd54VfLXAmlxI6NOqKrUZocygOG43QXEycSB90KCZTUx90Mvk6bvRBV+P95F6jPY1RUQ9SrW55uPOdqR3id3kUEUYDkZkdmu8da731KrLoI3mPxkfDV486Ovthrps800aPUrs7l2ZR6uV00XPrc2GZMMtWC7Lo26Aez7gwyyxGFJ0MxWHOhVlmlW7pugE1dL03hPpl/y/wA2KfxX6gk++62cSoixkShxba9fuywjgsfgKwHZNCHyuYfVtvjjqfOHqdSWHMsG8XU0Z3I6Av98ZXi5vOR5uNQxDtVoBQzzhk+f63Sw+9juQenjKiz9Pj/oNsnQ4qYeNpZ0H1JYBBsWzVPPoZim2L5tElFOsRuOXFc6iVEkAbXSiVTCigjRAKmTaNE/G9nfNtbRsGwnjudBKW5Gk2ZtCtsJcb7N2+/5ebHv1JXROEkkFxih6IkSr57ufrnaQ2Ia93UP/4c5pt3Ar16dvfE509XpT/Hb62FX593852YHp9+dLWz3MfTfc686cQbmpAD+iGBvSAbmhAD+iGBvSAbmhAD+iGBvSAbuhjoDdKErYPmDSBttISWRvzhJI899m1tDShFRW5B6AnomBqSzXn3fWWANPchDbMMxF74segq3khf/h3X3g3b+Ek02V3aUFX+2QuD2l9e6vFH35VimjaQaPTr7mVHtW+XB6TAXRO5uVgRP8fNPdCM81WyCsp0dOeiBaDGY4o28GgqB00C7l8s5RhHx8iUFK4BW0dkdMpoyY493E4TJ5ydFUgCoFUL/RMQkViriXKGKgIS26pN2ht4a1Az7WkpZg5FuIGs8XBlrocp2uC59LNsv3QlO/2uH9DgwEINws7kmSdWWqZAE7jQRSMlGGPJULzgnv0EVqn1W9B6WP2CqcuuaJkZioOSN8BHVZHHoZtZIELXEL8cQ7JQrIiVXgPfXGYBCOeJKWGOmYEoANHpUBbuPKANrUFCy6aVWkJNdIPzYBzIArx4hBPQJucDj72HYVdduThtMXQpsjF4SVX0RFaJ9LqJLl0FTqatQgDPNdlowNaXyPtk5EKyPl2kzyuggdBytj96pGjKiTLFdqRugFt3kFzju+a/Sm0MnTOvP5IAzVlAeotxF6YLlYigaDAHfh8gpw8rhU6Q0U5pIdGKekMvd2ABqCCWcYMC9S5ACAxVS38diEaR1kqBwoGcImvrAAbUC7J2ny/eVtAgw1yZUjfgjZCZXE3lOUL9BxdrVIdNKEnKuIYX1egLZy4sphMBq0ggAB13bprOCu1zwsWCqORHmiXM8hSn9HCZ/aspdC000Nx1npZGVXFKl0AwmwvVuU5a4lcXgOqlLqy8ARUZnUcgnjXMdcjiI4ty7q4W9kWHjXx2oDul+rdiU/yR4C28SV9B5SzQJtr0nfoLNDlIOFNz9zTQKfi031TzwN9hwb0gG5oQA/oDxR9iq80ehI9PfQT6amhh4Y+k/4BYXA+w/0JM4sAAAAASUVORK5CYII=';
     const JAVDB_ITEM_SELECTOR = '.movie-list.v.cols-4.vcols-8 .item, .movie-list.v.cols-4.vcols-5 .item, .movie-list.h.cols-4.vcols-8 .item, .movie-list.h.cols-4.vcols-5 .item';
+    const BTSOW_DOMAIN = 'btsow.beauty';
+    const JAVDB_DOMAIN = 'javdb007.com';
+    const TORRENTKITTY_DOMAIN = 'www.torrentkitty.live';
+    
     // 115用户ID
     let jav_userID = GM_getValue('jav_user_id', 0);
     // icon图标
@@ -243,7 +248,7 @@
 
             // 磁链访问地址初始化
             if (isNewVersion || GM_getValue('btsow_url', undefined) === undefined) {
-                GM_setValue('btsow_url', 'btsow.beauty');
+                GM_setValue('btsow_url', BTSOW_DOMAIN);
             }
             if (isNewVersion || GM_getValue('btdig_url', undefined) === undefined) {
                 GM_setValue('btdig_url', 'www.btdig.com');
@@ -252,10 +257,10 @@
                 GM_setValue('nyaa_url', 'sukebei.nyaa.si');
             }
             if (isNewVersion || GM_getValue('torrentkitty_url', undefined) === undefined) {
-                GM_setValue('torrentkitty_url', 'www.torrentkitty.live');
+                GM_setValue('torrentkitty_url', TORRENTKITTY_DOMAIN);
             }
             if (isNewVersion || GM_getValue('javdb_url', undefined) === undefined) {
-                GM_setValue('javdb_url', 'javdb006.com');
+                GM_setValue('javdb_url', JAVDB_DOMAIN);
             }
             if (isNewVersion || GM_getValue('javlib_url', undefined) === undefined) {
                 GM_setValue('javlib_url', 'www.javlibrary.com');
@@ -867,13 +872,15 @@
                     return promise2.then((result) => {
                         if (!result.loadstuts) return;
                         let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.news a font[size*="+1"]');
+                        let img_array = $(doc).find('.news a font[size*="+1"],.news a img[alt*=".th"]');
                         if (img_array.length > 0) {
                             let imgUrl = img_array[img_array.length - 1].parentElement.href;
-                            // imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
-                            // imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
-                            //     .replace('thumbs', 'images').replace('//t', '//img')
-                            //     .replace(/[\?*\"*]/, '');
+                            if(img_array[0].tagName === 'IMG'){
+                                imgUrl = img_array[img_array.length - 1].src;
+                                imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
+                                imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                                    .replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');                            
+                            }
 
                             return Common.requestGM_XHR({
                                 method: 'HEAD',
@@ -908,6 +915,7 @@
                 timeout: 15000,
                 headers: {
                     "Accept-Language": "ja-JP", //突破dmm地区访问限制，部分作品限制日本ip访问，例如STARS-706
+                    "cookie": "age_check_done=1;" //跳过18岁以上限制
                 },
             }).then((result) => {
                 var doc = Common.parsetext(result.responseText);
@@ -917,7 +925,7 @@
                 dmmData.user_num = $(doc).find(".d-review__evaluates strong").text();
                 dmmData.url = dmmIdUrl;
                 dmmData.finalUrl = result.finalUrl;
-                return dmmData;
+                return dmmData; 
             }).catch(msg => {
                 return {};
             });
@@ -1588,15 +1596,6 @@
                         }
 
                         Common.getDmmData(`https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=${dmmId}/`).then((dmmData) => {
-                            // if(dmmData.collect_num){
-                            //     $div_zuobiao.before(addLinkHtml(dmmData));
-                            // }
-                            // else{
-                            //     let dmmId = Common.getDmmId($('#video_jacket_img').attr('src'));
-                            //     Common.getDmmData(`https://www.dmm.co.jp/mono/dvd/-/detail/=/cid=${dmmId}/`).then((dmmData) => {
-                            //         $div_zuobiao.before(addLinkHtml(dmmData));
-                            //     });
-                            // }
                             $div_zuobiao.before(addLinkHtml(dmmData));
 
                             function addLinkHtml(dmmData) {
@@ -2061,9 +2060,17 @@
                     $('.category_news_left_side,.slide_exlogo,.box_left_news.news_2n').remove();
                 }
                 // 显示大预览图
-                let img_array = $('.news a font[size*="+1"]');
+                let img_array = $('.news a font[size*="+1"],.news a img[alt*=".th"]');
+                //if (img_array.length == 0) $(doc).find('.news a img[alt*=".th"]');
                 img_array.toArray().forEach(e => {
                     let imgUrl = e.parentElement.href;
+                    if(e.tagName === 'IMG'){
+                        imgUrl = img_array[img_array.length - 1].src;
+                        imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
+                        imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
+                            .replace('thumbs', 'images').replace('//t', '//img')
+                            .replace(/[\?*\"*]/, '');
+                    }
                     e.parentElement.href = "#";
                     e.parentElement.target = "";
                     e.parentElement.title = "返回顶部";
