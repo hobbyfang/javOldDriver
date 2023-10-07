@@ -1633,6 +1633,7 @@
                                 <td class="header">JAV跳转:</td>
                                 <td id="linkJump">
                                     <span class="genre"><a href="https://${GM_getValue('javbus_url')}/${AVID}" target="_blank">JavBus</a></span>
+				    <span class="genre"><a href="https://www.dmm.co.jp/search/=/searchstr=${AVID}" target="_blank">FANZA</a></span>
                                 </td>
                             </tr></tbody></table>
                         </div>
