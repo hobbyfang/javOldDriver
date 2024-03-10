@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.3
+// @version      3.8.4
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -77,6 +77,7 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
+// v3.8.4  增加javdb影片详情页的115离线快捷键及115在线播放入口。
 // v3.8.3  修复javstore22年12月番号视频内容预览大图改版前后的图片获取及显示兼容问题。解决获取dmm评价数据受18岁询问限制。
 // v3.8.2  修复javstore番号页图片显示问题,修复javstore备用预览图失效的问题。
 // v3.8.1  javlib、javbus、javdb新增了VR菜单入口，javbus新增了FC2菜单跳转，javdb修改了FC2菜单内容（需登录）。修复了已知问题。
@@ -1964,6 +1965,43 @@
                 // 瀑布流脚本
                 thirdparty.waterfallScrollInit();
 
+		if ($("div.video-detail")) {
+            var AVID = $("a.button.is-white.copy-to-clipboard")[0].dataset
+          .clipboardText;
+          //去除广告
+          $("div.top-meta").remove();
+
+          //查找115是否有此番号
+          Common.search115Data(AVID, (BOOLEAN_TYPE, playUrl, pc) => {
+            if (BOOLEAN_TYPE) {
+              let $imgObj = $("a.cover-container");
+              $imgObj.after(`
+                            <div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">
+                                <p style="color: white;font-size: 40px;margin: 0 0 0px;display: inline-block;text-align: left;">115网盘已拥有此片</p>
+                                <a target="_blank" href="${playUrl}">
+                                <p style="color: white;font-size: 40px;margin: 0 0 0px;display: inline-block;text-align: right;width: 50%;">115在线播放 ►</p></a>
+                            </div>
+                        `);
+            }
+            console.log("番号输出:" + AVID);
+          });
+
+          let mag_array = $("div.magnet-links .item");
+          for (var i = 0; i < mag_array.length; i++) {
+            let magEle = mag_array[i];
+            let magnetUrl = $(magEle).find("a")[0].href;
+            // console.log("磁链输出:" + magnetUrl);
+            $(magEle).find(".buttons.column").append(`<button class=\"button is-info is-small nong-offline-download\" href=\"${magnetUrl}\" type=\"button\">&nbsp;离线下载&nbsp;</button>`);
+            $(magEle)
+              .find(".nong-offline-download")[0]
+              .addEventListener(
+                "click",
+                thirdparty.nong.magnet_table.handle_event,
+                false
+              );
+          }
+        }
+
                 // 非小封面列表
                 if (!$("#waterfall").hasClass("v cols-4 vcols-8")) {
                     // 如果没有，加入tabs元素
@@ -3126,7 +3164,8 @@
                 },
                 handle_event: (event) => {
                     var maglink = event.target.parentElement.parentElement.getAttribute('maglink')
-                        || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
+                        || event.target.parentElement.parentElement.parentElement.getAttribute('maglink')
+			    || event.target.getAttribute("href");
                     if (event.target.className == 'nong-copy') {
                         event.target.innerHTML = '成功';
                         maglink = maglink.substr(0, 60);
