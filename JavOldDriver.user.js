@@ -3166,7 +3166,7 @@
                     var maglink = event.target.parentElement.parentElement.getAttribute('maglink')
                         || event.target.parentElement.parentElement.parentElement.getAttribute('maglink')
 			    || event.target.getAttribute("href");
-                    if (event.target.className == 'nong-copy') {
+                    if ($(event.target).hasClass("nong-copy")) {
                         event.target.innerHTML = '成功';
                         maglink = maglink.substr(0, 60);
                         GM_setClipboard(maglink);
@@ -3175,7 +3175,7 @@
                         }, 1000);
                         event.preventDefault(); //阻止跳转
                     }
-                    else if (event.target.className == 'nong-offline-download') {
+                    else if ($(event.target).hasClass("nong-offline-download")) {
                         maglink = maglink.substr(0, 60);
                         GM_setValue('magnet', maglink);
                         //获取115 token接口
