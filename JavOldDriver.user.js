@@ -1848,11 +1848,24 @@
                     // 先执行一次，针对已经提前加载出磁链列表结果时有效
                     this.javbusUs();
                     // 针对为提前加载出磁链列表结果，通过dom元素是否改变事件来判断是否执行功能。
-                    $('#magnet-table').on("DOMNodeInserted", () => {
+		    // DOMNodeInserted新版 Chrome中已经被废弃
+                    // $('#magnet-table').on("DOMNodeInserted", () => {
+                    //     // 触发后关闭监听事件
+                    //     $('#magnet-table').off();
+                    //     this.javbusUs();
+                    // });
+		    // 使用MutationObserver API替换DOMNodeInserted
+		    const observer = new MutationObserver((mutationsList, observer) => {
                         // 触发后关闭监听事件
-                        $('#magnet-table').off();
+                        observer.disconnect(); // 停止监听
                         this.javbusUs();
                     });
+                    // 指定要观察的目标节点
+                    const targetNode = document.getElementById('magnet-table');
+                    // 配置观察选项
+                    const config = { childList: true };
+                    // 开始观察目标节点
+                    observer.observe(targetNode, config);
 
                     // 挊
                     thirdparty.nong.searchMagnetRun();
