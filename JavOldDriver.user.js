@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.3
+// @version      3.8.4
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -35,7 +35,7 @@
 // avsox有无码jav资源，含FC2  tellme.pw/avsox
 // @include      *://*avsox.*/*
 
-// jav321有素人资源、排行榜      
+// jav321有素人资源、排行榜
 // @include      *://*jav321.com/video/*
 
 // javdb有各资源排行榜，但部分需付费  javdb.com
@@ -77,6 +77,7 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
+// v3.8.4  增加javdb影片详情页的115离线快捷键及115在线播放入口。
 // v3.8.3  修复javstore22年12月番号视频内容预览大图改版前后的图片获取及显示兼容问题。解决获取dmm评价数据受18岁询问限制。
 // v3.8.2  修复javstore番号页图片显示问题,修复javstore备用预览图失效的问题。
 // v3.8.1  javlib、javbus、javdb新增了VR菜单入口，javbus新增了FC2菜单跳转，javdb修改了FC2菜单内容（需登录）。修复了已知问题。
@@ -131,7 +132,7 @@
     const BTSOW_DOMAIN = 'btsow.beauty';
     const JAVDB_DOMAIN = 'javdb007.com';
     const TORRENTKITTY_DOMAIN = 'www.torrentkitty.live';
-    
+
     // 115用户ID
     let jav_userID = GM_getValue('jav_user_id', 0);
     // icon图标
@@ -414,7 +415,7 @@
          * @param {string} url 对象参数
          * @param {string} referrer
          * @param {number} timeoutInt 超时毫秒数
-         * @returns {Promise} 
+         * @returns {Promise}
          */
         static request(url, referrerStr, timeoutInt) {
             return new Promise((resolve, reject) => {
@@ -455,7 +456,7 @@
         /**
          * 发起网络请求
          * @param {*} details 对象参数
-         * @returns {Promise} 
+         * @returns {Promise}
          */
         static requestGM_XHR(details) {
             return new Promise((resolve, reject) => {
@@ -485,7 +486,7 @@
         }
 
         /**
-         * 获取带-的番号 
+         * 获取带-的番号
          * @param {String} avid 番号如:ABP888
          * @returns {String}  带-的番号
          */
@@ -879,7 +880,7 @@
                                 imgUrl = img_array[img_array.length - 1].src;
                                 imgUrl = imgUrl ? imgUrl : img_array[0].dataset.src;
                                 imgUrl = imgUrl.replace('pixhost.org', 'pixhost.to').replace('.th', '')
-                                    .replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');                            
+                                    .replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '');
                             }
 
                             return Common.requestGM_XHR({
@@ -904,7 +905,7 @@
         }
         /**
          * 获取Dmm对应番号的数据
-         * @param {string} dmmIdUrl DmmId网址 
+         * @param {string} dmmIdUrl DmmId网址
          * @returns {Promise}  Promise内实现异步返回参数dmmData
          */
         static getDmmData(dmmIdUrl) {
@@ -925,14 +926,14 @@
                 dmmData.user_num = $(doc).find(".d-review__evaluates strong").text();
                 dmmData.url = dmmIdUrl;
                 dmmData.finalUrl = result.finalUrl;
-                return dmmData; 
+                return dmmData;
             }).catch(msg => {
                 return {};
             });
         }
         /**
          * 获取JavDb对应番号的数据
-         * @param {string} avid av编号 
+         * @param {string} avid av编号
          * @returns {Promise}  Promise内实现异步返回参数javdbData
          */
         static getJavDbData(avid) {
@@ -1729,7 +1730,7 @@
             let a3 = this.waterfallButton();
             if ((/(JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) {
                 GM_addStyle(`
-                    .info p {line-height: 18px!important;} 
+                    .info p {line-height: 18px!important;}
                     .screencap img{	width:100%;	max-width: 1000px;}
                 `);
                 // 新增FC2菜单入口
@@ -1848,11 +1849,24 @@
                     // 先执行一次，针对已经提前加载出磁链列表结果时有效
                     this.javbusUs();
                     // 针对为提前加载出磁链列表结果，通过dom元素是否改变事件来判断是否执行功能。
-                    $('#magnet-table').on("DOMNodeInserted", () => {
+                    // DOMNodeInserted新版 Chrome中已经被废弃
+                    // $('#magnet-table').on("DOMNodeInserted", () => {
+                    //     // 触发后关闭监听事件
+                    //     $('#magnet-table').off();
+                    //     this.javbusUs();
+                    // });
+		            // 使用MutationObserver API替换DOMNodeInserted
+		            const observer = new MutationObserver((mutationsList, observer) => {
                         // 触发后关闭监听事件
-                        $('#magnet-table').off();
+                        observer.disconnect(); // 停止监听
                         this.javbusUs();
                     });
+                    // 指定要观察的目标节点
+                    const targetNode = document.getElementById('magnet-table');
+                    // 配置观察选项
+                    const config = { childList: true };
+                    // 开始观察目标节点
+                    observer.observe(targetNode, config);
 
                     // 挊
                     thirdparty.nong.searchMagnetRun();
@@ -1959,10 +1973,47 @@
                 // 新增VR菜单入口
                 $('.navbar-dropdown.is-boxed .navbar-item:eq(0)')
                 .after('<a class="navbar-item" href="/advanced_search?type=0&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&tags%5B%5D=212%7CVR&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h">VR</a>');
-                
+
 
                 // 瀑布流脚本
                 thirdparty.waterfallScrollInit();
+
+		if ($("div.video-detail")) {
+            var AVID = $("a.button.is-white.copy-to-clipboard")[0].dataset
+          .clipboardText;
+          //去除广告
+          $("div.top-meta").remove();
+
+          //查找115是否有此番号
+          Common.search115Data(AVID, (BOOLEAN_TYPE, playUrl, pc) => {
+            if (BOOLEAN_TYPE) {
+              let $imgObj = $("a.cover-container");
+              $imgObj.after(`
+                            <div style="position: absolute;width: 100%;height: 12%;background: rgba(0,0,0,0.5);top: 88%;left: 0;">
+                                <p style="color: white;font-size: 40px;margin: 0 0 0px;display: inline-block;text-align: left;">115网盘已拥有此片</p>
+                                <a target="_blank" href="${playUrl}">
+                                <p style="color: white;font-size: 40px;margin: 0 0 0px;display: inline-block;text-align: right;width: 50%;">115在线播放 ►</p></a>
+                            </div>
+                        `);
+            }
+            console.log("番号输出:" + AVID);
+          });
+
+          let mag_array = $("div.magnet-links .item");
+          for (var i = 0; i < mag_array.length; i++) {
+            let magEle = mag_array[i];
+            let magnetUrl = $(magEle).find("a")[0].href;
+            // console.log("磁链输出:" + magnetUrl);
+            $(magEle).find(".buttons.column").append(`<button class=\"button is-info is-small nong-offline-download\" href=\"${magnetUrl}\" type=\"button\">&nbsp;离线下载&nbsp;</button>`);
+            $(magEle)
+              .find(".nong-offline-download")[0]
+              .addEventListener(
+                "click",
+                thirdparty.nong.magnet_table.handle_event,
+                false
+              );
+          }
+        }
 
                 // 非小封面列表
                 if (!$("#waterfall").hasClass("v cols-4 vcols-8")) {
@@ -1989,7 +2040,7 @@
                                 <a href="#maodian" style="color: #3273dc; font-weight: bold;">
                                     <span>屏蔽评分人数&nbsp&lt;&nbsp</span>
                                 </a>
-                                <input id="offusernum" name="offusernum" class="input" placeholder="0&nbsp人数" min="0" max="9999" type="number" 
+                                <input id="offusernum" name="offusernum" class="input" placeholder="0&nbsp人数" min="0" max="9999" type="number"
                                         style="height: 1.5em;width: 5.5em;padding: 2px;margin: 0.6em 1em 0 0;">
                             </div>
                         </div>
@@ -2446,15 +2497,15 @@
                                         <a title="可忽略" href="https://${GM_getValue('avsox_url')}/cn/search/${avid}" target="_blank">
                                             <span class="tag hobby" style="margin-right: 5px;background-color:#bf9be6;display:none;">avsox</span>
                                         </a>
-                                        <a title="无码 JAV资源站" href="https://${GM_getValue('javbus_url')}/${avid}" target="_blank">               
+                                        <a title="无码 JAV资源站" href="https://${GM_getValue('javbus_url')}/${avid}" target="_blank">
                                             <span class="tag hobby" style="margin-right: 5px;background-color:#febe00;">JavBus</span>
                                         </a>
                                         <a title="有码 JAV资源站" href="https://${GM_getValue('javlib_url')}/cn/vl_searchbyid.php?keyword=${avid}" target="_blank">
-                                            <span class="tag hobby" style="margin-right: 0px;background-color:#f908bb;">JavLib</span>    
+                                            <span class="tag hobby" style="margin-right: 0px;background-color:#f908bb;">JavLib</span>
                                         </a>
-                                        <a title="FC2 JAV资源站" href="${Common.getOneJavSearchUrl(avid)}" target="_blank">            
+                                        <a title="FC2 JAV资源站" href="${Common.getOneJavSearchUrl(avid)}" target="_blank">
                                             <span class="tag hobby" style="margin-right: 3px;background-color:#00d1b2;">OneJav</span>
-                                        </a>  
+                                        </a>
                                     `);
                             let $a = $(`
                                         <a title="素人 JAV资源站" href="javascript:void(0);">
@@ -3126,8 +3177,9 @@
                 },
                 handle_event: (event) => {
                     var maglink = event.target.parentElement.parentElement.getAttribute('maglink')
-                        || event.target.parentElement.parentElement.parentElement.getAttribute('maglink');
-                    if (event.target.className == 'nong-copy') {
+                        || event.target.parentElement.parentElement.parentElement.getAttribute('maglink')
+			    || event.target.getAttribute("href");
+                    if ($(event.target).hasClass("nong-copy")) {
                         event.target.innerHTML = '成功';
                         maglink = maglink.substr(0, 60);
                         GM_setClipboard(maglink);
@@ -3136,7 +3188,7 @@
                         }, 1000);
                         event.preventDefault(); //阻止跳转
                     }
-                    else if (event.target.className == 'nong-offline-download') {
+                    else if ($(event.target).hasClass("nong-offline-download")) {
                         maglink = maglink.substr(0, 60);
                         GM_setValue('magnet', maglink);
                         //获取115 token接口
