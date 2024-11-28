@@ -1771,6 +1771,7 @@
                 $(".active").closest(".navbar-nav").append($(li_elem));
                 $(".ad-box").remove();
 
+		$(".ad-box").remove();
                 // 瀑布流脚本
                 thirdparty.waterfallScrollInit();
 
