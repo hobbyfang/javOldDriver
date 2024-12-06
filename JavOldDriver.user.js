@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.6
+// @version      3.8.7
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -15,10 +15,10 @@
 // @require      https://cdn.jsdelivr.net/npm/sweetalert2@9.17.2/dist/sweetalert2.all.min.js
 // @resource     icon https://cdn.jsdelivr.net/gh/hobbyfang/javOldDriver@master/115helper_icon_001.jpg
 
-// javlib主要有码jav资源、排行榜、点评
+// javlib主要有码jav资源、排行榜、点评，最新地址在github.com/javlibcom
 // @include      *://*javlibrary.com/*
 // @include      *://*javlib.com/*
-// @include      *://*.o83h.com/*
+// @include      *://*r86m.com/*
 
 // javbus有无码jav资源、论坛
 // @include      *://*javbus.com/*
@@ -77,6 +77,7 @@
 // 已知问题：javlib加了Cloudflare防御，导致列表大部分功能失效。如用他们新网址相对好些，但是也是半残状态。目前暂不知可行处理方案，先就这样了。
 //          如有参考方案，可留言反馈。javlib新网址,能在github上查找到。另外blogjav站应该是没了，少了一个预览大图源。
 
+// v3.8.7  修复部分页面预览图失效的问题。javlib新增了FC2菜单跳转（onejav）。
 // v3.8.6  增加了115离线成功，3秒后刷新当前页面。修复了磁力列表下javdb查找问题。
 // v3.8.5  增加javdb影片详情页的115离线快捷键及115在线播放入口（by Stel000）。修复因新版chrome中DOMNodeInserted事件废弃导致无法离线下载问题。
 // v3.8.4  修复了javlib同步问题。修复了115网盘关联视频问题。
@@ -134,6 +135,7 @@
     const BTSOW_DOMAIN = 'btsow.motorcycles';
     const JAVDB_DOMAIN = 'javdb368.com';
     const TORRENTKITTY_DOMAIN = 'www.torrentkitty.one';
+    const MMTV_DOMAIN = '7mmtv.sx';
     
     // 115用户ID
     let jav_userID = GM_getValue('jav_user_id', 0);
@@ -493,12 +495,15 @@
          * @returns {String}  带-的番号
          */
         static getAvCode(avid) {
+            //debugger;
             // 带-的番号不处理，除了-0 如：DSVR-01167
             if (avid.match(/-[^0]/g)) return avid;
             // 999999_001,999999-001 不处理
             if (avid.match(/^[0-9-_]+$/g)) return avid;
             // crazyasia99999,sm999,video_999,BrazzersExxtra.99.99.99 不处理
             if (avid.match(/^(crazyasia|sm|video_|BrazzersExxtra)+/gi)) return avid;
+            //去除开头的FC2
+            avid = avid.replace(/\b(FC2+)/gi, ""); 
             let letter = avid.match(/[a-z|A-Z]+/gi);
             let num = avid.match(/\d+$/gi)[0];
             if (num.length > 3) {
@@ -684,11 +689,11 @@
          * @param {boolean} isZoom 是否放大,默认true
          */
         static addAvImg(avid, func, isZoom) {
-            //let p = Common.getBigPreviewImgUrlFromBlogjav(avid);
+            let p = Common.getBigPreviewImgUrlFromBlogjav(avid);
             let p2 = Common.getBigPreviewImgUrlFromJavStore(avid);
-            p2.then(imgUrl => {
-                if (imgUrl === null) {
-                    //addJavArchiveImg.call(this);
+            p.then(imgUrl => {
+                if (!imgUrl || imgUrl === null) {
+                    addJavArchiveImg.call(this);
                     return;
                 }
 
@@ -759,72 +764,52 @@
                 return Promise.resolve(null);
             }
             //请求搜索blogjav.net的番号
-            return Common.request(`https://www.bing.com/search?q=${Common.getBlogJavSearchVal(avid)}+site:blogjav.net&mkt=ja-JP`, "", 3000).then((result) => {
-                if (!result.loadstuts) {
-                    console.log("从bing查找blogjav番号出错");
-                    return null;
-                }
-                var doc = Common.parsetext(result.responseText);
-                let a_array = $(doc).find("#b_results .b_algo h2 a");
-                let a = null;
-                console.log("avid:" + avid);
-                //如果找到全高清大图优先获取全高清的
-                for (let i = 0; i < a_array.length; i++) {
-                    if (i == 5) break;
-                    // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
-                    let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
-                    if (a_array[i].innerHTML.search(reg) > 0) {
-                        if (!a) a = a_array[i];
-                        var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
-                        if (fhd_idx > 0) {
-                            a = a_array[i];
-                            break;
-                        }
-                    }
-                };
-                return Promise.resolve(a);
-            }).then(a => {
-                if (a) {
-                    return Promise.resolve(a);
-                } else {
-                    return Common.request(`https://blogjav.net/?s=${Common.getBlogJavSearchVal(avid)}`, "", 15000).then((result) => {
-                        if (!result.loadstuts) {
-                            console.log("从blogjav查找番号出错");
-                            return null;
-                        }
-                        var doc = Common.parsetext(result.responseText);
-                        let a_array = $(doc).find(".entry-title a");
-                        let a = null;
-                        console.log("avid:" + avid);
-                        //如果找到全高清大图优先获取全高清的
-                        for (let i = 0; i < a_array.length; i++) {
-                            if (i == 5) break;
-                            // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
-                            let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
-                            if (a_array[i].innerHTML.search(reg) > 0) {
-                                if (!a) a = a_array[i];
-                                var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
-                                if (fhd_idx > 0) {
-                                    a = a_array[i];
-                                    break;
-                                }
-                            }
-                        };
-                        return Promise.resolve(a);
-                    });
-                }
-            }).then(a => {
+            return Common.searchBing(Common.getBlogJavSearchVal(avid),"blogjav.net")
+            // .then(a => {
+            //     if (a) {
+            //         return Promise.resolve(a);
+            //     } else {
+            //         return Common.request(`https://blogjav.net/?s=${Common.getBlogJavSearchVal(avid)}`, "", 15000).then((result) => {
+            //             if (!result.loadstuts) {
+            //                 console.log("从blogjav查找番号出错");
+            //                 return null;
+            //             }
+            //             var doc = Common.parsetext(result.responseText);
+            //             let a_array = $(doc).find(".entry-title a");
+            //             let a = null;
+            //             console.log("avid:" + avid);
+            //             //如果找到全高清大图优先获取全高清的
+            //             for (let i = 0; i < a_array.length; i++) {
+            //                 if (i == 5) break;
+            //                 // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
+            //                 let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
+            //                 if (a_array[i].innerHTML.search(reg) > 0) {
+            //                     if (!a) a = a_array[i];
+            //                     var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
+            //                     if (fhd_idx > 0) {
+            //                         a = a_array[i];
+            //                         break;
+            //                     }
+            //                 }
+            //             };
+            //             return Promise.resolve(a);
+            //         });
+            //     }
+            //})
+            .then(url => {
                 let targetImgUrl = "";
-                if (a) {
+                if (url.length > 0) {
                     //请求调用内页详情的访问地址
-                    return Common.request(a.href, "https://pixhost.to/", 15000).then((result) => {
+                    return Common.request(url, "https://pixhost.to/", 15000).then((result) => {
+                        //debugger;
                         if (!result.loadstuts) return null;
                         let doc = Common.parsetext(result.responseText);
-                        let img_array = $(doc).find('.entry-content a img[data-lazy-src*="imagetwist."],.entry-content a img[data-lazy-src*="pixhost."]');
+                        let img_array = $(doc).find('.entry-content a img[data-lazy-src*="imagetwist."],.entry-content a img[data-lazy-src*="pixhost."],.entry-content a img[data-src*="pixhost."]');
 
                         //如果找到内容大图
                         if (img_array.length > 0) {
-                            var new_img_src = $(img_array[img_array.length - 1]).data('lazySrc');
+                            //debugger;
+                            var new_img_src = $(img_array[img_array.length - 1]).data('src')//.data('lazySrc');
                             targetImgUrl = new_img_src.replace('thumbs', 'images').replace('//t', '//img').replace(/[\?*\"*]/, '').replace('/th/', '/i/');
                             if (/imagetwist/gi.test(targetImgUrl)) targetImgUrl = targetImgUrl.replace('.jpg', '.jpeg');
                             console.log("blogjav获取的图片地址:" + targetImgUrl);
@@ -849,34 +834,10 @@
         static getBigPreviewImgUrlFromJavStore(avid) {
             //异步请求搜索JavStore的番号
             GM_setValue(`temp_img_url_${avid}`, "");
-            return Common.request(`https://www.google.com/search?q=${avid}+site:javstore.net&mkt=ja-JP`, "", 3000).then((result) => {
-                if (!result.loadstuts) {
-                    console.log("从google查找javstore番号出错");
-                    return null;
-                }
-                var doc = Common.parsetext(result.responseText);
-                let a_array = $(doc).find("#rso span a");
-                let a = null;
-                console.log("avid:" + avid);
-                //如果找到全高清大图优先获取全高清的
-                for (let i = 0; i < a_array.length; i++) {
-                    if (i == 5) break;
-                    // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
-                    let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
-                    if (a_array[i].innerHTML.search(reg) > 0) {
-                        if (!a) a = a_array[i];
-                        var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
-                        if (fhd_idx > 0) {
-                            a = a_array[i];
-                            break;
-                        }
-                    }
-                };
-                return Promise.resolve(a);
-            }).then(a => {
-                if (a) {
+            return Common.searchBing(avid,"javstore.net").then(url => {
+                if (url.length > 0) {
                     //异步请求调用内页详情的访问地址
-                    let promise2 = Common.request(`https://javstore.net${a.pathname}`, "http://pixhost.to/");
+                    let promise2 = Common.request(url, "http://pixhost.to/");
                     return promise2.then((result) => {
                         if (!result.loadstuts) return;
                         let doc = Common.parsetext(result.responseText);
@@ -907,9 +868,45 @@
                             });
                         }
                     });
-                } 
+                } else {
+                    return Promise.resolve();
+                }
             });
         }
+        /**
+         * 
+         * @param {string} key 
+         * @param {string} site 
+         * @returns {Promise}  Promise内实现异步返回参数url
+         */
+        static searchBing(key,site) {
+            return Common.request(`https://www.bing.com/search?q=${key}+site:${site}&mkt=ja-JP`, "", 3000).then((result) => {
+                if (!result.loadstuts) {
+                    console.log(`从bing查找${site}番号出错`);
+                    return Promise.resolve();
+                }
+                var doc = Common.parsetext(result.responseText);
+                let a_array = $(doc).find("#b_results .b_algo h2 a"); //$(doc).find("#rso span a");google
+                let url = "";
+                //如果找到全高清大图优先获取全高清的
+                for (let i = 0; i < a_array.length; i++) {
+                    if (i == 5)
+                        break;
+                    // 筛选匹配的番号数据  mium-999 => 正则/mium.*999/gi
+                    let reg = RegExp(key.replace(/\+/g, ".*").replace(/-/g, ".*"), "gi");
+                    if (a_array[i].innerHTML.search(reg) >= 0) {
+                        if (url.length == 0) url = a_array[i].href;
+                        var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
+                        if (fhd_idx > 0) {
+                            url = a_array[i].href;
+                            break;
+                        }
+                    }
+                };
+                return new Promise((resolve, reject) => { resolve(url)});
+            });
+        }
+
         /**
          * 获取Dmm对应番号的数据
          * @param {string} dmmIdUrl DmmId网址 
@@ -984,18 +981,20 @@
             //保存查询关键词参数
             GM_setValue("115_search_var", `${javId}|${javId2}|${javId3}|${javId4}|${javId5}|${javId6}`);
             
-            let promise1 = Common.request(`https://webapi.115.com/files/search?search_value=${javId_Key}&format=json&limit=100`);
+            let promise1 = Common.request(`https://webapi.115.com/files/search?search_value=${javId_Key}&format=json&limit=100`,"",3000);
             promise1.then((result) => {
-                let resultJson = JSON.parse(result.responseText);
-                if (resultJson.count > 0) {
-                    let pickcode = '';
-                    let reg = new RegExp(GM_getValue("115_search_var"), "gi");
-                    for (let i = 0; i < resultJson.data.length; i++) {
-                        let row = resultJson.data[i];
-                        if (row.play_long && (row.n.search(reg) >= 0)) { //iv vdi ico play_long
-                            pickcode = row.pc;
-                            callback(true, `https://v.anxia.com/?pickcode=${pickcode}`, pickcode);
-                            return;
+                if(result.loadstuts){
+                    let resultJson = JSON.parse(result.responseText);
+                    if (resultJson.count > 0) {
+                        let pickcode = '';
+                        let reg = new RegExp(GM_getValue("115_search_var"), "gi");
+                        for (let i = 0; i < resultJson.data.length; i++) {
+                            let row = resultJson.data[i];
+                            if (row.play_long && (row.n.search(reg) >= 0)) { //iv vdi ico play_long
+                                pickcode = row.pc;
+                                callback(true, `https://v.anxia.com/?pickcode=${pickcode}`, pickcode);
+                                return;
+                            }
                         }
                     }
                 }
@@ -1014,19 +1013,21 @@
             let javId4 = javId.replace(/(-)/g, "-0"); //把番号-替换为-0，例如DSVR-584 =》 DSVR-0584
             //保存查询关键词参数
             GM_setValue("quark_search_var", `${javId}|${javId2}|${javId3}|${javId4}`);
-            let p1 = Common.request(`https://drive.quark.cn/1/clouddrive/file/search?pr=ucpro&fr=pc&q=${javId2}&_page=1&_size=50&_fetch_total=1&_sort=file_type:desc,updated_at:desc&_is_hl=1`);
+            let p1 = Common.request(`https://drive.quark.cn/1/clouddrive/file/search?pr=ucpro&fr=pc&q=${javId2}&_page=1&_size=50&_fetch_total=1&_sort=file_type:desc,updated_at:desc&_is_hl=1`,"",3000);
             return p1.then((result) => {
-                let resultJson = JSON.parse(result.responseText);
-                if (resultJson.status == 200 && resultJson.metadata._count > 0) {
-                    let reg = new RegExp(GM_getValue("quark_search_var"), "gi");
-                    for (let i = 0; i < resultJson.data.list.length; i++) {
-                        let row = resultJson.data.list[i];
-                        if (row.duration && (row.file_name.search(reg) >= 0)) { //时长、文件名判断
-                            return Promise.resolve({
-                                isHave: true,
-                                playUrl: `https://pan.quark.cn/list#/video/${row.fid}`,
-                                pickcode: row.fid
-                            });
+                if(result.loadstuts){
+                    let resultJson = JSON.parse(result.responseText);
+                    if (resultJson.status == 200 && resultJson.metadata._count > 0) {
+                        let reg = new RegExp(GM_getValue("quark_search_var"), "gi");
+                        for (let i = 0; i < resultJson.data.list.length; i++) {
+                            let row = resultJson.data.list[i];
+                            if (row.duration && (row.file_name.search(reg) >= 0)) { //时长、文件名判断
+                                return Promise.resolve({
+                                    isHave: true,
+                                    playUrl: `https://pan.quark.cn/list#/video/${row.fid}`,
+                                    pickcode: row.fid
+                                });
+                            }
                         }
                     }
                 }
@@ -1321,6 +1322,7 @@
 
         static getMovie($doc) {
             return {
+                
                 index_cd: $('#video_title a', $doc).attr('href').split("v=")[1],
                 code: $('.header', $doc)[0].nextElementSibling.textContent,
                 release_date: $('#video_date .text', $doc).text(),
@@ -1366,6 +1368,7 @@
          * javlib记录已阅影片
          */
         static javlibSaveData(AVID, pickcode, pm_mater) {
+            //console.log($(document));
             let movie = Jav.getMovie($(document));
             movie.pick_code = pickcode;
             let newId = Common.getAvCode(AVID);
@@ -1586,8 +1589,10 @@
                     // 增加同步数据到本地的触发按钮
                 }
 
-                // 新增VR发行菜单入口
-                $('.menul1 ul li:contains("新发行")').after('<li><a href="vl_genre.php?g=aaua">VR发行</a></li>');
+                // 新增VR发行、FC2发行菜单入口
+                $('.menul1 ul li:contains("新发行")').after('<li><a href="https://onejav.com/popular/?amateur=1" target="_blank" style="color: red;">FC2发行</a></li>');
+                $('.menul1 ul li:contains("新发行")').after('<li><a href="vl_genre.php?g=aaua" style="color: red;">VR发行</a></li>');
+                
 
                 // 处理javlib番号详情页面的脚本
                 if ($('.header').length && $('meta[name="keywords"]').length) {
@@ -1671,7 +1676,7 @@
                                 <td class="header">在线预览:</td>
                                 <td>
                                     <span class="genre"><a href="https://missav.com/cn/${AVID}" target="_blank" title="需解封印" >missav</a></span>
-                                    <span class="genre"><a href="https://7mmtv.tv/zh/censored_search/all/${AVID}/1.html" target="_blank" title="需解封印" >7mmtv</a></span>
+                                    <span class="genre"><a href="https://${MMTV_DOMAIN}/zh/censored_search/all/${AVID}/1.html" target="_blank" title="需解封印" >7mmtv</a></span>
                                     <span class="genre"><a href="https://supjav.com/zh/?s=${Common.getAvCode(AVID)}+${AVID}" target="_blank" title="需解封印">supjav</a></span>
                                 </td>
                             </tr></tbody></table>
@@ -1755,10 +1760,9 @@
                     .screencap img{	width:100%;	max-width: 1000px;}
                 `);
                 // 新增FC2菜单入口
-                $('#navbar ul.nav.navbar-nav li:eq(0)')
-                .after(`<li><a href="https://${GM_getValue('javdb_url')}/advanced_search?type=3&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h" target="_blank">FC2</a></li>`);
+                $('#navbar ul.nav.navbar-nav li:eq(0)').after(`<li><a href="https://onejav.com/popular/?amateur=1" target="_blank" style="color: red;">FC2</a></li>`);
                 // 新增VR菜单入口
-                $('#navbar ul.nav.navbar-nav li:eq(0)').after('<li><a href="/search/VR&type=1">VR</a></li>');
+                $('#navbar ul.nav.navbar-nav li:eq(0)').after('<li><a href="/search/VR&type=1" style="color: red;">VR</a></li>');
                 // 指定站点页面加入瀑布流控制按钮
                 let li_elem = document.createElement('li');
                 $(li_elem).append($(a3));
@@ -1851,7 +1855,7 @@
                         <p>
                             <span class="header">在线预览:</span>
                             <a href="https://missav.com/cn/${AVID}" target="_blank" style="color: rgb(204, 0, 0);" title="需解封印">missav&nbsp;</a>
-                            <a href="https://7mmtv.tv/zh/censored_search/all/${AVID}/1.html" target="_blank" style="color: rgb(204, 0, 0);" title="需解封印">7mmtv&nbsp;</a>
+                            <a href="https://${MMTV_DOMAIN}/zh/censored_search/all/${AVID}/1.html" target="_blank" style="color: rgb(204, 0, 0);" title="需解封印">7mmtv&nbsp;</a>
                             <a href="https://supjav.com/zh/?s=${AVID}" target="_blank" style="color: rgb(204, 0, 0);" title="需解封印">supjav&nbsp;</a>
                         </p>
                     `);
@@ -1991,10 +1995,10 @@
 
                 // 修改FC2菜单入口
                 $('.navbar-dropdown.is-boxed .navbar-item:contains("FC2")')
-                .attr("href","/advanced_search?type=3&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h");
+                .attr("href","/advanced_search?type=3&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h").attr("style","color: red;");
                 // 新增VR菜单入口
                 $('.navbar-dropdown.is-boxed .navbar-item:eq(0)')
-                .after('<a class="navbar-item" href="/advanced_search?type=0&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&tags%5B%5D=212%7CVR&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h">VR</a>');
+                .after('<a class="navbar-item" href="/advanced_search?type=0&score_min=4.2&score_max=&released_start=&released_end=&actors%5B%5D=&tags%5B%5D=&tags%5B%5D=212%7CVR&p=0&d=0&d=1&c=0&s=0&i=0&v=0&commit=檢索&lm=h" style="color: red;">VR</a>');
                 
 
                 // 瀑布流脚本
@@ -2170,7 +2174,7 @@
                 $(".onlinePlayLink").append(`
                     <a href="https://njav.tv/zh/search?keyword=${$('.boxoleft .box_left_news.news_2n').attr("avid")}" target="_blank" style="color: rgb(204, 0, 0);" title="">njav&nbsp;&nbsp;</a>
                     <a href="https://missav.com/cn/${$('.boxoleft .box_left_news.news_2n').attr("avid")}" target="_blank" style="color: rgb(204, 0, 0);" title="此站需解封">missav&nbsp;&nbsp;</a>
-                    <a href="https://7mmtv.tv/zh/censored_search/all/${$('.boxoleft .box_left_news.news_2n').attr("avid")}/1.html" target="_blank" style="color: rgb(204, 0, 0);" title="此站需解封">7mmtv&nbsp;&nbsp;</a>
+                    <a href="https://${MMTV_DOMAIN}/zh/censored_search/all/${$('.boxoleft .box_left_news.news_2n').attr("avid")}/1.html" target="_blank" style="color: rgb(204, 0, 0);" title="此站需解封">7mmtv&nbsp;&nbsp;</a>
                     <a href="https://supjav.com/zh/?s=${$('.boxoleft .box_left_news.news_2n').attr("avid")}" target="_blank" style="color: rgb(204, 0, 0);" title="此站需解封">supjav&nbsp;&nbsp;</a>
                 `);
 
@@ -2328,7 +2332,7 @@
             });
 
             // javlib脚本
-            w.setThirdCallback((elems) => {
+            w.setJavlibCallback((elems) => {
                 // hobby mod script
                 let filerMonth = (indexCd_id, dateString) => {
                     //过滤最新X月份的影片
@@ -2418,7 +2422,7 @@
                                     Common.addBrowseJavidCache(code);
                                 }
                             }
-                            else if (Common.browseJavidHasCache(code)) {    //纯正GM缓存中
+                            else if (Common.browseJavidHasCache(code)) {    //存在GM缓存中
                                 getMovieInfo(true);
                             }
                             else { //都不存在
@@ -2459,9 +2463,10 @@
                         if (!(/(-)/g).test(avid)) {
                             avcd = Common.getAvCode(avid);
                         }
+                        //debugger;
                         //修改样式
                         $(aEle.parentElement.parentElement).attr("style", "flex-direction: column;");
-                        if (!(/^FC2-/g).test(avid)) {
+                        if (!(/^FC2(-)/g).test(avid)) {
                             // Javlib的跳转链接
                             $(aEle.parentElement).append(`<a style='color:red;' href='https://${GM_getValue('javlib_url')}/cn/vl_searchbyid.php?keyword=` +
                                 avcd + "&" + avid + "' target='_blank' title='点击到Javlib看看'>&nbsp;&nbsp;Javlib</a>");
@@ -2729,7 +2734,7 @@
             waterfall.prototype.setSecondCallback = function (f) {
                 this._2func = f;
             };
-            waterfall.prototype.setThirdCallback = function (f) {
+            waterfall.prototype.setJavlibCallback = function (f) {
                 this._3func = f;
             };
             waterfall.prototype.setFourthCallback = function (f) {
