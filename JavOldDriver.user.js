@@ -7,9 +7,6 @@
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
 // @author       Hobby
 
-// @require      https://cdn.staticfile.org/jquery/2.2.4/jquery.min.js
-// @require      https://cdn.staticfile.org/lovefield/2.1.12/lovefield.min.js
-// @require      https://cdn.staticfile.org/limonte-sweetalert2/9.17.2/sweetalert2.all.min.js
 // @require      https://lib.baomitu.com/jquery/2.2.4/jquery.min.js
 // @require      https://lib.baomitu.com/lovefield/2.1.12/lovefield.min.js
 // @require      https://lib.baomitu.com/limonte-sweetalert2/9.17.2/sweetalert2.all.min.js
