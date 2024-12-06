@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.7
+// @version      3.8.8
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -18,6 +18,7 @@
 // javlib主要有码jav资源、排行榜、点评，最新地址在github.com/javlibcom
 // @include      *://*javlibrary.com/*
 // @include      *://*javlib.com/*
+// @include      *://*o83h.com/*
 // @include      *://*r86m.com/*
 
 // javbus有无码jav资源、论坛
@@ -74,10 +75,12 @@
 
 // 油猴脚本技术交流：https://t.me/+TgfN6vLVRew7aMWt
 
-// 已知问题：javlib加了Cloudflare防御，导致列表大部分功能失效。如用他们新网址相对好些，但是也是半残状态。目前暂不知可行处理方案，先就这样了。
-//          如有参考方案，可留言反馈。javlib新网址,能在github上查找到。另外blogjav站应该是没了，少了一个预览大图源。
+// 已知问题：javlib加了Cloudflare防御，目前更新版本利用新网址列表功能已经复活8成以上，代价是2秒左右刷新一个列表的番号。目前只能这样了。
+//          如有更优方案，可留言反馈。另外blogjav站已经能访问了，但新番号基本无预览图了，就做一个备用预览大图源吧。
 
+// v3.8.8  修复javlib加了Cloudflare防御导致列表功能失效问题。
 // v3.8.7  修复部分页面预览图失效的问题。javlib新增了FC2菜单跳转（onejav）。
+
 // v3.8.6  增加了115离线成功，3秒后刷新当前页面。修复了磁力列表下javdb查找问题。
 // v3.8.5  增加javdb影片详情页的115离线快捷键及115在线播放入口（by Stel000）。修复因新版chrome中DOMNodeInserted事件废弃导致无法离线下载问题。
 // v3.8.4  修复了javlib同步问题。修复了115网盘关联视频问题。
@@ -136,6 +139,7 @@
     const JAVDB_DOMAIN = 'javdb368.com';
     const TORRENTKITTY_DOMAIN = 'www.torrentkitty.one';
     const MMTV_DOMAIN = '7mmtv.sx';
+    const JAVLIB_DOMAIN = 'r86m.com';
     
     // 115用户ID
     let jav_userID = GM_getValue('jav_user_id', 0);
@@ -903,7 +907,7 @@
                         }
                     }
                 };
-                return new Promise((resolve, reject) => { resolve(url)});
+                return new Promise(resolve => { resolve(url)});
             });
         }
 
@@ -1322,7 +1326,6 @@
 
         static getMovie($doc) {
             return {
-                
                 index_cd: $('#video_title a', $doc).attr('href').split("v=")[1],
                 code: $('.header', $doc)[0].nextElementSibling.textContent,
                 release_date: $('#video_date .text', $doc).text(),
@@ -2430,22 +2433,36 @@
                             }
 
                             function getMovieInfo(isSave) {
-                                let promise1 = Common.request(location.origin + "/ja/?v=" + _vid);
-                                promise1.then((result) => {
-                                    indexCd_id = "#vid_" + result.finalUrl.split("=")[1]; //例如：http://www.j12lib.com/cn/?v=javlikd42a
-                                    let doc = result.responseText;
-                                    let movie_info = doc.substring(doc.search(/<table id="video_jacket_info">/),
-                                        doc.search(/<div id="video_favorite_edit" class="">/));
-                                    // 阻止构造Document对象时加载src内容
-                                    movie_info = movie_info.replace("src", "hobbysrc");
-                                    let $doc = $(Common.parsetext(movie_info));
-                                    actor = $('#video_cast .text .star a', $doc).text();
-                                    dateString = $('#video_date .text', $doc).text();
-                                    pingfengString = $('#video_review .text .score', $doc).text();
-                                    extCode(indexCd_id, actor, dateString, pingfengString);
-                                    // todo 1118
-                                    if (isSave) Jav.syncMovie(result);
-                                    return Promise.resolve();
+                                //console.log(`push:${_vid}`);
+                                //console.log(w.queue);
+                                w.queue.push(() => {
+                                    let defer = $.Deferred();
+                                    let promise1 = Common.request(`https://${JAVLIB_DOMAIN}/ja/?v=${_vid}`);
+                                    promise1.then((result) => {
+                                        if(result.loadstuts && result.status < 300){
+                                            indexCd_id = "#vid_" + result.finalUrl.split("=")[1]; //例如：http://www.j12lib.com/cn/?v=javlikd42a
+                                            let doc = result.responseText;
+                                            let movie_info = doc.substring(doc.search(/<table id="video_jacket_info">/),
+                                                doc.search(/<div id="video_favorite_edit" class="">/));
+                                            // 阻止构造Document对象时加载src内容
+                                            movie_info = movie_info.replace("src", "hobbysrc");
+                                            let $doc = $(Common.parsetext(movie_info));
+                                            actor = $('#video_cast .text .star a', $doc).text();
+                                            dateString = $('#video_date .text', $doc).text();
+                                            pingfengString = $('#video_review .text .score', $doc).text();
+                                            extCode(indexCd_id, actor, dateString, pingfengString);
+                                            // todo 1118
+                                            if (isSave) Jav.syncMovie(result);
+                                        } else {
+                                            if(result.status > 300) console.log(`${result.finalUrl} 加载出错：${result.responseXML.title}`);
+                                        }
+                                        return Promise.resolve();
+                                    }).then(() => { // 等待0.8秒执行下一个任务，受Cloudflare限制访问
+                                        setTimeout(() => {
+                                            defer.resolve();
+                                        },800);
+                                    });
+                                    return defer.promise();
                                 });
                             }
                         });
@@ -2600,6 +2617,9 @@
                         this.locked = false;
                     }
                 }
+                // 创建请求队列  //浏览器对同一域名进行请求的最大并发连接数:chrome为6
+                this.queue = new Queue(1);
+                this.page_queue = new Queue(1);
                 this.lock = new Lock();
                 this.baseURI = this.getBaseURI();
                 this.selector = {
@@ -2641,26 +2661,35 @@
             // 瀑布流脚本
             waterfall.prototype.fetchURL = function (url) {
                 console.log(`fetchUrl = ${url}`);
+                let status = 404;
                 const fetchwithcookie = fetch(url, { credentials: 'same-origin' });
-                return fetchwithcookie.then(response => response.text())
-                    .then(html => new DOMParser().parseFromString(html, 'text/html'))
+                return fetchwithcookie.then(response => {
+                        status = response.status;
+                        return response.text();
+                    }).then(html => new DOMParser().parseFromString(html, 'text/html'))
                     .then(doc => {
                         let $doc = $(doc);
-                        let href = $doc.find(this.selector.next).attr('href');
-                        let nextURL = href ? this.getNextURL(href) : undefined;
-                        let elems = $doc.find(this.selector.item);
-                        for (const elem of elems) {
-                            const links = elem.getElementsByTagName('a');
-                            for (const link of links) {
-                                link.target = "_blank";
+                        let elems = [];
+                        let nextURL;
+                        if(status < 300){
+                            let href = $doc.find(this.selector.next).attr('href');
+                            nextURL = href ? this.getNextURL(href) : undefined;
+                            elems = $doc.find(this.selector.item);
+                            for (const elem of elems) {
+                                const links = elem.getElementsByTagName('a');
+                                for (const link of links) {
+                                    link.target = "_blank";
+                                }
                             }
-                        }
-                        // javdb列表 bug：一直有最后一页 console.log(`1 ${url}`);console.log(`2 ${nextURL}`);
-                        if ($(JAVDB_ITEM_SELECTOR).length && (this._count !== 0) && url === nextURL) {
-                            if ($(`#waterfall>div>a[href="${$(elems[0]).find('a.box')[0].attr('href')}"]`).length > 0) {
-                                nextURL = undefined;
-                                elems = [];
+                            // javdb列表 bug：一直有最后一页 console.log(`1 ${url}`);console.log(`2 ${nextURL}`);
+                            if ($(JAVDB_ITEM_SELECTOR).length && (this._count !== 0) && url === nextURL) {
+                                if ($(`#waterfall>div>a[href="${$(elems[0]).find('a.box')[0].attr('href')}"]`).length > 0) {
+                                    nextURL = undefined;
+                                    elems = [];
+                                }
                             }
+                        } else {
+                            nextURL = $doc.url;
                         }
                         return {
                             nextURL,
@@ -2718,15 +2747,39 @@
             waterfall.prototype.reachBottom = function (elem, limit) {
                 return (elem.getBoundingClientRect().top - $(window).height()) < limit;
             };
+            //滚动条事件触发
             waterfall.prototype.scroll = function () {
-                if (this.reachBottom(this.anchor, 500) && this.appendElems(this._2func)) {
-                    this.end();
-                }
+                this.pageQueuePush();
             };
+            //滚轮事件触发
             waterfall.prototype.wheel = function () {
-                if (this.reachBottom(this.anchor, 1000) && this.appendElems(this._2func)) {
-                    this.end();
-                }
+                this.pageQueuePush();
+            };
+            waterfall.prototype.pageQueuePush = function () {
+                this.page_queue.push(() => {
+                    let defer = $.Deferred();
+                    new Promise(resolve => {
+                        if (this.reachBottom(this.anchor, 1200) && this.appendElems(this._2func)) {
+                            this.end();
+                        }
+                        resolve();
+                    }).then(() => {
+                        // 延迟1秒运行定时循环函数
+                        setTimeout(() => {
+                            if (new RegExp(JAVLIB_DOMAIN).test(domain)) {
+                                // 定时循环函数,当队列执行完成时结束
+                                var s4 = setInterval(() => {
+                                    if (this.queue.taskList.length == 0) {
+                                        defer.resolve();
+                                    }
+                                }, 200);
+                            } else {
+                                defer.resolve();
+                            }
+                        }, 500);
+                    });
+                    return defer.promise();
+                });
             };
             waterfall.prototype.setFirstCallback = function (f) {
                 this._1func = f;
