@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JAV老司机
 // @namespace    https://sleazyfork.org/zh-CN/users/25794
-// @version      3.8.8
+// @version      3.8.9
 // @supportURL   https://sleazyfork.org/zh-CN/scripts/25781/feedback
 // @source       https://github.com/hobbyfang/javOldDriver
 // @description  JAV老司机神器,支持各Jav老司机站点。拥有高效浏览Jav的页面排版，JAV高清预览大图，JAV列表无限滚动自动加载，合成“挊”的自动获取JAV磁链接，一键自动115离线下载。。。。没时间解释了，快上车！
@@ -78,6 +78,7 @@
 // 已知问题：javlib加了Cloudflare防御，目前更新版本利用新网址列表功能已经复活8成以上，代价是2秒左右刷新一个列表的番号。目前只能这样了。
 //          如有更优方案，可留言反馈。另外blogjav站已经能访问了，但新番号基本无预览图了，就做一个备用预览大图源吧。
 
+// v3.8.9  优化预览图加载顺序，优化预览图加载问题。
 // v3.8.8  修复javlib加了Cloudflare防御导致列表功能失效问题。
 // v3.8.7  修复部分页面预览图失效的问题。javlib新增了FC2菜单跳转（onejav）。
 
@@ -621,10 +622,10 @@
                     let reg = RegExp(avid.replace(/-/g, ".*"), "gi");
                     if (a_array[i].title.search(reg) > 0) {
                         if (!a) a = a_array[i];
-                        let fhd_idx = a_array[i].title.search(/Uncensored|FHD/i);
-                        if (fhd_idx >= 0) {
+                        let search_idx = a_array[i].title.search(/Uncensored|FHD|4K|Mosaic/i);
+                        // 是否更新的链接
+                        if ( parseInt(a_array[i].href.match(/\d+/)[0]) > parseInt(a.href.match(/\d+/)[0]) && search_idx >= 0) {
                             a = a_array[i];
-                            break;
                         }
                     }
                 }
@@ -696,6 +697,7 @@
             let p = Common.getBigPreviewImgUrlFromBlogjav(avid);
             let p2 = Common.getBigPreviewImgUrlFromJavStore(avid);
             p.then(imgUrl => {
+   
                 if (!imgUrl || imgUrl === null) {
                     addJavArchiveImg.call(this);
                     return;
@@ -768,7 +770,7 @@
                 return Promise.resolve(null);
             }
             //请求搜索blogjav.net的番号
-            return Common.searchBing(Common.getBlogJavSearchVal(avid),"blogjav.net")
+            return Common.searchBing(Common.getBlogJavSearchVal(avid),"blogjav.net","&mkt=zh-TW")
             // .then(a => {
             //     if (a) {
             //         return Promise.resolve(a);
@@ -805,7 +807,6 @@
                 if (url.length > 0) {
                     //请求调用内页详情的访问地址
                     return Common.request(url, "https://pixhost.to/", 15000).then((result) => {
-                        //debugger;
                         if (!result.loadstuts) return null;
                         let doc = Common.parsetext(result.responseText);
                         let img_array = $(doc).find('.entry-content a img[data-lazy-src*="imagetwist."],.entry-content a img[data-lazy-src*="pixhost."],.entry-content a img[data-src*="pixhost."]');
@@ -838,11 +839,10 @@
         static getBigPreviewImgUrlFromJavStore(avid) {
             //异步请求搜索JavStore的番号
             GM_setValue(`temp_img_url_${avid}`, "");
-            return Common.searchBing(avid,"javstore.net").then(url => {
-                if (url.length > 0) {
+            return Common.searchBing(avid,"javstore.net","&mkt=ja-JP").then(javUrl => {
+                if (javUrl.length > 0) {
                     //异步请求调用内页详情的访问地址
-                    let promise2 = Common.request(url, "http://pixhost.to/");
-                    return promise2.then((result) => {
+                    return Common.request(javUrl, "http://pixhost.to/").then((result) => {
                         if (!result.loadstuts) return;
                         let doc = Common.parsetext(result.responseText);
                         let img_array = $(doc).find('.news a font[size*="+1"],.news a img[alt*=".th"]');
@@ -883,15 +883,15 @@
          * @param {string} site 
          * @returns {Promise}  Promise内实现异步返回参数url
          */
-        static searchBing(key,site) {
-            return Common.request(`https://www.bing.com/search?q=${key}+site:${site}&mkt=ja-JP`, "", 3000).then((result) => {
+        static searchBing(key,site,other) {
+            return Common.request(`https://www.bing.com/search?q=site:${site}+${key}${other}`, "", 3000).then((result) => {
                 if (!result.loadstuts) {
                     console.log(`从bing查找${site}番号出错`);
-                    return Promise.resolve();
+                    return Promise.resolve("");
                 }
                 var doc = Common.parsetext(result.responseText);
                 let a_array = $(doc).find("#b_results .b_algo h2 a"); //$(doc).find("#rso span a");google
-                let url = "";
+                let url = "",b = true;
                 //如果找到全高清大图优先获取全高清的
                 for (let i = 0; i < a_array.length; i++) {
                     if (i == 5)
@@ -900,10 +900,11 @@
                     let reg = RegExp(key.replace(/\+/g, ".*").replace(/-/g, ".*"), "gi");
                     if (a_array[i].innerHTML.search(reg) >= 0) {
                         if (url.length == 0) url = a_array[i].href;
-                        var fhd_idx = a_array[i].innerHTML.search(/FHD/i);
-                        if (fhd_idx > 0) {
+                        var search_idx = a_array[i].innerHTML.search(/Uncensored|FHD|4K|Mosaic/i);
+                        // 是否更新的链接，针对javstore
+                        if((/(javstore)/g).test(site) && parseInt(a_array[i].href.match(/\d+/)[0]) < parseInt(url.match(/\d+/)[0])) b = false ;
+                        if ( b && search_idx >= 0) {
                             url = a_array[i].href;
-                            break;
                         }
                     }
                 };
@@ -984,7 +985,6 @@
             
             //保存查询关键词参数
             GM_setValue("115_search_var", `${javId}|${javId2}|${javId3}|${javId4}|${javId5}|${javId6}`);
-            
             let promise1 = Common.request(`https://webapi.115.com/files/search?search_value=${javId_Key}&format=json&limit=100`,"",3000);
             promise1.then((result) => {
                 if(result.loadstuts){
@@ -1618,6 +1618,27 @@
                     $('#video_genres').before(`<div id="zuobiao" class="item"></div>`);
                     let $div_zuobiao = $('#zuobiao');
 
+                    console.log("番号输出:" + AVID);
+                    //加入预览JAV全片截图
+                    Common.addAvImg(Common.getAvCode(AVID), ($img) => {
+                        // http://www.javlibrary.com/cn/?v=javlilzo4e
+                        let divEle = $("div[id='video_title']")[0];  // todo 190604
+                        if (divEle) {
+                            $(divEle).after(
+                                '<div style="width: 100%;height: 100%;display: inline-block;margin: 0px 0px 0px 0px;">' +
+                                '<div id="hobby_div_left" style="float: left;min-width: 60%;"></div>' +
+                                '<div id="hobby_div_right" style="float: left;min-width: 66px;"></div>' +
+                                '</div>'
+                            );
+                            $('#hobby_div_left').append($('#video_jacket_info'));
+                            $('#hobby_div_left').append($('#video_favorite_edit'));
+                            $('#hobby_div_right').append($img);
+                        }
+                    }, true);
+
+                    // 挊
+                    thirdparty.nong.searchMagnetRun();
+
                     //加入dmm评分数据
                     if (imgs.length) {
                         let dmmId = Common.getDmmId(imgs[0].src);
@@ -1690,6 +1711,8 @@
                     $('#watched .smalldarkbutton.hidden').html("我放弃这片了");
 
 
+
+
                     //查找115是否有此番号
                     Common.search115Data(AVID, (BOOLEAN_TYPE, playUrl, pc) => {
                         if (BOOLEAN_TYPE) {
@@ -1704,23 +1727,6 @@
                             `);
                             $('#owned button[class="smallbutton"]').click();
                         }
-                        console.log("番号输出:" + AVID);
-                        //加入预览JAV全片截图
-                        Common.addAvImg(Common.getAvCode(AVID), ($img) => {
-                            // http://www.javlibrary.com/cn/?v=javlilzo4e
-                            let divEle = $("div[id='video_title']")[0];  // todo 190604
-                            if (divEle) {
-                                $(divEle).after(
-                                    '<div style="width: 100%;height: 100%;display: inline-block;margin: 0px 0px 0px 0px;">' +
-                                    '<div id="hobby_div_left" style="float: left;min-width: 60%;"></div>' +
-                                    '<div id="hobby_div_right" style="float: left;min-width: 66px;"></div>' +
-                                    '</div>'
-                                );
-                                $('#hobby_div_left').append($('#video_jacket_info'));
-                                $('#hobby_div_left').append($('#video_favorite_edit'));
-                                $('#hobby_div_right').append($img);
-                            }
-                        }, !BOOLEAN_TYPE);
 
                         // 只支持javlibray处理已阅影片
                         this.javlibSaveData(AVID, pickcode, pm_mater);
@@ -1749,8 +1755,7 @@
                     $('#video_title h3').text($('#video_title a').text());
                     $('#video_title a').empty();
 
-                    // 挊
-                    thirdparty.nong.searchMagnetRun();
+
                 }//番号影片详情页处理end
             }
         }
@@ -1786,6 +1791,19 @@
                     //加入坐标div，辅助插入元素
                     $('p.header').before('<p id="zuobiao"></p>');
                     let $p_zuobiao = $('#zuobiao');
+
+                    console.log("番号输出:" + AVID);
+                    Common.addAvImg(AVID, ($img) => {
+                        //https://www.javbus.com/CHN-141
+                        let divEle = $("div[class='col-md-3 info']")[0];
+                        $(divEle).attr("id", "video_info");
+                        if (divEle) {
+                            $(divEle.parentElement).append($img);
+                        }
+                    }, false);//javbus 默认不放大
+
+                    // 挊
+                    thirdparty.nong.searchMagnetRun();
 
                     //加入dmm评分数据
                     let a_imgs = $('#sample-waterfall>a');
@@ -1828,15 +1846,7 @@
                                 </div>
                             `);
                         }
-                        console.log("番号输出:" + AVID);
-                        Common.addAvImg(AVID, ($img) => {
-                            //https://www.javbus.com/CHN-141
-                            let divEle = $("div[class='col-md-3 info']")[0];
-                            $(divEle).attr("id", "video_info");
-                            if (divEle) {
-                                $(divEle.parentElement).append($img);
-                            }
-                        }, false);//javbus 默认不放大
+
                     });
 
                     //查找夸克是否有此番号
@@ -1896,9 +1906,6 @@
                     const config = { childList: true };
                     // 开始观察目标节点
                     observer.observe(targetNode, config);
-
-                    // 挊
-                    thirdparty.nong.searchMagnetRun();
                 }
             }
         }
@@ -2766,6 +2773,7 @@
                     }).then(() => {
                         // 延迟1秒运行定时循环函数
                         setTimeout(() => {
+                            // 判断域名是否当前页
                             if (new RegExp(JAVLIB_DOMAIN).test(domain)) {
                                 // 定时循环函数,当队列执行完成时结束
                                 var s4 = setInterval(() => {
@@ -2874,7 +2882,7 @@
                 },
             },
             resource_sites: {
-                [GM_getValue('javdb_url')]: (kw, cb) => {
+                [GM_getValue('javdb_url')]: (kw, callback) => {
                     let promise = Common.request("https://" + GM_getValue('search_index') + "/search?f=download&q=" + kw, "https://" + GM_getValue('search_index') + "/");
                     promise.then((result) => {
                         let data = [];
@@ -2915,7 +2923,7 @@
                                         "src": result.finalUrl,
                                     });
                                 }
-                                cb(result.finalUrl, data);
+                                callback(result.finalUrl, data);
                             })
                         }).catch(() => {
                             data.push({
@@ -2924,11 +2932,11 @@
                                 "size": "0",
                                 "src": result.finalUrl,
                             });
-                            cb(result.finalUrl, data);
+                            callback(result.finalUrl, data);
                         });
                     });
                 },
-                [GM_getValue('btsow_url')]: (kw, cb) => {
+                [GM_getValue('btsow_url')]: (kw, callback) => {
                     let promise = Common.request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -2951,10 +2959,10 @@
                                 }
                             }
                         }
-                        cb(result.finalUrl, data);
+                        callback(result.finalUrl, data);
                     });
                 },
-                [GM_getValue('btdig_url')]: (kw, cb) => {
+                [GM_getValue('btdig_url')]: (kw, callback) => {
                     let promise = Common.request("https://" + GM_getValue('search_index') + "/search?q=" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -2979,10 +2987,10 @@
                                 "src": result.finalUrl,
                             });
                         }
-                        cb(result.finalUrl, data);
+                        callback(result.finalUrl, data);
                     });
                 },
-                [GM_getValue('nyaa_url')]: (kw, cb) => {
+                [GM_getValue('nyaa_url')]: (kw, callback) => {
                     let promise = Common.request("https://" + GM_getValue('search_index') + "/?f=0&c=0_0&q=" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -3004,10 +3012,10 @@
                                 });
                             }
                         }
-                        cb(result.finalUrl, data);
+                        callback(result.finalUrl, data);
                     });
                 },
-                [GM_getValue('torrentkitty_url')]: (kw, cb) => {
+                [GM_getValue('torrentkitty_url')]: (kw, callback) => {
                     let promise = Common.request("https://" + GM_getValue('search_index') + "/search/" + kw);
                     promise.then((result) => {
                         thirdparty.nong.search_engines.full_url = result.finalUrl;
@@ -3034,7 +3042,7 @@
                                 "src": result.finalUrl,
                             });
                         }
-                        cb(result.finalUrl, data);
+                        callback(result.finalUrl, data);
                     });
                 },
             },
@@ -3052,7 +3060,7 @@
                     GM_setValue('search_index', i);
                     return i;
                 },
-                cur_engine: (kw, cb) => {
+                cur_engine: (kw, callback) => {
                     let ops = Object.keys(thirdparty.nong.resource_sites);
                     let z = thirdparty.nong.resource_sites[GM_getValue('search_index', ops[0])];
                     if (!z) {
@@ -3060,7 +3068,7 @@
                         GM_setValue('search_index', Object.keys(thirdparty.nong.resource_sites)[0]);
                         z = thirdparty.nong.resource_sites[GM_getValue('search_index')];
                     }
-                    return z(kw, cb);
+                    return z(kw, callback);
                 },
                 parse_error: (a) => {
                     alert("调用搜索引擎错误，可能需要更新，请向作者反馈。i=" + a);
@@ -3390,7 +3398,7 @@
                                 if (GM_getValue('search_index', null) === null) {
                                     GM_setValue('search_index', Object.keys(thirdparty.nong.resource_sites)[0]);
                                 }
-                                thirdparty.nong.search_engines.cur_engine(main.cur_vid, (src, data) => {
+                                thirdparty.nong.search_engines.cur_engine(main.cur_vid, (src, data) => { //callback
                                     if (data.length === 0) {
                                         let url = thirdparty.nong.search_engines.full_url;
                                         $('#nong-table-new #notice').text('No search result! ');   //todo 181224
@@ -3422,6 +3430,7 @@
 		`);
 
         Jav.javStoreScript();
+        // 判断是否指定页面
         if ((/(JAVLibrary|JavBus|AVMOO|AVSOX)/g).test(document.title) || $("footer:contains('JavBus')").length) {
             Common.addAvImgCSS();
             GM_addStyle(`
